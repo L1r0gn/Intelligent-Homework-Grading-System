@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>添加用户</title>
+    <link rel="stylesheet" href="{% static 'plugins/bootstrap/css/bootstrap.css'%}">
+</head>
+<body>
+   <!---导航栏--->
+    <nav class="navbar navbar-default">
+        <div class="container-fluid">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                    data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#">Brand</a>
+            </div>
+
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav">
+                    <li class="active"><a href="#">Link <span class="sr-only">(current)</span></a></li>
+                    <li><a href="#">Link</a></li>
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
+                            aria-expanded="false">Dropdown <span class="caret"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="#">Action</a></li>
+                            <li><a href="#">Another action</a></li>
+                            <li><a href="#">Something else here</a></li>
+                            <li role="separator" class="divider"></li>
+                            <li><a href="#">Separated link</a></li>
+                            <li role="separator" class="divider"></li>
+                            <li><a href="#">One more separated link</a></li>
+                        </ul>
+                    </li>
+                </ul>
+                <ul class="nav navbar-nav navbar-right">
+                    <li><a href="#">Link</a></li>
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
+                            aria-expanded="false">Dropdown <span class="caret"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="#">Action</a></li>
+                            <li><a href="#">Another action</a></li>
+                            <li><a href="#">Something else here</a></li>
+                            <li role="separator" class="divider"></li>
+                            <li><a href="#">Separated link</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div><!-- /.navbar-collapse -->
+        </div><!-- /.container-fluid -->
+    </nav>
+    <div class="container">
+        <form method="post">
+            {% csrf_token %}
+
+            <!-- 昵称：正确 -->
+            <div class="form-group">
+                <label for="nickName">昵称</label>
+                <input type="text" class="form-control" id="nickName" name="nickName" placeholder="请输入昵称">
+            </div>
+
+            <!-- 手机号：正确 -->
+            <div class="form-group">
+                <label for="phone">手机号</label>
+                <input type="tel" class="form-control" id="phone" name="phone" placeholder="请输入手机号">
+            </div>
+
+            <!-- 性别：value改为1/2（与模型choices匹配） -->
+            <div class="form-group">
+                <label>性别</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="gender" id="male" value="1" checked>
+                    <label class="form-check-label" for="male">男</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="gender" id="female" value="2">
+                    <label class="form-check-label" for="female">女</label>
+                </div>
+            </div>
+
+            <!-- 用户属性：value改为1/2（与模型choices匹配） -->
+            <div class="form-group">
+                <label for="userAttribute">用户属性</label>
+                <select class="form-control" id="userAttribute" name="userAttribute">
+                    <option value="">请选择用户属性</option>
+                    <option value="1">student</option>  <!-- 1对应student -->
+                    <option value="2">teacher</option>   <!-- 2对应teacher -->
+                </select>
+            </div>
+
+            <!-- 班级信息：下拉选择已存在的班级（外键关联必须） -->
+            <div class="form-group">
+                <label for="classInfo">班级信息</label>
+                <select class="form-control" id="classInfo" name="classInfo">
+                    <option value="">请选择班级</option>
+                    {% for class in class_list %}
+                        <option value="{{ class.id }}">{{ class.name }}</option>  <!-- 传递班级id -->
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="d-flex justify-content-end">
+                <button type="reset" class="btn btn-secondary mr-2">重置</button>
+                <button type="submit" class="btn btn-primary">提交</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>
