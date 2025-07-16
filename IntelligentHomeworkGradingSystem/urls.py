@@ -20,7 +20,9 @@ from userManageModule import views
 from userManageModule.static.plugins.bootstrap import css
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('user/list/',views.user_list),
-    path('user/add/',views.user_add),
+    path('user/list/',views.user_list,name='user_list'),
+    path('user/add/',views.user_add,name='user_add'),
     path('class_name/add/',views.class_add),
+    path('user/edit/<int:user_id>/', views.user_edit, name='user_edit'),
+    path('user/delete/<int:user_id>/', views.user_delete, name='user_delete'),
 ]

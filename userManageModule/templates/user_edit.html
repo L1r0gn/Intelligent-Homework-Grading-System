@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>编辑用户</title>
+    <link rel="stylesheet" href="{% static 'plugins/bootstrap/css/bootstrap.css' %}">
+</head>
+<body>
+<div class="container">
+    <h1>编辑用户</h1>
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label>昵称</label>
+            <input type="text" class="form-control" name="nickName" value="{{ user.nickName }}">
+        </div>
+
+        <div class="form-group">
+            <label>手机号</label>
+            <input type="text" class="form-control" name="phone" value="{{ user.phone }}">
+        </div>
+
+        <div class="form-group">
+            <label>性别</label>
+            <select class="form-control" name="gender">
+                <option value="1" {% if user.gender == 1 %}selected{% endif %}>男</option>
+                <option value="2" {% if user.gender == 2 %}selected{% endif %}>女</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>用户属性</label>
+            <select class="form-control" name="userAttribute">
+                <option value="1" {% if user.user_attribute == 1 %}selected{% endif %}>学生</option>
+                <option value="2" {% if user.user_attribute == 2 %}selected{% endif %}>老师</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>所属班级</label>
+            <select class="form-control" name="classInfo">
+                <option value="">请选择</option>
+                {% for class in class_list %}
+                <option value="{{ class.id }}" {% if user.class_in.id == class.id %}selected{% endif %}>{{ class.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-success">保存</button>
+        <a href="{% url 'user_list' %}" class="btn btn-default">返回</a>
+    </form>
+</div>
+</body>
+</html>

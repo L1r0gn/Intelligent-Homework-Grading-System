@@ -1,5 +1,6 @@
 from django.apps import AppConfig
 
-class UserManageModuleConfig(AppConfig):
+
+class QuestionmanagemoduleConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'userManageModule'
+    name = 'questionManageModule'
