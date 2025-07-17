@@ -1,9 +1,42 @@
 from django.db import models
-from django_jsonfield_backport.models import JSONField
-# from django.contrib.postgres.fields import JSONField  # 如果使用PostgreSQL
-from django.core.validators import MinValueValidator, MaxValueValidator
 from userManageModule.models import User
 
+
+class Problem(models.Model):
+    #题目基本信息表
+    DIF_CHOICES = [
+        (1, '简单'),
+        (2, '中等'),
+        (3, '困难'),
+    ]
+    title = models.CharField(max_length=200, verbose_name="题目标题")
+    content = models.ForeignKey('ProblemContent',on_delete=models.SET_NULL, null=True,verbose_name='题目内容')
+    problem_type = models.ForeignKey('ProblemType', on_delete=models.PROTECT, verbose_name="题目类型")
+    tags = models.ManyToManyField('ProblemTag', blank=True, verbose_name="标签")
+    creator = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name="创建人")
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
+    difficulty = models.PositiveSmallIntegerField(
+        choices=DIF_CHOICES, default=2, verbose_name="难度"
+    )
+    #is_active = models.BooleanField(default=True, verbose_name="是否激活") #是否可见
+    subject = models.ForeignKey('Subject', on_delete=models.PROTECT, verbose_name="所属科目")
+    points = models.PositiveIntegerField(default=0, verbose_name="分值")
+    scoringPoint = models.ForeignKey('ScoringPoint',on_delete=models.SET_NULL,null = True)
+    answer = models.ForeignKey('Answer',on_delete=models.SET_NULL,null = True)
+    attachment = models.ForeignKey('ProblemAttachment',on_delete=models.SET_NULL,null = True)
+    estimated_time = models.PositiveIntegerField(
+        default=5, verbose_name="预估耗时(分钟)",
+        help_text="预计学生完成此题需要的时间(分钟)"
+    )
+    class Meta:
+        ordering = ['-create_time']
+        indexes = [
+            models.Index(fields=['problem_type']),
+            models.Index(fields=['subject']),
+            models.Index(fields=['difficulty']),
+        ]
+    def __str__(self):
+        return f"{self.id}-{self.title}"
 
 class ProblemType(models.Model):
     #题目类型表
@@ -14,56 +47,24 @@ class ProblemType(models.Model):
     def __str__(self):
         return self.name
 
-class Problem(models.Model):
-    #题目基本信息表
-    DIF_CHOICES = [
-        (1, '简单'),
-        (2, '中等'),
-        (3, '困难'),
-    ]
-    problem_type = models.ForeignKey(ProblemType, on_delete=models.PROTECT, verbose_name="题目类型")
-    title = models.CharField(max_length=200, verbose_name="题目标题")
-    creator = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name="创建人")
-    create_time = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
-    difficulty = models.PositiveSmallIntegerField(
-        choices=DIF_CHOICES, default=2, verbose_name="难度"
-    )
-    #is_active = models.BooleanField(default=True, verbose_name="是否激活") #是否可见
-    tags = models.ManyToManyField('ProblemTag', blank=True, verbose_name="标签")
-    subject = models.ForeignKey('Subject', on_delete=models.PROTECT, verbose_name="所属科目")
-    points = models.PositiveIntegerField(default=0, verbose_name="分值")
-    estimated_time = models.PositiveIntegerField(
-        default=5, verbose_name="预估耗时(分钟)",
-        help_text="预计学生完成此题需要的时间(分钟)"
-    )
-    class Meta:
-        ordering = ['-create_time']
-        indexes = [
-            models.Index(fields=['problem_type']),
-            models.Index(fields=['creator']),
-            models.Index(fields=['difficulty']),
-        ]
-    def __str__(self):
-        return f"{self.id}-{self.title}"
-
 class ProblemContent(models.Model):
     """
     题目内容表，支持多种题型
     """
-    problem = models.ForeignKey(Problem, on_delete=models.CASCADE, related_name="contents")
+    # problem = models.ForeignKey(Problem, on_delete=models.CASCADE, related_name="contents")
     content = models.TextField(verbose_name="题目内容")
     # 使用JSON字段存储题目特定的结构化数据(如选择题选项、填空题空白位置等)
-    content_data = JSONField(default=dict, blank=True, verbose_name="题目内容数据")
+    content_data = models.JSONField(default=dict, blank=True, verbose_name="题目内容数据")
     created_at = models.DateTimeField(auto_now_add=True)
     def __str__(self):
-        return f"{self.problem_id}-{self.language}-v{self.version}"
+        return f"{self.problem_id}"
 
 class Answer(models.Model):
     #题目答案表
-    problem = models.OneToOneField(Problem, on_delete=models.CASCADE, related_name="answer")
+    # problem = models.OneToOneField(Problem, on_delete=models.CASCADE, related_name="answer")
     content = models.TextField(verbose_name="答案内容")
     # 使用JSON字段存储结构化答案(如选择题的正确选项、填空题的填空答案等)
-    content_data = JSONField(default=dict, blank=True, verbose_name="答案数据")
+    content_data = models.JSONField(default=dict, blank=True, verbose_name="答案数据")
     explanation = models.TextField(blank=True, verbose_name="答案解析")
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -79,7 +80,7 @@ class ScoringPoint(models.Model):
     """
     题目得分点表
     """
-    problem = models.ForeignKey(Problem, on_delete=models.CASCADE, related_name="scoring_points")
+    # problem = models.ForeignKey(Problem, on_delete=models.CASCADE, related_name="scoring_points")
     point = models.CharField(max_length=200, verbose_name="得分点描述")
     point_key = models.CharField(
         max_length=50, blank=True, verbose_name="得分点标识",
@@ -87,7 +88,7 @@ class ScoringPoint(models.Model):
     )
     score = models.FloatField(verbose_name="分值")
     # 使用JSON字段存储得分点的匹配规则(用于自动批改)
-    matching_rule = JSONField(default=dict, blank=True, verbose_name="匹配规则")
+    matching_rule = models.JSONField(default=dict, blank=True, verbose_name="匹配规则")
     order = models.PositiveSmallIntegerField(default=0, verbose_name="排序")
 
     class Meta:
@@ -130,7 +131,7 @@ class ProblemAttachment(models.Model):
     """
     题目附件表
     """
-    problem = models.ForeignKey(Problem, on_delete=models.CASCADE, related_name="attachments")
+    # problem = models.ForeignKey(Problem, on_delete=models.CASCADE, related_name="attachments")
     file = models.FileField(upload_to='problem_attachments/%Y/%m/%d/', verbose_name="附件")
     name = models.CharField(max_length=100, verbose_name="附件名称")
     description = models.TextField(blank=True, verbose_name="描述")
