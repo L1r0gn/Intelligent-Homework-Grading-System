@@ -16,13 +16,18 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-from userManageModule import views
-from userManageModule.static.plugins.bootstrap import css
+from userManageModule import views as user_views
+from questionManageModule import views as question_views
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('user/list/',views.user_list,name='user_list'),
-    path('user/add/',views.user_add,name='user_add'),
-    path('class_name/add/',views.class_add),
-    path('user/edit/<int:user_id>/', views.user_edit, name='user_edit'),
-    path('user/delete/<int:user_id>/', views.user_delete, name='user_delete'),
+    path('user/list/',user_views.user_list,name='user_list'),
+    path('user/add/',user_views.user_add,name='user_add'),
+    path('class_name/add/',user_views.class_add,name = 'class_add'),
+    path('user/edit/<int:user_id>/', user_views.user_edit, name='user_edit'),
+    path('user/delete/<int:user_id>/', user_views.user_delete, name='user_delete'),
+    path('question/list/', question_views.question_list, name='question_list'),
+    path('question/create/', question_views.question_create, name='question_create'),
+    path('question/detail/<int:question_id>/', question_views.question_detail, name='question_detail'),
+    path('question/update/<int:question_id>/', question_views.question_update, name='question_update'),
+    path('question/delete/<int:question_id>/', question_views.question_delete, name='question_delete'),
 ]

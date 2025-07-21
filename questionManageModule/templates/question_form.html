@@ -1,0 +1,83 @@
+{% extends 'question_view_base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <form method="post">
+        {% csrf_token %}
+
+        <!-- 题目名称 -->
+        <div class="form-group">
+            <label for="title">题目标题</label>
+            <input type="text" class="form-control" id="title" name="title" placeholder="请输入题目标题" required>
+        </div>
+
+        <!-- 题目内容 -->
+        <div class="form-group">
+            <label for="content">题目内容</label>
+            <textarea class="form-control" id="content" name="content_data" rows="5" required></textarea>
+        </div>
+
+        <!-- 难度等级 -->
+        <div class="form-group">
+            <label for="difficulty">难度等级</label>
+            <select class="form-control" id="difficulty" name="difficulty" required>
+                <option value="">请选择难度</option>
+                <option value="1">简单</option>
+                <option value="2">中等</option>
+                <option value="3">困难</option>
+            </select>
+        </div>
+
+        <!-- 题型选择 -->
+        <div class="form-group">
+            <label for="problem_type">题目类型</label>
+            <select class="form-control" id="problem_type" name="problem_type_id" required>
+                <option value="">请选择题型</option>
+                {% for problem_type in problem_types %}
+                <option value="{{ problem_type.id }}">{{ problem_type.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- 学科选择 -->
+        <div class="form-group">
+            <label for="subject">所属学科</label>
+            <select class="form-control" id="subject" name="subject_id" required>
+                <option value="">请选择学科</option>
+                {% for subject in subjects %}
+                <option value="{{ subject.id }}">{{ subject.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- 知识点 -->
+        <div class="form-group">
+            <label for="points">关联知识点</label>
+            <input type="text" class="form-control" id="points" name="points" placeholder="请输入知识点（多个用逗号分隔）">
+        </div>
+
+        <!-- 预估时间 -->
+        <div class="form-group">
+            <label for="estimated_time">预估时间（分钟）</label>
+            <input type="number" class="form-control" id="estimated_time" name="estimated_time" min="1" value="10">
+        </div>
+
+        <!-- 标签选择 -->
+        <div class="form-group">
+            <label for="tags">题目标签</label>
+            <select multiple class="form-control" id="tags" name="tags">
+                {% for tag in tags %}
+                <option value="{{ tag.id }}">{{ tag.name }}</option>
+                {% endfor %}
+            </select>
+            <small class="form-text text-muted">按住Ctrl键多选</small>
+        </div>
+
+        <div class="d-flex justify-content-end mt-4">
+            <button type="reset" class="btn btn-secondary mr-2">重置</button>
+            <button type="submit" class="btn btn-primary">提交</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
