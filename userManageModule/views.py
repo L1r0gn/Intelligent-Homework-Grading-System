@@ -24,7 +24,7 @@ def user_add(request):
     try:
         # 数据类型转换
         phone = int(phone) if phone else None  # 手机号转为整数
-        gender = int(gender) if gender else None  # 性别转为整数（1/2）
+        gender  = int(gender) if gender else None  # 性别转为整数（1/2）
         user_attribute = int(user_attribute) if user_attribute else None  # 属性转为整数（1/2）
         class_in = class_name.objects.get(id=class_in_id) if class_in_id else None  # 外键关联班级
 

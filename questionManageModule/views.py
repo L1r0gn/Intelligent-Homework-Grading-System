@@ -2,6 +2,8 @@ from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from .models import *
+import json,logging
+logger = logging.getLogger(__name__)
 
 
 def question_list(request):
@@ -16,60 +18,79 @@ def question_detail(request, question_id):
 
 
 def question_create(request):
+    title = ''
+    difficulty = ''
+    problem_type = None
+    subject = None
+    estimated_time = 10  # 设置默认值
     if request.method == 'POST':
         try:
-            # 新增内容处理
-            content_obj = ProblemContent.objects.create(
-                content=request.POST['content'],
-                content_data={}
-            )
-
-            problem_data = {
-                'title': request.POST['title'],
-                'content': content_obj,  # 关联内容对象
-                'difficulty': request.POST.get('difficulty', 2),
-                'problem_type_id': request.POST['problem_type'],
-                'subject_id': request.POST['subject'],
-                'points': request.POST.get('points', 0),
-                'creator': request.user
-            }
-
-            # 增加字段验证
-            required_fields = ['title', 'content', 'problem_type', 'subject']
-            for field in required_fields:
-                if not request.POST.get(field):
-                    raise ValueError(f'必填字段 {field} 不能为空')
-
-            question = Problem.objects.create(**problem_data)
-
-            # 事务处理多对多关系
             with transaction.atomic():
-                if tags := request.POST.getlist('tags'):
-                    question.tags.add(*Tag.objects.filter(id__in=tags))
+                # 新增内容字段验证
+                content = request.POST.get('content')
+                if not content:
+                    messages.error(request, '问题内容不能为空')
+                    return render(request, 'question_form.html', {
+                        'problem_types': ProblemType.objects.all(),
+                        'subjects': Subject.objects.all(),
+                        'tags': ProblemTag.objects.all()
+                    })
 
-                # 处理附件上传
-                for file in request.FILES.getlist('attachments'):
-                    ProblemAttachment.objects.create(
-                        problem=question,
-                        file=file,
-                        name=file.name
-                    )
+                # 新增富文本内容处理（添加JSON解析异常处理）
+                try:
+                    content_data = json.loads(request.POST.get('content_data', '{}'))
+                except json.JSONDecodeError:
+                    content_data = {}
+                # 处理POST请求
+                title = request.POST.get('title')
+                content = request.POST.get('content')
+                difficulty = request.POST.get('difficulty')
+                problem_type = request.POST.get('problem_type')
+                subject = request.POST.get('subject')
+                estimated_time = request.POST.get('estimated_time')
+                # 后创建关联内容
+                content_obj = ProblemContent.objects.create(
+                    problem=None,
+                    content=content,
+                    content_data=content_data
+                )
+                problem = Problem.objects.create(
+                    title=title,
+                    content=content_obj,
+                    difficulty=difficulty,
+                    problem_type_id=problem_type,
+                    subject_id=subject,
+                    estimated_time=estimated_time,
+                    creator=request.user  # 确保已登录
+                )
+                problem.save()
+                content_obj.problem = problem
+                content_obj.save()
 
-            messages.success(request, '问题创建成功')
-            return redirect('question_detail', question_id=question.id)
+                messages.success(request, '问题创建成功')
+                return redirect('question_list')
 
         except Exception as e:
+            logger.error(
+            '问题创建失败',
+            exc_info=True,
+            extra={
+                'request': request,
+                'error_details': str(e)
+            }
+            )
             messages.error(request, f'创建失败: {str(e)}')
-            # 回滚已创建的内容对象
-            if 'content_obj' in locals():
-                content_obj.delete()
-
-    # 保持现有上下文准备
-    return render(request, 'question_form.html', {
-        'problem_types': ProblemType.objects.all(),
-        'subjects': Subject.objects.all(),
-        'tags': ProblemTag.objects.all()
-    })
+            # 保持现有上下文准备
+            return render(request, 'question_form.html', {
+                'title': title,
+                'content': content,
+                'difficulty': difficulty,
+                'problem_type': problem_type,
+                'subject': subject,
+                'estimated_time': estimated_time,
+                'problem_types': ProblemType.objects.all(),
+                'subjects': Subject.objects.all(),
+            })
 
 def question_update(request, question_id):
     """更新问题"""

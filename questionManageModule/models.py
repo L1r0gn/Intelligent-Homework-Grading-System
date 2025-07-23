@@ -10,23 +10,24 @@ class Problem(models.Model):
         (3, '困难'),
     ]
     title = models.CharField(max_length=200, verbose_name="题目标题")
-    content = models.ForeignKey('ProblemContent',on_delete=models.SET_NULL, null=True,verbose_name='题目内容')
+    content = models.ForeignKey('ProblemContent',on_delete=models.SET_NULL, null=True,blank = True , verbose_name='题目内容',related_name='problem_content')
     problem_type = models.ForeignKey('ProblemType', on_delete=models.PROTECT, verbose_name="题目类型")
     tags = models.ManyToManyField('ProblemTag', blank=True, verbose_name="标签")
-    creator = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name="创建人")
-    create_time = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
+    creator = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name="创建人", null=True,blank = True)
+    create_time = models.DateTimeField(auto_now_add=True, verbose_name="创建时间", null=True,blank = True)
     difficulty = models.PositiveSmallIntegerField(
         choices=DIF_CHOICES, default=2, verbose_name="难度"
     )
     #is_active = models.BooleanField(default=True, verbose_name="是否激活") #是否可见
     subject = models.ForeignKey('Subject', on_delete=models.PROTECT, verbose_name="所属科目")
-    points = models.PositiveIntegerField(default=0, verbose_name="分值")
-    scoringPoint = models.ForeignKey('ScoringPoint',on_delete=models.SET_NULL,null = True)
-    answer = models.ForeignKey('Answer',on_delete=models.SET_NULL,null = True)
-    attachment = models.ForeignKey('ProblemAttachment',on_delete=models.SET_NULL,null = True)
+    points = models.PositiveIntegerField(default=0, verbose_name="分值" , null=True , blank=True )
+    scoringPoint = models.ForeignKey('ScoringPoint',on_delete=models.SET_NULL,null = True,blank = True)
+    answer = models.ForeignKey('Answer',on_delete=models.SET_NULL,null=True,blank = True)
+    attachment = models.ForeignKey('ProblemAttachment',on_delete=models.SET_NULL,null = True,blank = True)
     estimated_time = models.PositiveIntegerField(
         default=5, verbose_name="预估耗时(分钟)",
-        help_text="预计学生完成此题需要的时间(分钟)"
+        help_text="预计学生完成此题需要的时间(分钟)",
+        null=True,blank = True
     )
     class Meta:
         ordering = ['-create_time']
@@ -51,13 +52,13 @@ class ProblemContent(models.Model):
     """
     题目内容表，支持多种题型
     """
-    # problem = models.ForeignKey(Problem, on_delete=models.CASCADE, related_name="contents")
+    problem = models.ForeignKey(Problem, on_delete=models.CASCADE, related_name="contents",null=True,blank=True)
     content = models.TextField(verbose_name="题目内容")
     # 使用JSON字段存储题目特定的结构化数据(如选择题选项、填空题空白位置等)
     content_data = models.JSONField(default=dict, blank=True, verbose_name="题目内容数据")
     created_at = models.DateTimeField(auto_now_add=True)
     def __str__(self):
-        return f"{self.problem_id}"
+        return f"{self.id}"
 
 class Answer(models.Model):
     #题目答案表
