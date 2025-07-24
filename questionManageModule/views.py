@@ -19,6 +19,7 @@ def question_detail(request, question_id):
 
 def question_create(request):
     title = ''
+    content = ''
     difficulty = ''
     problem_type = None
     subject = None
@@ -26,21 +27,6 @@ def question_create(request):
     if request.method == 'POST':
         try:
             with transaction.atomic():
-                # 新增内容字段验证
-                content = request.POST.get('content')
-                if not content:
-                    messages.error(request, '问题内容不能为空')
-                    return render(request, 'question_form.html', {
-                        'problem_types': ProblemType.objects.all(),
-                        'subjects': Subject.objects.all(),
-                        'tags': ProblemTag.objects.all()
-                    })
-
-                # 新增富文本内容处理（添加JSON解析异常处理）
-                try:
-                    content_data = json.loads(request.POST.get('content_data', '{}'))
-                except json.JSONDecodeError:
-                    content_data = {}
                 # 处理POST请求
                 title = request.POST.get('title')
                 content = request.POST.get('content')
@@ -48,6 +34,16 @@ def question_create(request):
                 problem_type = request.POST.get('problem_type')
                 subject = request.POST.get('subject')
                 estimated_time = request.POST.get('estimated_time')
+
+                if not content:
+                    messages.error(request, '问题内容不能为空')
+                    raise ValueError("内容为空")  # ✅ 触发事务回滚
+                # 新增富文本内容处理（添加JSON解析异常处理）
+                try:
+                    content_data = json.loads(request.POST.get('content_data', '{}'))
+                except json.JSONDecodeError:
+                    content_data = {}
+
                 # 后创建关联内容
                 content_obj = ProblemContent.objects.create(
                     problem=None,
@@ -61,7 +57,6 @@ def question_create(request):
                     problem_type_id=problem_type,
                     subject_id=subject,
                     estimated_time=estimated_time,
-                    creator=request.user  # 确保已登录
                 )
                 problem.save()
                 content_obj.problem = problem
@@ -71,14 +66,7 @@ def question_create(request):
                 return redirect('question_list')
 
         except Exception as e:
-            logger.error(
-            '问题创建失败',
-            exc_info=True,
-            extra={
-                'request': request,
-                'error_details': str(e)
-            }
-            )
+            logger.error('问题创建失败:%s',str(e),exc_info=True)
             messages.error(request, f'创建失败: {str(e)}')
             # 保持现有上下文准备
             return render(request, 'question_form.html', {
@@ -91,6 +79,17 @@ def question_create(request):
                 'problem_types': ProblemType.objects.all(),
                 'subjects': Subject.objects.all(),
             })
+        # GET 请求
+    return render(request, 'question_form.html',{
+        'title': title,
+        'content': content,
+        'difficulty': difficulty,
+        'problem_type': problem_type,
+        'subject': subject,
+        'estimated_time': estimated_time,
+        'problem_types': ProblemType.objects.all(),
+        'subjects': Subject.objects.all(),
+    })
 
 def question_update(request, question_id):
     """更新问题"""

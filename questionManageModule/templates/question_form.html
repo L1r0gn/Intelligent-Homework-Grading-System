@@ -3,7 +3,7 @@
 
 {% block content %}
 <div class="container">
-    <form method="post">
+    <form method="post" action="{% url 'question_create' %}">
         {% csrf_token %}
 
         <!-- 题目名称 -->
@@ -15,7 +15,7 @@
         <!-- 题目内容 -->
         <div class="form-group">
             <label for="content">题目内容</label>
-            <textarea class="form-control" id="content" name="content_data" rows="5" required></textarea>
+            <input class="form-control" id="content" name="content" required>
         </div>
 
         <!-- 难度等级 -->
@@ -32,7 +32,7 @@
         <!-- 题型选择 -->
         <div class="form-group">
             <label for="problem_type">题目类型</label>
-            <select class="form-control" id="problem_type" name="problem_type_id" required>
+            <select class="form-control" id="problem_type" name="problem_type" required>
                 <option value="">请选择题型</option>
                 {% for problem_type in problem_types %}
                 <option value="{{ problem_type.id }}">{{ problem_type.name }}</option>
@@ -43,7 +43,7 @@
         <!-- 学科选择 -->
         <div class="form-group">
             <label for="subject">所属学科</label>
-            <select class="form-control" id="subject" name="subject_id" required>
+            <select class="form-control" id="subject" name="subject" required>
                 <option value="">请选择学科</option>
                 {% for subject in subjects %}
                 <option value="{{ subject.id }}">{{ subject.name }}</option>
@@ -60,7 +60,7 @@
         <!-- 修改提交按钮 -->
         <div class="d-flex justify-content-end mt-4">
             <a href="{% url 'question_list' %}" class="btn btn-secondary mr-2">返回列表</a>
-            <button type="submit" class="btn btn-primary" href="question/list/">保存题目</button>
+            <button type="submit" class="btn btn-primary" >保存题目</button>
         </div>
     </form>
 </div>
