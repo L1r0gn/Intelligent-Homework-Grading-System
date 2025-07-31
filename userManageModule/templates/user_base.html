@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>{% block title %}用户列表{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'plugins/bootstrap/css/bootstrap.css'%}">
-
 </head>
 <body>
     <!---导航栏--->
@@ -19,7 +18,7 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand" href="#">Brand</a>
+                <a class="navbar-brand" href="#">智能作业评分系统</a>
             </div>
 
             <!-- Collect the nav links, forms, and other content for toggling -->
@@ -27,19 +26,6 @@
                 <ul class="nav navbar-nav">
                     <li class="active"><a href="{% url 'user_list' %}">用户管理 <span class="sr-only">(current)</span></a></li>
                     <li><a href="{% url 'question_list' %}">题目管理</a></li>
-                    <li class="dropdown">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
-                            aria-expanded="false">Dropdown <span class="caret"></span></a>
-                        <ul class="dropdown-menu">
-                            <li><a href="#">Action</a></li>
-                            <li><a href="#">Another action</a></li>
-                            <li><a href="#">Something else here</a></li>
-                            <li role="separator" class="divider"></li>
-                            <li><a href="#">Separated link</a></li>
-                            <li role="separator" class="divider"></li>
-                            <li><a href="#">One more separated link</a></li>
-                        </ul>
-                    </li>
                 </ul>
                 <ul class="nav navbar-nav navbar-right">
                     <li><a href="#">Link</a></li>

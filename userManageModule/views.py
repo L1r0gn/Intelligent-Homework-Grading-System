@@ -1,12 +1,55 @@
-from .models import User
-from .models import class_name
-from django.shortcuts import render  # 解决 render 未解析
+import requests
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework import status
+from IntelligentHomeworkGradingSystem import settings
+from django.http import JsonResponse
+
+from .models import class_name,User
 from django.contrib import messages  # 解决 messages 未解析
 from django.shortcuts import render, redirect, get_object_or_404
 def user_list(request):
     queryset = User.objects.all()
     return render(request, "user_list.html", {'queryset': queryset})
 
+def wx_user_list(request, user_id):
+    try:
+        # 用 get 直接获取单个用户，更符合“查询单个用户”场景
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return JsonResponse({'error': '用户不存在'}, status=404)
+
+        # 处理关联字段和枚举值转换（关键优化）
+    class_name = user.class_in.name if user.class_in else None  # 处理班级为空的情况
+
+    # 性别转换：1→男，2→女，其他→None
+    gender_map = {1: '男', 2: '女'}
+    gender = gender_map.get(user.gender)
+
+    # 用户属性转换：1→student，2→teacher
+    attribute_map = {1: 'student', 2: 'teacher'}
+    user_attribute = attribute_map.get(user.user_attribute)
+
+    # 构造响应数据（包含前端需要的所有字段）
+    data = {
+        'id': user.id,
+        'wx_nickName': user.wx_nickName,
+        'wx_avatar': user.wx_avatar,
+        'phone': user.phone,
+        'gender': gender,  # 返回转换后的文本（男/女/None）
+        'user_attribute': user_attribute,  # 返回转换后的文本（student/teacher/None）
+        'class_in': {
+            'name': class_name  # 班级名称（空则为None）
+        },
+        'wx_country': user.wx_country,
+        'wx_province': user.wx_province,
+        'wx_city': user.wx_city,
+        'last_login_time': user.last_login_time.strftime('%Y-%m-%d %H:%M:%S')  # 格式化时间
+    }
+    print(data)
+    return JsonResponse({'data': data}, status=200)  # 直接返回单个对象
 
 def user_add(request):
     if request.method == "GET":
@@ -56,8 +99,8 @@ def user_add(request):
 def class_add(request):
     if request.method == "GET":
         return render(request,  "class_add.html")
-    class_name = request.POST.get('name')
-    class_name.objects.create(name=class_name)
+    name = request.POST.get('name')
+    class_name.objects.create(name=name)
     return render(request, 'user_list.html')
 
 
@@ -88,6 +131,7 @@ def user_edit(request, user_id):
     user_attribute = request.POST.get('userAttribute')
     class_in_id = request.POST.get('classInfo')
 
+
     try:
         # 更新用户字段
         user.nickName = nickName
@@ -106,3 +150,87 @@ def user_edit(request, user_id):
             'user': user,
             'class_list': class_name.objects.all()
         })
+
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def wechat_login(request):
+    """微信小程序登录接口 - 函数视图实现"""
+    code = request.data.get('code')  # 从前端获取code
+    nickName = request.data.get('nickName')  # 从前端获取nickName
+    avatarUrl = request.data.get('avatarUrl')  # 从前端获取avatarUrl
+    if not code:
+        print("登录请求缺少code参数")  # 记录警告日志
+        return Response({'error': '缺少code参数'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # 读取微信配置（提前检查配置是否存在）
+    appid = getattr(settings, 'WECHAT_APPID', None)
+    secret = getattr(settings, 'WECHAT_SECRET', None)
+    if not appid or not secret:
+        print("微信登录配置缺失：WECHAT_APPID或WECHAT_SECRET未设置")
+        return Response({'error': '服务器配置错误'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    # 微信code2Session接口URL
+    url = f'https://api.weixin.qq.com/sns/jscode2session?appid={appid}&secret={secret}&js_code={code}&grant_type=authorization_code'
+
+    try:
+        # 调用微信接口，设置超时时间（避免请求挂起）
+        response = requests.get(url, timeout=10)  # 超时时间10秒
+        response.raise_for_status()  # 触发HTTP错误（如404、500）
+        response_data = response.json()
+
+        # 处理微信接口返回的错误
+        if 'errcode' in response_data and response_data['errcode'] != 0:
+            err_msg = response_data.get('errmsg', '未知错误')
+            print(f"微信code2Session失败：errcode={response_data['errcode']}, errmsg={err_msg}")
+            return Response({
+                'error': '微信登录失败',
+                'detail': err_msg,
+                'errcode': response_data['errcode']  # 返回微信错误码，便于调试
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 提取关键信息
+        openid = response_data.get('openid')
+        session_key = response_data.get('session_key')
+        if not openid or not session_key:
+            print(f"微信接口未返回openid或session_key：{response_data}")
+            return Response({'error': '获取用户身份失败'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 数据库操作（单独捕获数据库异常）
+        try:
+            user, created = User.objects.get_or_create(openid=openid)
+            user.session_key = session_key  # 确保User模型有session_key字段
+            user.wx_nickName = nickName
+            user.save(update_fields=['session_key','wx_nickName'])  # 只更新需要的字段，提高性能
+        except Exception as e:
+            print(f"用户创建/更新失败：{str(e)}")  # 记录堆栈信息
+            return Response({'error': '用户信息存储失败'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # 生成JWT（单独捕获JWT相关异常）
+        try:
+            refresh = RefreshToken.for_user(user)
+        except Exception as e:
+            print(f"JWT令牌生成失败：{str(e)}")
+            return Response({'error': '认证令牌生成失败'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # 登录成功，记录日志
+        print(f"用户登录成功：openid={openid}, 用户ID={user.id}, 新用户={created}")
+        return Response({
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'user_id': user.id,
+            'is_new_user': created,
+            'code':200
+        }, status=status.HTTP_200_OK)
+
+    # 细分异常类型
+    except requests.exceptions.Timeout:
+        print("调用微信接口超时")
+        return Response({'error': '微信接口响应超时'}, status=status.HTTP_504_GATEWAY_TIMEOUT)
+    except requests.exceptions.RequestException as e:  # 网络错误（如连接失败、HTTP 500）
+        print(f"微信接口网络请求失败：{str(e)}")
+        return Response({'error': '微信接口请求失败'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception as e:  # 其他未捕获异常
+        print(f"登录接口未知错误：{str(e)}")
+        return Response({'error': '服务器内部错误'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

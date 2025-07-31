@@ -1,4 +1,4 @@
-{% extends 'question_view_base.html' %}
+{% extends 'question_base.html' %}
 {% load static %}
 
 {% block content %}
@@ -15,7 +15,7 @@
         <!-- 题目内容 -->
         <div class="form-group">
             <label for="content">题目内容</label>
-            <input class="form-control" id="content" name="content" required>
+            <textarea class="form-control" id="content" name="content" required></textarea>
         </div>
 
         <!-- 难度等级 -->

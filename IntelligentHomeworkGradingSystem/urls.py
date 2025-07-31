@@ -17,14 +17,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path,include
 from userManageModule import views as user_views
-from questionManageModule import views as question_views
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('user/list/',user_views.user_list,name='user_list'),
-    path('user/add/',user_views.user_add,name='user_add'),
     path('class_name/add/',user_views.class_add,name = 'class_add'),
-    path('user/edit/<int:user_id>/', user_views.user_edit, name='user_edit'),
-    path('user/delete/<int:user_id>/', user_views.user_delete, name='user_delete'),
     path('question/', include('questionManageModule.urls')),  # 添加这一行
+    path('user/',include('userManageModule.urls')),
+
 ]
 

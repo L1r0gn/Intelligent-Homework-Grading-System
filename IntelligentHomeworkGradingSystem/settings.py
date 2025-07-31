@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 import os
 import pymysql
+
+
 pymysql.install_as_MySQLdb()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -28,8 +30,12 @@ SECRET_KEY = 'django-insecure-41xk46xx!z4lq&xjl*r-@7@c3yot*y$=$-*&8)$d@=abvoeye)
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+AUTH_USER_MODEL = 'userManageModule.User'  # 格式：app名称.模型类名
+
 ALLOWED_HOSTS = []
 
+WECHAT_APPID = 'wx144180b95c1f6746'
+WECHAT_SECRET = '3772679a541e4d7ff0dba5aebfe4c606'
 
 # Application definition
 
@@ -101,7 +107,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',  # 切换到mysql
         'NAME': 'ihgs',
         'USER': 'root',
-        'PASSWORD': '@200656Ljr',
+        'PASSWORD': '!!!L1r0gn',
         'HOST': 'localhost',
         'PORT': '3306',
     }
