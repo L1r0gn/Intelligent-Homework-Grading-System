@@ -202,7 +202,8 @@ def wechat_login(request):
             user, created = User.objects.get_or_create(openid=openid)
             user.session_key = session_key  # 确保User模型有session_key字段
             user.wx_nickName = nickName
-            user.save(update_fields=['session_key','wx_nickName'])  # 只更新需要的字段，提高性能
+            user.wx_avatar = avatarUrl
+            user.save(update_fields=['session_key','wx_nickName','wx_avatar'])  # 只更新需要的字段，提高性能
         except Exception as e:
             print(f"用户创建/更新失败：{str(e)}")  # 记录堆栈信息
             return Response({'error': '用户信息存储失败'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

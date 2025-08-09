@@ -5,6 +5,7 @@ from userManageModule import views as user_views
 urlpatterns = [
 
 path('list/', user_views.user_list, name='user_list'),
+    #http://127.0.0.1/list
 path('wx/add/', user_views.user_add, name='user_add'),
 path('edit/<int:user_id>/', user_views.user_edit, name='user_edit'),
 path('delete/<int:user_id>/', user_views.user_delete, name='user_delete'),

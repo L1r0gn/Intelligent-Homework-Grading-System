@@ -69,7 +69,7 @@ def question_create(request):
             logger.error('问题创建失败:%s',str(e),exc_info=True)
             messages.error(request, f'创建失败: {str(e)}')
             # 保持现有上下文准备
-            return render(request, 'question_form.html', {
+            return render(request, 'question_update.html', {
                 'title': title,
                 'content': content,
                 'difficulty': difficulty,
@@ -80,7 +80,7 @@ def question_create(request):
                 'subjects': Subject.objects.all(),
             })
         # GET 请求
-    return render(request, 'question_form.html',{
+    return render(request, 'question_create.html', {
         'title': title,
         'content': content,
         'difficulty': difficulty,
@@ -98,7 +98,11 @@ def question_update(request, question_id):
         # 处理更新逻辑
         messages.success(request, '问题更新成功')
         return redirect('question_detail', question_id=question.id)
-    return render(request, 'question_form.html', {'question': question})
+    return render(request, 'question_update.html', {
+        'question': question,
+        'problem_types': ProblemType.objects.all(),
+        'subjects': Subject.objects.all(),
+    })
 
 def question_delete(request, question_id):
     """删除问题"""

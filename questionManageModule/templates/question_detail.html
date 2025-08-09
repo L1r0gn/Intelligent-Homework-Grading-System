@@ -1,18 +1,71 @@
-<!DOCTYPE html>
-{% extends "question_base.html" %}
+{% extends 'question_view_base.html' %}
 {% load static %}
-
-{% block title %}问题详情 - {{ question.title }}{% endblock %}
 
 {% block content %}
 <div class="container">
-    <h2>{{ question.title }}</h2>
-    <div class="well">
-        <p>{{ question.content }}</p>
-    </div>
-    <div>
-        <a href="{% url 'question_list' %}" class="btn btn-default">返回列表</a>
-        <a href="{% url 'question_update' question.id %}" class="btn btn-primary">编辑</a>
-    </div>
+    <form method="get" >
+        {% csrf_token %}
+
+        <!-- 题目名称 -->
+        <div class="form-group">
+            <label for="title">题目标题</label>
+            <input type="text" class="form-control" id="title" name="title" value="{{ question.title }}" placeholder="请输入题目标题" required readonly>
+        </div>
+
+        <!-- 题目内容 -->
+        <div class="form-group">
+            <label for="content">题目内容</label>
+            <textarea class="form-control" id="content" name="content" required readonly>{{ question.content }}</textarea>
+        </div>
+
+        <!-- 难度等级 -->
+        <div class="form-group">
+            <label for="difficulty">难度等级</label>
+            <select class="form-control" id="difficulty" name="difficulty" required readonly>
+                 <option value="">请选择难度</option>
+                <!-- 编辑时默认选中当前难度，使用selected属性实现 -->
+                <option value="1" {% if question.difficulty == 1 %}selected{% endif %}>简单</option>
+                <option value="2" {% if question.difficulty == 2 %}selected{% endif %}>中等</option>
+                <option value="3" {% if question.difficulty == 3 %}selected{% endif %}>困难</option>
+            </select>
+        </div>
+
+        <!-- 题型选择 -->
+        <div class="form-group">
+            <label for="problem_type">题目类型</label>
+            <select class="form-control" id="problem_type" name="problem_type" required readonly>
+                <option value="">请选择题型</option>
+                {% for problem_type in problem_types %}
+                <option value="{{ problem_type.id }}" {% if question.problem_type.id == problem_type.id %}selected{% endif %}>
+                    {{ problem_type.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- 学科选择 -->
+        <div class="form-group">
+            <label for="subject">所属学科</label>
+            <select class="form-control" id="subject" name="subject" required readonly>
+                <option value="">请选择学科</option>
+                {% for subject in subjects %}
+                <option value="{{ subject.id }}" {% if question.subject.id == subject.id %}selected{% endif %}>
+                    {{ subject.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- 预估时间 -->
+        <div class="form-group">
+            <label for="estimated_time">预估时间（分钟）</label>
+            <input type="number" class="form-control" id="estimated_time" name="estimated_time" min="1" value="{{ question.estimated_time|default:10 }}" readonly>
+        </div>
+
+        <!-- 修改提交按钮 -->
+        <div class="d-flex justify-content-end mt-4">
+            <a href="{% url 'question_list' %}" class="btn btn-info btn-sm">返回列表</a>
+        </div>
+    </form>
 </div>
 {% endblock %}
