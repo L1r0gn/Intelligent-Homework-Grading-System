@@ -1,3 +1,5 @@
+from symtable import Class
+
 import requests
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -13,7 +15,6 @@ from django.shortcuts import render, redirect, get_object_or_404
 def user_list(request):
     queryset = User.objects.all()
     return render(request, "user_list.html", {'queryset': queryset})
-
 def wx_user_list(request, user_id):
     try:
         # 用 get 直接获取单个用户，更符合“查询单个用户”场景
@@ -50,7 +51,6 @@ def wx_user_list(request, user_id):
     }
     print(data)
     return JsonResponse({'data': data}, status=200)  # 直接返回单个对象
-
 def user_add(request):
     if request.method == "GET":
         # 获取所有班级信息，用于表单下拉选择（外键关联需要）
@@ -93,26 +93,18 @@ def user_add(request):
             'class_in_id': class_in_id,
             'class_list': class_name.objects.all()  # 回传班级列表
         })
-
-
-
 def class_add(request):
     if request.method == "GET":
         return render(request,  "class_add.html")
     name = request.POST.get('name')
     class_name.objects.create(name=name)
     return render(request, 'user_list.html')
-
-
 #   hxt新增
 def user_delete(request, user_id):
     user = get_object_or_404(User, id=user_id)
     user.delete()
     messages.success(request, '用户删除成功')
     return redirect('user_list')
-
-
-
 def user_edit(request, user_id):
     user = get_object_or_404(User, id=user_id)  # 获取要编辑的用户
 
@@ -130,8 +122,6 @@ def user_edit(request, user_id):
     gender = request.POST.get('gender')
     user_attribute = request.POST.get('userAttribute')
     class_in_id = request.POST.get('classInfo')
-
-
     try:
         # 更新用户字段
         user.nickName = nickName
@@ -152,7 +142,72 @@ def user_edit(request, user_id):
         })
 
 
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from .models import User, class_name
+from django.views.decorators.csrf import csrf_exempt
+import json
 
+
+@csrf_exempt  # 禁用 CSRF 检查（适用于 API 接口）
+def wx_user_edit(request, user_id):
+    # 获取指定用户
+    user = get_object_or_404(User, id=user_id)
+
+    if request.method == "GET":
+        classNameList = class_name.objects.all().values('id', 'name')  # 获取所有班级实例
+        response_data = {
+            'user': {
+                'gender': user.gender,
+                'user_attribute': user.user_attribute,
+                'class_in': {
+                    'id': user.class_in.id if user.class_in else None,
+                    'name': user.class_in.name if user.class_in else ''
+                },
+                'phone': user.phone,
+                'nickName': user.nickName,
+                'avatarUrl': user.avatarUrl,
+                'last_login_time': user.last_login_time
+            },
+            'classNameList': list(classNameList)
+        }
+        return JsonResponse(response_data)
+
+    elif request.method == "POST":
+        # 获取前端传来的数据
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON format'}, status=400)
+
+        # 更新用户数据
+        if 'gender' in data:
+            user.gender = data['gender']
+        if 'user_attribute' in data:
+            user.user_attribute = data['user_attribute']
+        if 'phone' in data:
+            user.phone = data['phone']
+        if 'class_in' in data:
+            class_in_id = data['class_in'].get('id')
+            if class_in_id:
+                class_in = get_object_or_404(class_name, id=class_in_id)
+                user.class_in = class_in
+            else:
+                user.class_in = None
+        user.save()
+        response_data = {
+            'user': {
+                'gender': user.gender,
+                'user_attribute': user.user_attribute,
+                'class_in': {
+                    'id': user.class_in.id if user.class_in else None,
+                    'name': user.class_in.name if user.class_in else ''
+                },
+                'phone': user.phone,
+                'last_login_time': user.last_login_time
+            }
+        }
+        return JsonResponse(response_data)
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def wechat_login(request):
