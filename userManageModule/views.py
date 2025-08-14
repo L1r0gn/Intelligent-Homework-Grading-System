@@ -154,6 +154,7 @@ def wx_user_edit(request, user_id):
     # 获取指定用户
     user = get_object_or_404(User, id=user_id)
 
+    #前端传过来 ： POST / GET -> 提交至后端 / 从后端获取
     if request.method == "GET":
         classNameList = class_name.objects.all().values('id', 'name')  # 获取所有班级实例
         response_data = {
