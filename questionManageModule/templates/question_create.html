@@ -3,65 +3,117 @@
 
 {% block content %}
 <div class="container">
-    <form method="post" action="{% url 'question_create' %}">
-        {% csrf_token %}
+    <div class="row">
+        <!-- 左侧：创建问题表单 -->
+        <div class="col-md-6">
+            <h3>创建新问题</h3>
+            <form method="post" action="{% url 'question_create' %}">
+                {% csrf_token %}
 
-        <!-- 题目名称 -->
-        <div class="form-group">
-            <label for="title">题目标题</label>
-            <input type="text" class="form-control" id="title" name="title" placeholder="请输入题目标题" required>
+                <!-- 题目名称 -->
+                <div class="form-group">
+                    <label for="title">题目标题</label>
+                    <input type="text" class="form-control" id="title" name="title" placeholder="请输入题目标题" required>
+                </div>
+
+                <!-- 题目内容 -->
+                <div class="form-group">
+                    <label for="content">题目内容</label>
+                    <textarea class="form-control" id="content" name="content" rows="5" required></textarea>
+                </div>
+
+                <!-- 难度等级 -->
+                <div class="form-group">
+                    <label for="difficulty">难度等级</label>
+                    <select class="form-control" id="difficulty" name="difficulty" required>
+                        <option value="">请选择难度</option>
+                        <option value="1">简单</option>
+                        <option value="2">中等</option>
+                        <option value="3">困难</option>
+                    </select>
+                </div>
+
+                <!-- 题型选择 -->
+                <div class="form-group">
+                    <label for="problem_type">题目类型</label>
+                    <select class="form-control" id="problem_type" name="problem_type" required>
+                        <option value="">请选择题型</option>
+                        {% for problem_type in problem_types %}
+                        <option value="{{ problem_type.id }}">{{ problem_type.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- 学科选择 -->
+                <div class="form-group">
+                    <label for="subject">所属学科</label>
+                    <select class="form-control" id="subject" name="subject" required>
+                        <option value="">请选择学科</option>
+                        {% for subject in subjects %}
+                        <option value="{{ subject.id }}">{{ subject.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- 预估时间 -->
+                <div class="form-group">
+                    <label for="estimated_time">预估时间（分钟）</label>
+                    <input type="number" class="form-control" id="estimated_time" name="estimated_time" min="1" value="10">
+                </div>
+
+                <!-- 提交按钮 -->
+                <div class="d-flex justify-content-end mt-4">
+                    <a href="{% url 'question_list' %}" class="btn btn-secondary mr-2">返回列表</a>
+                    <button type="submit" class="btn btn-primary">保存题目</button>
+                </div>
+            </form>
         </div>
 
-        <!-- 题目内容 -->
-        <div class="form-group">
-            <label for="content">题目内容</label>
-            <textarea class="form-control" id="content" name="content" required></textarea>
-        </div>
+        <!-- 右侧：已有问题列表（数据集导入的问题） -->
+        <div class="col-md-6">
+            <h3>已有问题参考</h3>
+            <div class="card">
+                <div class="card-body">
+                    {% if existing_questions %}
+                        <div class="list-group">
+                            {% for question in existing_questions %}
+                                <div class="list-group-item mb-3">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5 class="mb-1">{{ question.title }}</h5>
+                                        <small>
+                                            难度：{{ question.get_difficulty_display }} |
+                                            题型：{{ question.problem_type.name }}
+                                        </small>
+                                    </div>
+                                    <p class="mb-1 text-truncate">{{ question.content.content }}</p>
+                                    <small class="text-muted">
+                                        学科：{{ question.subject.name }} |
+                                        创建时间：{{ question.create_time|date:"Y-m-d" }}
+                                    </small>
 
-        <!-- 难度等级 -->
-        <div class="form-group">
-            <label for="difficulty">难度等级</label>
-            <select class="form-control" id="difficulty" name="difficulty" required>
-                <option value="">请选择难度</option>
-                <option value="1">简单</option>
-                <option value="2">中等</option>
-                <option value="3">困难</option>
-            </select>
+                                    <!-- 快捷复用按钮（可选） -->
+                                    <button type="button" class="btn btn-sm btn-outline-primary mt-2"
+                                            onclick="useExistingQuestion('{{ question.title }}', '{{ question.content.content|escapejs }}')">
+                                        复用此问题
+                                    </button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-center text-muted">暂无已有问题，请先导入数据集或创建问题</p>
+                    {% endif %}
+                </div>
+            </div>
         </div>
-
-        <!-- 题型选择 -->
-        <div class="form-group">
-            <label for="problem_type">题目类型</label>
-            <select class="form-control" id="problem_type" name="problem_type" required>
-                <option value="">请选择题型</option>
-                {% for problem_type in problem_types %}
-                <option value="{{ problem_type.id }}">{{ problem_type.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <!-- 学科选择 -->
-        <div class="form-group">
-            <label for="subject">所属学科</label>
-            <select class="form-control" id="subject" name="subject" required>
-                <option value="">请选择学科</option>
-                {% for subject in subjects %}
-                <option value="{{ subject.id }}">{{ subject.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <!-- 预估时间 -->
-        <div class="form-group">
-            <label for="estimated_time">预估时间（分钟）</label>
-            <input type="number" class="form-control" id="estimated_time" name="estimated_time" min="1" value="10">
-        </div>
-
-        <!-- 修改提交按钮 -->
-        <div class="d-flex justify-content-end mt-4">
-            <a href="{% url 'question_list' %}" class="btn btn-secondary mr-2">返回列表</a>
-            <button type="submit" class="btn btn-primary" >保存题目</button>
-        </div>
-    </form>
+    </div>
 </div>
+
+<!-- 复用问题的JavaScript -->
+<script>
+    // 点击"复用此问题"时，将已有问题的标题和内容填充到表单
+    function useExistingQuestion(title, content) {
+        document.getElementById('title').value = title;
+        document.getElementById('content').value = content;
+    }
+</script>
 {% endblock %}

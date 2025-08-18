@@ -1,43 +1,40 @@
 <!DOCTYPE html>
 {% load static %}
+{% extends "question_view_base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <title>确认删除问题</title>
-    <link rel="stylesheet" href="{% static 'plugins/bootstrap/css/bootstrap.css'%}">
-</head>
+{% block title %}确认删除问题{% endblock %}
 
-<body>
-    <!---导航栏--->
-    <nav class="navbar navbar-default">
-        <div class="container-fluid">
-            <div class="navbar-header">
-                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
-                    data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-                <a class="navbar-brand" href="#">智能作业评分系统</a>
-            </div>
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h3 class="mb-0">确认删除</h3>
+                </div>
+                <div class="card-body">
+                    <h4 class="card-title text-danger">您确定要删除以下问题吗？</h4>
+                    <p class="text-muted">此操作不可逆转，删除后数据将无法恢复。</p>
 
-            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-                <ul class="nav navbar-nav">
-                    <li><a href="#">问题管理</a></li>
-                </ul>
+                    <!--显示问题对象-->
+                    <div class="bg-light p-3 rounded mb-4">
+                        {{ question }}
+                    </div>
+
+                    <!-- 操作按钮 -->
+                    <form method="post" class="d-flex gap-2">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger flex-grow-1">
+                            <i class="fas fa-trash-alt"></i> 确认删除
+                        </button>
+                        <a href="{% url 'question_list' %}" class="btn btn-secondary flex-grow-1">
+                            <i class="fas fa-times"></i> 取消
+                        </a>
+                    </form>
+                </div>
             </div>
         </div>
-    </nav>
-
-    <div class="container">
-        <h2>确认删除问题</h2>
-        <p>您确定要删除以下问题吗？</p>
-        <p>{{ question }}</p>
-        <form method="post">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-danger">确认删除</button>
-            <a href="{% url 'question_list' %}" class="btn btn-default">取消</a>
-        </form>
     </div>
-</body>
+</div>
+{% endblock %}
+

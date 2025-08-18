@@ -1329,3 +1329,112 @@ Traceback (most recent call last):
     raise ValueError(
 ValueError: The view questionManageModule.views.question_create didn't return an HttpResponse object. It returned None instead.
 "GET /question/create/ HTTP/1.1" 500 71603
+Internal Server Error: /user/wx/login
+"POST /user/wx/login HTTP/1.1" 500 36
+Internal Server Error: /user/edit/3
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\utils\deprecation.py", line 136, in __call__
+    response = self.process_response(request, response)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\middleware\common.py", line 108, in process_response
+    return self.response_redirect_class(self.get_full_path_with_slash(request))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\middleware\common.py", line 87, in get_full_path_with_slash
+    raise RuntimeError(
+RuntimeError: You called this URL via POST, but the URL doesn't end in a slash and you have APPEND_SLASH set. Django can't redirect to the slash URL while maintaining POST data. Change your form to point to 127.0.0.1:8000/user/edit/3/ (note the trailing slash), or set APPEND_SLASH=False in your Django settings.
+"POST /user/edit/3 HTTP/1.1" 500 73464
+Internal Server Error: /user/edit/3
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\utils\deprecation.py", line 136, in __call__
+    response = self.process_response(request, response)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\middleware\common.py", line 108, in process_response
+    return self.response_redirect_class(self.get_full_path_with_slash(request))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\middleware\common.py", line 87, in get_full_path_with_slash
+    raise RuntimeError(
+RuntimeError: You called this URL via POST, but the URL doesn't end in a slash and you have APPEND_SLASH set. Django can't redirect to the slash URL while maintaining POST data. Change your form to point to 127.0.0.1:8000/user/edit/3/ (note the trailing slash), or set APPEND_SLASH=False in your Django settings.
+"POST /user/edit/3 HTTP/1.1" 500 73464
+Internal Server Error: /user/edit/3
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\utils\deprecation.py", line 136, in __call__
+    response = self.process_response(request, response)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\middleware\common.py", line 108, in process_response
+    return self.response_redirect_class(self.get_full_path_with_slash(request))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\middleware\common.py", line 87, in get_full_path_with_slash
+    raise RuntimeError(
+RuntimeError: You called this URL via POST, but the URL doesn't end in a slash and you have APPEND_SLASH set. Django can't redirect to the slash URL while maintaining POST data. Change your form to point to 127.0.0.1:8000/user/edit/3/ (note the trailing slash), or set APPEND_SLASH=False in your Django settings.
+"POST /user/edit/3 HTTP/1.1" 500 73464
+Internal Server Error: /user/wx/edit/3
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 168, in wx_user_edit
+    'nickName': user.nickName,
+AttributeError: 'User' object has no attribute 'nickName'
+"GET /user/wx/edit/3 HTTP/1.1" 500 72893
+Internal Server Error: /user/wx/edit/3
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\db\models\fields\__init__.py", line 2053, in get_prep_value
+    return int(value)
+ValueError: invalid literal for int() with base 10: 'ÄÐ'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 197, in wx_user_edit
+    user.save()
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\contrib\auth\base_user.py", line 76, in save
+    super().save(*args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\db\models\base.py", line 814, in save
+    self.save_base(
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\db\models\base.py", line 877, in save_base
+    updated = self._save_table(
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\db\models\base.py", line 990, in _save_table
+    updated = self._do_update(
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\db\models\base.py", line 1054, in _do_update
+    return filtered._update(values) > 0
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\db\models\query.py", line 1231, in _update
+    return query.get_compiler(self.db).execute_sql(CURSOR)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\db\models\sql\compiler.py", line 1984, in execute_sql
+    cursor = super().execute_sql(result_type)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\db\models\sql\compiler.py", line 1549, in execute_sql
+    sql, params = self.as_sql()
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\db\backends\mysql\compiler.py", line 57, in as_sql
+    update_query, update_params = super().as_sql()
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\db\models\sql\compiler.py", line 1947, in as_sql
+    val = field.get_db_prep_save(val, connection=self.connection)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\db\models\fields\__init__.py", line 954, in get_db_prep_save
+    return self.get_db_prep_value(value, connection=connection, prepared=False)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\db\models\fields\__init__.py", line 2060, in get_db_prep_value
+    value = super().get_db_prep_value(value, connection, prepared)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\db\models\fields\__init__.py", line 947, in get_db_prep_value
+    value = self.get_prep_value(value)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\db\models\fields\__init__.py", line 2055, in get_prep_value
+    raise e.__class__(
+ValueError: Field 'gender' expected a number but got 'ÄÐ'.
+"POST /user/wx/edit/3 HTTP/1.1" 500 150213
+Internal Server Error: /user/wx/edit/3
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\views\decorators\csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 168, in wx_user_edit
+    'nickName': user.nickName,
+AttributeError: 'User' object has no attribute 'nickName'
+"GET /user/wx/edit/3 HTTP/1.1" 500 72893

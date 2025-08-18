@@ -1,6 +1,5 @@
-from symtable import Class
-
 import requests
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -8,13 +7,14 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import status
 from IntelligentHomeworkGradingSystem import settings
 from django.http import JsonResponse
-
-from .models import class_name,User
-from django.contrib import messages  # 解决 messages 未解析
+from .models import className,User
+from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
+
 def user_list(request):
     queryset = User.objects.all()
     return render(request, "user_list.html", {'queryset': queryset})
+
 def wx_user_list(request, user_id):
     try:
         # 用 get 直接获取单个用户，更符合“查询单个用户”场景
@@ -51,10 +51,11 @@ def wx_user_list(request, user_id):
     }
     print(data)
     return JsonResponse({'data': data}, status=200)  # 直接返回单个对象
+
 def user_add(request):
     if request.method == "GET":
         # 获取所有班级信息，用于表单下拉选择（外键关联需要）
-        class_list = class_name.objects.all()
+        class_list = className.objects.all()
         return render(request, "user_add.html", {'class_list': class_list})
 
     # 处理POST请求
@@ -69,11 +70,12 @@ def user_add(request):
         phone = int(phone) if phone else None  # 手机号转为整数
         gender  = int(gender) if gender else None  # 性别转为整数（1/2）
         user_attribute = int(user_attribute) if user_attribute else None  # 属性转为整数（1/2）
-        class_in = class_name.objects.get(id=class_in_id) if class_in_id else None  # 外键关联班级
+        class_in = className.objects.get(id=class_in_id) if class_in_id else None  # 外键关联班级
 
         # 创建用户（字段名与模型完全匹配）
         User.objects.create(
-            nickName=nickName,
+            username=nickName,
+            wx_nickName=nickName,
             phone=phone,
             gender=gender,
             user_attribute=user_attribute,
@@ -83,6 +85,7 @@ def user_add(request):
         return redirect('/user/list') # 重定向到列表页，避免重复提交
 
     except Exception as e:
+        print(request, f'添加失败: {str(e)}')
         messages.error(request, f'添加失败: {str(e)}')
         # 回传数据到表单，保留用户输入
         return render(request, 'user_add.html', {
@@ -91,26 +94,33 @@ def user_add(request):
             'gender': gender,
             'user_attribute': user_attribute,
             'class_in_id': class_in_id,
-            'class_list': class_name.objects.all()  # 回传班级列表
+            'class_list': className.objects.all()  # 回传班级列表
         })
+
+
+
 def class_add(request):
     if request.method == "GET":
         return render(request,  "class_add.html")
     name = request.POST.get('name')
-    class_name.objects.create(name=name)
+    className.objects.create(name=name)
     return render(request, 'user_list.html')
-#   hxt新增
+
+
 def user_delete(request, user_id):
     user = get_object_or_404(User, id=user_id)
     user.delete()
     messages.success(request, '用户删除成功')
     return redirect('user_list')
+
+
+
 def user_edit(request, user_id):
     user = get_object_or_404(User, id=user_id)  # 获取要编辑的用户
 
     if request.method == "GET":
         # 显示预填充的表单
-        class_list = class_name.objects.all()  # 获取所有班级
+        class_list = className.objects.all()  # 获取所有班级
         return render(request, "user_edit.html", {
             'user': user,  # 当前用户数据
             'class_list': class_list  # 班级列表（用于下拉框）
@@ -128,7 +138,7 @@ def user_edit(request, user_id):
         user.phone = int(phone) if phone else None
         user.gender = int(gender) if gender else None
         user.user_attribute = int(user_attribute) if user_attribute else None
-        user.class_in = class_name.objects.get(id=class_in_id) if class_in_id else None
+        user.class_in = className.objects.get(id=class_in_id) if class_in_id else None
         user.save()  # 保存到数据库
 
         messages.success(request, '用户信息更新成功')
@@ -138,15 +148,10 @@ def user_edit(request, user_id):
         messages.error(request, f'更新失败: {str(e)}')
         return render(request, "user_edit.html", {
             'user': user,
-            'class_list': class_name.objects.all()
+            'class_list': className.objects.all()
         })
 
 
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
-from .models import User, class_name
-from django.views.decorators.csrf import csrf_exempt
-import json
 
 
 @csrf_exempt  # 禁用 CSRF 检查（适用于 API 接口）
@@ -156,7 +161,7 @@ def wx_user_edit(request, user_id):
 
     #前端传过来 ： POST / GET -> 提交至后端 / 从后端获取
     if request.method == "GET":
-        classNameList = class_name.objects.all().values('id', 'name')  # 获取所有班级实例
+        classNameList = className.objects.all().values('id', 'name')  # 获取所有班级实例
         response_data = {
             'user': {
                 'gender': user.gender,
@@ -177,6 +182,7 @@ def wx_user_edit(request, user_id):
     elif request.method == "POST":
         # 获取前端传来的数据
         try:
+            import json
             data = json.loads(request.body)
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON format'}, status=400)
@@ -184,14 +190,14 @@ def wx_user_edit(request, user_id):
         # 更新用户数据
         if 'gender' in data:
             user.gender = data['gender']
-        if 'user_attribute' in data:
-            user.user_attribute = data['user_attribute']
+        if 'attribute' in data:
+            user.user_attribute = data['attribute']
         if 'phone' in data:
             user.phone = data['phone']
         if 'class_in' in data:
             class_in_id = data['class_in'].get('id')
             if class_in_id:
-                class_in = get_object_or_404(class_name, id=class_in_id)
+                class_in = get_object_or_404(className, id=class_in_id)
                 user.class_in = class_in
             else:
                 user.class_in = None

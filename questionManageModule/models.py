@@ -10,10 +10,18 @@ class Problem(models.Model):
         (3, '困难'),
     ]
     title = models.CharField(max_length=200, verbose_name="题目标题")
-    content = models.ForeignKey('ProblemContent',on_delete=models.SET_NULL, null=True,blank = True , verbose_name='题目内容',related_name='problem_content')
+    # 保留正向关联（一个 Problem 关联一个 ProblemContent）
+    content = models.ForeignKey(
+        'ProblemContent',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='题目内容',
+        related_name='problems'  # 反向引用名，避免冲突
+    )
     problem_type = models.ForeignKey('ProblemType', on_delete=models.PROTECT, verbose_name="题目类型")
     tags = models.ManyToManyField('ProblemTag', blank=True, verbose_name="标签")
-    creator = models.ForeignKey(User, on_delete=models.PROTECT, verbose_name="创建人", null=True,blank = True)
+    creator = models.ForeignKey('userManageModule.User', on_delete=models.PROTECT, verbose_name="创建人", null=True,blank = True)
     create_time = models.DateTimeField(auto_now_add=True, verbose_name="创建时间", null=True,blank = True)
     difficulty = models.PositiveSmallIntegerField(
         choices=DIF_CHOICES, default=2, verbose_name="难度"
@@ -52,7 +60,7 @@ class ProblemContent(models.Model):
     """
     题目内容表，支持多种题型
     """
-    problem = models.ForeignKey(Problem, on_delete=models.CASCADE, related_name="contents",null=True,blank=True)
+    # problem = models.ForeignKey(Problem, on_delete=models.CASCADE, related_name="contents",null=True,blank=True)
     content = models.TextField(verbose_name="题目内容")
     # 使用JSON字段存储题目特定的结构化数据(如选择题选项、填空题空白位置等)
     content_data = models.JSONField(default=dict, blank=True, verbose_name="题目内容数据")
