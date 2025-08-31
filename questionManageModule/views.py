@@ -1,4 +1,7 @@
+from statistics import quantiles
+
 from django.db import transaction
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from .models import *
@@ -16,6 +19,27 @@ def question_detail(request, question_id):
     question = get_object_or_404(Problem, id=question_id)
     return render(request, 'question_detail.html', {'question': question})
 
+def wx_question_detail_random(request):
+    """问题详情"""
+    if request.method == 'GET':
+        try:
+            # 使用order_by('?')随机排序并获取第一条记录
+            question = Problem.objects.order_by('?').first()
+
+            if question:
+                # 序列化数据，确保只返回可JSON序列化的对象
+                data = {
+                    'id': question.id,
+                    'content': question.content.content,
+                    
+                }
+                return JsonResponse({'question': data})
+            else:
+                return JsonResponse({'error': 'No questions available'}, status=404)
+        except Exception as e:
+            # 记录异常到日志，便于调试
+            logger.error(f"Error in random_question view: {str(e)}")
+            return JsonResponse({'error': 'Internal server error'}, status=500)
 
 # 1. 核心处理函数：复用的单条问题创建逻辑
 def handle_problem_creation(
@@ -221,3 +245,4 @@ def question_delete(request, question_id):
         messages.success(request, '问题删除成功')
         return redirect('question_list')
     return render(request, 'question_confirm_delete.html', {'question': question})
+
