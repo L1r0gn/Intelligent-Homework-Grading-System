@@ -37,6 +37,16 @@ ALLOWED_HOSTS = []
 WECHAT_APPID = 'wx144180b95c1f6746'
 WECHAT_SECRET = '3772679a541e4d7ff0dba5aebfe4c606'
 
+# --- Celery 配置 ---
+# 使用 Redis 作为消息代理 (Broker)
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+# 使用 Redis 作为结果后端 (Result Backend)
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Shanghai' # 根据你的时区设置
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -47,7 +57,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'userManageModule.apps.UserManageModuleConfig',
-    'questionManageModule.apps.QuestionmanagemoduleConfig'
+    'questionManageModule.apps.QuestionmanagemoduleConfig',
+    'gradingModule.apps.GradingmoduleConfig',
 ]
 
 MIDDLEWARE = [

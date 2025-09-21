@@ -1498,3 +1498,9 @@ Traceback (most recent call last):
     'nickName': user.nickName,
 AttributeError: 'User' object has no attribute 'nickName'
 "GET /user/wx/edit/3 HTTP/1.1" 500 72814
+Internal Server Error: /question/wx/detail/random/
+"GET /question/wx/detail/random/ HTTP/1.1" 500 34
+Internal Server Error: /question/wx/detail/random/
+"GET /question/wx/detail/random/ HTTP/1.1" 500 34
+Internal Server Error: /question/wx/detail/random/
+"GET /question/wx/detail/random/ HTTP/1.1" 500 34

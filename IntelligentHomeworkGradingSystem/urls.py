@@ -22,6 +22,7 @@ urlpatterns = [
     path('class_name/add/',user_views.class_add,name = 'class_add'),
     path('question/', include('questionManageModule.urls')),  # 添加这一行
     path('user/',include('userManageModule.urls')),
+    path('grading/', include('gradingModule.urls')),
 
 ]
 

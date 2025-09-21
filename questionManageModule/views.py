@@ -25,7 +25,8 @@ def wx_question_detail_random(request):
         try:
             # 使用order_by('?')随机排序并获取第一条记录
             question = Problem.objects.order_by('?').first()
-
+            print(question.problem_type.name)
+            print(question.answer)
             if question:
                 # 序列化数据，确保只返回可JSON序列化的对象
                 data = {
