@@ -1,0 +1,88 @@
+{% extends "question_view_base.html" %}
+{% load static %}
+
+{% block title %}问题列表{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>问题管理</h2>
+        <a href="{% url 'question_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>创建新问题
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>标题</th>
+                            <th>所属科目</th>
+                            <th>类型</th>
+                            <th>难度</th>
+                            <th>标签</th>
+                            <th>创建时间</th>
+                            <th class="text-center">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for question in questions %}
+                        <tr>
+                            <td><strong>{{ question.id }}</strong></td>
+                            <td>
+                                <a href="{% url 'question_detail' question.id %}" class="text-decoration-none fw-bold">
+                                    {{ question.title|truncatechars:25 }}
+                                </a>
+                            </td>
+                            <td>{{ question.subject.name }}</td>
+                            <td>{{ question.problem_type.name }}</td>
+                            <td>
+                                {% if question.difficulty == 1 %}
+                                    <span class="badge bg-success">{{ question.get_difficulty_display }}</span>
+                                {% elif question.difficulty == 2 %}
+                                    <span class="badge bg-warning text-dark">{{ question.get_difficulty_display }}</span>
+                                {% elif question.difficulty == 3 %}
+                                    <span class="badge bg-danger">{{ question.get_difficulty_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% for tag in question.tags.all %}
+                                    <span class="badge bg-secondary">{{ tag.name }}</span>
+                                {% endfor %}
+                            </td>
+                            <td>{{ question.create_time|date:"Y-m-d H:i" }}</td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'question_detail' question.id %}" class="btn btn-info" title="查看">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'question_update' question.id %}" class="btn btn-warning" title="编辑">
+                                        <i class="fas fa-pencil-alt"></i>
+                                    </a>
+                                    <a href="{% url 'question_delete' question.id %}" class="btn btn-danger" title="删除"
+                                       onclick="return confirm('确定要删除这个问题吗？标题: {{ question.title|escapejs }}')">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-5">
+                                <div class="text-muted">
+                                    <p class="mb-2">暂无问题数据</p>
+                                    <a href="{% url 'question_create' %}" class="btn btn-sm btn-outline-primary">点击这里，创建第一个问题</a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+{% load static %}
+{% extends "question_view_base.html" %}
+
+{% block title %}确认删除问题{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h3 class="mb-0">确认删除</h3>
+                </div>
+                <div class="card-body">
+                    <h4 class="card-title text-danger">您确定要删除以下问题吗？</h4>
+                    <p class="text-muted">此操作不可逆转，删除后数据将无法恢复。</p>
+
+                    <!--显示问题对象-->
+                    <div class="bg-light p-3 rounded mb-4">
+                        {{ question }}
+                    </div>
+
+                    <!-- 操作按钮 -->
+                    <form method="post" class="d-flex gap-2">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger flex-grow-1">
+                            <i class="fas fa-trash-alt"></i> 确认删除
+                        </button>
+                        <a href="{% url 'question_list' %}" class="btn btn-secondary flex-grow-1">
+                            <i class="fas fa-times"></i> 取消
+                        </a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

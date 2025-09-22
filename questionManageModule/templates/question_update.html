@@ -1,0 +1,71 @@
+{% extends 'question_view_base.html' %}
+{% load static %}
+
+{% block title %}编辑问题 - {{ question.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-9"> <div class="card shadow-sm">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>编辑问题 #{{ question.id }}: {{ question.title|truncatechars:30 }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-danger" role="alert">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label for="title" class="form-label">题目标题</label>
+                            <input type="text" class="form-control" id="title" name="title" value="{{ question.title }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="content" class="form-label">题目内容</label>
+                            <textarea class="form-control" id="content" name="content" rows="8" required>{{ question.content.content }}</textarea>
+                        </div>
+
+                        <hr class="my-4"> <h5 class="mb-3">答案与解析</h5>
+                        <div class="mb-3">
+                            <label for="answer_content" class="form-label">简洁答案</label>
+                            <input type="text" class="form-control" id="answer_content" name="answer_content" placeholder="例如：A, B, C / 42 / 巴黎" value="{{ question.answer.content }}">
+                            <small class="form-text text-muted">用于快速展示的简短答案，如选择题选项、填空题结果等。</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="answer_explanation" class="form-label">详细解析</label>
+                            <textarea class="form-control" id="answer_explanation" name="answer_explanation" rows="5" placeholder="请详细说明解题思路和步骤...">{{ question.answer.explanation }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="answer_content_data" class="form-label">答案数据 (JSON格式)</label>
+                            <textarea class="form-control" id="answer_content_data" name="answer_content_data" rows="5" placeholder='例如：{"correct_option": "A", "points": 10}'>{{ question.answer.content_data|safe }}</textarea>
+                            <small class="form-text text-muted">用于程序化评分的结构化数据，必须是合法的JSON格式。</small>
+                        </div>
+                        <hr class="my-4">
+
+                        <div class="row">
+                            </div>
+
+                        <div class="d-flex justify-content-end mt-4">
+                            <a href="{% url 'question_list' %}" class="btn btn-secondary me-2">取消</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>更新题目
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

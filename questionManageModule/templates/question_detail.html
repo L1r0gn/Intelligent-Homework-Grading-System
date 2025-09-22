@@ -1,0 +1,72 @@
+{% extends 'question_view_base.html' %}
+{% load static %}
+
+{% block title %}问题详情 - {{ question.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">问题详情：{{ question.title }}</h3>
+                <div class="btn-group">
+                    <a href="{% url 'question_update' question.id %}" class="btn btn-warning">
+                        <i class="fas fa-pencil-alt me-2"></i>编辑
+                    </a>
+                    <a href="{% url 'question_delete' question.id %}" class="btn btn-danger" onclick="return confirm('确定要删除这个问题吗？')">
+                        <i class="fas fa-trash-alt me-2"></i>删除
+                    </a>
+                    <a href="{% url 'question_list' %}" class="btn btn-secondary">返回列表</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body">
+            <div class="mb-4">
+                <h5>题目内容</h5>
+                <div class="p-3 bg-light rounded border">
+                    <p style="white-space: pre-wrap; margin-bottom: 0;">{{ question.content.content }}</p>
+                </div>
+            </div>
+
+            <hr>
+
+            <h5>详细信息</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <dl class="row">
+                        <dt class="col-sm-4">所属学科:</dt>
+                        <dd class="col-sm-8">{{ question.subject.name }}</dd>
+
+                        <dt class="col-sm-4">题目类型:</dt>
+                        <dd class="col-sm-8">{{ question.problem_type.name }}</dd>
+
+                        <dt class="col-sm-4">创建人:</dt>
+                        <dd class="col-sm-8">{{ question.creator.username|default:"N/A" }}</dd>
+                    </dl>
+                </div>
+                <div class="col-md-6">
+                    <dl class="row">
+                        <dt class="col-sm-4">难度等级:</dt>
+                        <dd class="col-sm-8">
+                            {% if question.difficulty == 1 %}
+                                <span class="badge bg-success">{{ question.get_difficulty_display }}</span>
+                            {% elif question.difficulty == 2 %}
+                                <span class="badge bg-warning text-dark">{{ question.get_difficulty_display }}</span>
+                            {% elif question.difficulty == 3 %}
+                                <span class="badge bg-danger">{{ question.get_difficulty_display }}</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-4">预估耗时:</dt>
+                        <dd class="col-sm-8">{{ question.estimated_time|default:"--" }} 分钟</dd>
+
+                        <dt class="col-sm-4">创建时间:</dt>
+                        <dd class="col-sm-8">{{ question.create_time|date:"Y-m-d H:i:s" }}</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+{% extends 'user_base.html' %}
+{%load static%}
+<html lang="en">
+    <title>{% block title %}用户列表{% endblock %}</title>
+
+{% block content %}
+<div class="container">
+    <div>
+        <a type="button" class="btn btn-primary" href="/user/add/" target="_self" style="margin-bottom: 5px" >
+            <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+            新建用户
+        </a>
+    </div>
+    <div class="panel panel-default">
+        <!-- Default panel contents -->
+    <div class="panel-heading">用户操作</div>
+        <!-- Table -->
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>NickName</th>
+                    <th>Username</th>
+                    <th>Password</th>
+                    <th>Phone</th>
+                    <th>Gender</th>
+                    <th>操作</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+               {% for obj in queryset %}
+                <tr>
+
+                    <td>{{ obj.id }}</td>
+                    <td>{{ obj.wx_nickName }}</td>
+                    <td>{{ obj.username }}</td>
+                    <td>{{ obj.password }}</td>
+                    <td>{{ obj.phone }}</td>
+                    <td>
+                    {% if obj.gender == 1 %}男
+                    {% elif obj.gender == 2 %}女
+                    {% else %}Error{% endif %}
+                    </td>
+                    <td>  <!-- 操作列的内容 -->
+                    <a href="{% url 'user_edit' obj.id %}" class="btn btn-sm btn-primary">编辑</a>
+                <a href="{% url 'user_delete' obj.id %}" class="btn btn-sm btn-danger" onclick="return confirm('确定删除吗？')">删除</a>
+
+    {#                    <td></td>#}
+                </tr>
+              {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+

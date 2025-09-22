@@ -11,6 +11,11 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+import pymysql
+
+
+pymysql.install_as_MySQLdb()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,8 +30,23 @@ SECRET_KEY = 'django-insecure-41xk46xx!z4lq&xjl*r-@7@c3yot*y$=$-*&8)$d@=abvoeye)
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+AUTH_USER_MODEL = 'userManageModule.User'  # 格式：app名称.模型类名
 
+# 允许的域名
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost','119.29.152.140','www.ihgs.com']
+
+WECHAT_APPID = 'wx144180b95c1f6746'
+WECHAT_SECRET = '3772679a541e4d7ff0dba5aebfe4c606'
+
+# --- Celery 配置 ---
+# 使用 Redis 作为消息代理 (Broker)
+CELERY_BROKER_URL = 'redis://localhost:6380/0'
+# 使用 Redis 作为结果后端 (Result Backend)
+CELERY_RESULT_BACKEND = 'redis://localhost:6380/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Shanghai' # 根据你的时区设置
 
 # Application definition
 
@@ -37,6 +57,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'userManageModule.apps.UserManageModuleConfig',
+    'questionManageModule.apps.QuestionmanagemoduleConfig',
+    'gradingModule.apps.GradingmoduleConfig',
 ]
 
 MIDDLEWARE = [
@@ -48,13 +71,22 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+MEDIA_ROOT = BASE_DIR / 'media'
+# 确保JSON解析器配置正确
+REST_FRAMEWORK = {
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.FormParser',
+        'rest_framework.parsers.MultiPartParser',
+    ],
+}
 
 ROOT_URLCONF = 'IntelligentHomeworkGradingSystem.urls'
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -69,14 +101,36 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'IntelligentHomeworkGradingSystem.wsgi.application'
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'filename': 'debug.log',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',  # 切换到mysql
+        'NAME': 'ihgs',
+        'USER': 'root',
+        'PASSWORD': '!!!L1r0gn',
+        'HOST': 'localhost',
+        'PORT': '3306',
     }
 }
 
@@ -115,7 +169,13 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
+
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # 生产环境收集静态文件的目录
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

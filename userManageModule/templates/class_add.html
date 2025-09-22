@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>添加班级</title>
+    <link rel="stylesheet" href="{% static 'plugins/bootstrap/css/bootstrap.css'%}">
+</head>
+<body>
+   <!---导航栏--->
+    <nav class="navbar navbar-default">
+        <div class="container-fluid">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                    data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#">Brand</a>
+            </div>
+
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav">
+                    <li> <a href="{% url 'user_list' %}">用户管理 </a></li>
+                    <li class="active"><a href="{% url 'question_list' %}">题目管理<span class="sr-only">(current)</span></a></li>
+                </ul>
+                <ul class="nav navbar-nav navbar-right">
+                    <li><a href="#">Link</a></li>
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
+                            aria-expanded="false">Dropdown <span class="caret"></span></a>
+                        <ul class="dropdown-menu">
+                            <li><a href="#">Action</a></li>
+                            <li><a href="#">Another action</a></li>
+                            <li><a href="#">Something else here</a></li>
+                            <li role="separator" class="divider"></li>
+                            <li><a href="#">Separated link</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div><!-- /.navbar-collapse -->
+        </div><!-- /.container-fluid -->
+    </nav>
+    <div class="container">
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="name">班级名称</label>
+                <input type="text" class="form-control" id="name" name="name" placeholder="请输入班级名称">
+            </div>
+
+            <div class="d-flex justify-content-end">
+                <button type="reset" class="btn btn-secondary mr-2">重置</button>
+                <button type="submit" class="btn btn-primary" href="user/list/" >提交</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

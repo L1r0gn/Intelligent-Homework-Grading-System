@@ -1,0 +1,121 @@
+{% extends 'question_view_base.html' %}
+{% load static %}
+
+{% block title %}创建新问题{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row g-4"> <div class="col-lg-7">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="fas fa-plus-circle me-2"></i>创建新问题</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'question_create' %}">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label for="title" class="form-label">题目标题</label>
+                            <input type="text" class="form-control" id="title" name="title" placeholder="请输入题目标题" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="content" class="form-label">题目内容</label>
+                            <textarea class="form-control" id="content" name="content" rows="6" placeholder="请详细描述题目..." required></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="difficulty" class="form-label">难度等级</label>
+                                <select class="form-select" id="difficulty" name="difficulty" required>
+                                    <option value="" selected disabled>请选择难度</option>
+                                    <option value="1">简单</option>
+                                    <option value="2">中等</option>
+                                    <option value="3">困难</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="problem_type" class="form-label">题目类型</label>
+                                <select class="form-select" id="problem_type" name="problem_type" required>
+                                    <option value="" selected disabled>请选择题型</option>
+                                    {% for type in problem_types %}
+                                    <option value="{{ type.id }}">{{ type.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="subject" class="form-label">所属学科</label>
+                                <select class="form-select" id="subject" name="subject" required>
+                                    <option value="" selected disabled>请选择学科</option>
+                                    {% for sub in subjects %}
+                                    <option value="{{ sub.id }}">{{ sub.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="estimated_time" class="form-label">预估时间（分钟）</label>
+                                <input type="number" class="form-control" id="estimated_time" name="estimated_time" min="1" value="10">
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-4">
+                            <a href="{% url 'question_list' %}" class="btn btn-secondary me-2">返回列表</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>保存题目
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="fas fa-book-open me-2"></i>已有问题参考</h4>
+                </div>
+                <div class="card-body" style="max-height: 80vh; overflow-y: auto;">
+                    {% if existing_questions %}
+                        <div class="list-group list-group-flush">
+                            {% for question in existing_questions %}
+                                <div class="list-group-item px-1 py-3">
+                                    <h6 class="mb-1">{{ question.title }}</h6>
+                                    <p class="mb-1 text-muted small" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                        {{ question.content.content }}
+                                    </p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                         <small class="text-muted">{{ question.subject.name }} | {{ question.get_difficulty_display }}</small>
+                                         <button type="button" class="btn btn-sm btn-outline-primary"
+                                                 onclick="useExistingQuestion('{{ question.title|escapejs }}', '{{ question.content.content|escapejs }}')">
+                                             <i class="fas fa-copy me-1"></i>复用
+                                         </button>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted p-5">暂无已有问题</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function useExistingQuestion(title, content) {
+        document.getElementById('title').value = title;
+        document.getElementById('content').value = content;
+        // 可以在这里添加一个提示，比如让标题框闪烁一下
+        const titleInput = document.getElementById('title');
+        titleInput.focus();
+        titleInput.classList.add('is-valid');
+        setTimeout(() => {
+            titleInput.classList.remove('is-valid');
+        }, 1500);
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block title %}提交记录 - 智能作业批改系统{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fas fa-list-ul me-2"></i>提交记录管理
+        </h5>
+        <span class="badge bg-primary rounded-pill">总计: {{ total_count|default:0 }} 条记录</span>
+    </div>
+    <div class="card-body">
+        <div class="p-3 mb-4 bg-light rounded border">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label for="{{ form.status.id_for_label }}" class="form-label">状态</label>
+                    {{ form.status }} {# 假设在forms.py中已添加 'class': 'form-select' #}
+                </div>
+                <div class="col-md-3">
+                    <label for="{{ form.assignment.id_for_label }}" class="form-label">作业</label>
+                    {{ form.assignment }} {# 假设在forms.py中已添加 'class': 'form-select' #}
+                </div>
+                <div class="col-md-4">
+                    <label for="{{ form.student.id_for_label }}" class="form-label">学生</label>
+                    {{ form.student }} {# 假设在forms.py中已添加 'class': 'form-control' #}
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter me-1"></i> 筛选</button>
+                    <a href="{% url 'submission_list' %}" class="btn btn-secondary w-100 mt-2"><i class="fas fa-undo me-1"></i> 重置</a>
+                </div>
+            </form>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>学生</th>
+                        <th>作业</th>
+                        <th>提交时间</th>
+                        <th>状态</th>
+                        <th>分数</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for submission in page_obj %}
+                    <tr class="align-middle">
+                        <td>{{ submission.id }}</td>
+                        <td>{{ submission.student.username }}</td>
+                        <td>{{ submission.assignment.title }}</td>
+                        <td>{{ submission.submitted_time|date:"Y-m-d H:i" }}</td>
+                        <td>
+                            <span class="badge rounded-pill
+                                {% if submission.status == 'graded' %}bg-success
+                                {% elif submission.status == 'processing' %}bg-warning text-dark
+                                {% elif submission.status == 'error' %}bg-danger
+                                {% else %}bg-secondary{% endif %}">
+                                {{ submission.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if submission.score is not None %}
+                                <span class="fw-bold text-primary">{{ submission.score }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'submission_detail' submission.id %}" class="btn btn-sm btn-info">
+                                <i class="fas fa-search me-1"></i> 查看详情
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-5">
+                            <i class="fas fa-folder-open fa-3x mb-3"></i>
+                            <p>暂无提交记录</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center mt-4">
+                {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page=1&{{ request.GET.urlencode }}">&laquo; 首页</a></li>
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">上一页</a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">&laquo; 首页</span></li>
+                    <li class="page-item disabled"><span class="page-link">上一页</span></li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}&{{ request.GET.urlencode }}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">下一页</a></li>
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&{{ request.GET.urlencode }}">末页 &raquo;</a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">下一页</span></li>
+                    <li class="page-item disabled"><span class="page-link">末页 &raquo;</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+/* 可以在这里添加一些针对此页面的微调样式 */
+.badge {
+    font-size: 0.8rem;
+    padding: 0.4em 0.7em;
+}
+.table > thead {
+    vertical-align: middle;
+}
+</style>
+{% endblock %}
