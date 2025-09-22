@@ -28,20 +28,21 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-41xk46xx!z4lq&xjl*r-@7@c3yot*y$=$-*&8)$d@=abvoeye)'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 AUTH_USER_MODEL = 'userManageModule.User'  # 格式：app名称.模型类名
 
-ALLOWED_HOSTS = []
+# 允许的域名
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost','119.29.152.140','www.ihgs.com']
 
 WECHAT_APPID = 'wx144180b95c1f6746'
 WECHAT_SECRET = '3772679a541e4d7ff0dba5aebfe4c606'
 
 # --- Celery 配置 ---
 # 使用 Redis 作为消息代理 (Broker)
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = 'redis://localhost:6380/0'
 # 使用 Redis 作为结果后端 (Result Backend)
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6380/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
@@ -70,6 +71,15 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+MEDIA_ROOT = BASE_DIR / 'media'
+# 确保JSON解析器配置正确
+REST_FRAMEWORK = {
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.FormParser',
+        'rest_framework.parsers.MultiPartParser',
+    ],
+}
 
 ROOT_URLCONF = 'IntelligentHomeworkGradingSystem.urls'
 

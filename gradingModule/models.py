@@ -17,9 +17,10 @@ class Submission(models.Model):
     problem = models.ForeignKey(Problem, on_delete=models.CASCADE, related_name='submissions', verbose_name="题目")
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='submissions', verbose_name="学生")
     # 提交内容
-    submitted_text = models.TextField(verbose_name="提交的文本", null=True, blank=True)
+    submitted_text = models.TextField(verbose_name="提交的文本", null=True, blank=True,default='')
     submitted_time = models.DateTimeField(auto_now_add=True, verbose_name="提交时间")
-    submitted_image = models.ImageField(upload_to='submissions/',blank=True,null=True)
+    submitted_image = models.ImageField(upload_to='submissions/',blank=True,null=True,default="default_submissionImage.png")
+    choose_answer = models.TextField(verbose_name="提交的选择题答案", null=True, blank=True)
     # 批改结果
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING', verbose_name="状态")
     score = models.FloatField(null=True, blank=True, verbose_name="得分")

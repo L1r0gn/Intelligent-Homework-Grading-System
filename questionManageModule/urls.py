@@ -1,6 +1,4 @@
-from django.contrib import admin
 from django.urls import path
-from userManageModule import views as user_views
 from questionManageModule import views as question_views
 
 urlpatterns = [

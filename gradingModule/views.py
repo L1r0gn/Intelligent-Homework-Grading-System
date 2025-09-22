@@ -1,10 +1,13 @@
+from django.core.paginator import Paginator
 from django.http import JsonResponse, HttpResponseBadRequest
+from django.shortcuts import render, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.decorators import login_required
+
+from userManageModule.models import User
+from .forms import SubmissionFilterForm
 from .models import Submission, Problem
 from .tasks import process_and_grade_submission # 导入你的异步任务
-
-@login_required
+import json
 @csrf_exempt
 def submissionprocess(request):
     if request.method == 'GET':
@@ -26,29 +29,40 @@ def submissionprocess(request):
         return JsonResponse(data, safe=False)
 
     elif request.method == 'POST':
-        # POST 请求逻辑完全改变，以处理图片上传和触发异步任务
-        problem_id = request.POST.get('problem_id')
-        submitted_image = request.FILES.get('submitted_image')
-        submitted_text = request.POST.get('submitted_text')
+        # 1. 解码并用 json.loads() 解析 request.body
+        data = json.loads(request.body.decode('utf-8'))
+
+        # 2. 从解析后的 data 字典中获取数据
+        problem_id = data.get('questionId')
+        submitted_text = data.get('submitted_text')
+        choose_answer = data.get('selectedAnswer')
+        userId = data.get('userId')
 
         if not problem_id:
             return HttpResponseBadRequest("请求必须包含 'problem_id' ")
-        if not problem_id or not submitted_image:
-            return HttpResponseBadRequest("请求必须包含 'problem_id' 和 'submitted_image'")
-        if not problem_id or not submitted_image:
-            return HttpResponseBadRequest("请求必须包含 'problem_id' 和 'submitted_image'")
+        # if not submitted_image:
+        #     return HttpResponseBadRequest("请求必须包含 'submitted_image' ")
+        # if not submitted_text:
+        #     return HttpResponseBadRequest("请求必须包含 'submitted_text' ")
         try:
             problem = Problem.objects.get(id=problem_id)
         except Problem.DoesNotExist:
             return JsonResponse({'error': '指定的题目不存在'}, status=404)
-
+        user = User.objects.get(id=userId)
+        print('用户',user,"创建了新提交")
+        if not user:
+            return HttpResponseBadRequest({'error':'用户不存在'},status=405)
         # 创建新的 submission 实例，保存图片
         submission = Submission.objects.create(
-            student=request.user,
+            student=user,
             problem=problem,
-            submitted_image=submitted_image,
-            status='PENDING' # 初始状态为判题中
+            submitted_text=submitted_text,
+            choose_answer=choose_answer,
+            # submitted_image=submitted_image,
+            status='PENDING', # 初始状态为判题中
         )
+        submissions = Submission.objects.filter(student=user).order_by('-submitted_time')
+        print(submissions)
         # 触发异步任务！使用 .delay() 方法，任务会被发送到 Celery 队列中等待执行
         process_and_grade_submission.delay(submission.id)
         # 立即返回响应给用户
@@ -60,3 +74,52 @@ def submissionprocess(request):
         return JsonResponse(response_data, status=201)
     else:
         return JsonResponse({'error': '不支持的请求方法'}, status=405)
+
+
+def submission_list(request):
+    # 获取所有提交记录，按时间倒序排列
+    submissions = Submission.objects.all().order_by('-submitted_time')
+
+    # 初始化筛选表单
+    form = SubmissionFilterForm(request.GET or None)
+
+    # 应用筛选
+    if form.is_valid():
+        status = form.cleaned_data.get('status')
+        assignment = form.cleaned_data.get('assignment')
+        student = form.cleaned_data.get('student')
+
+        if status:
+            submissions = submissions.filter(status=status)
+        if assignment:
+            submissions = submissions.filter(assignment__title__icontains=assignment)
+        if student:
+            submissions = submissions.filter(student__username__icontains=student)
+
+    # 分页
+    paginator = Paginator(submissions, 25)  # 每页25条记录
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'form': form,
+        'total_count': submissions.count(),
+    }
+
+    return render(request, 'submission_list.html', context)
+
+
+def submission_detail(request, submission_id):
+    submission = get_object_or_404(Submission, id=submission_id)
+
+    # 检查权限：教师可以查看所有，学生只能查看自己的
+    if not request.user.is_staff and submission.student != request.user:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("您没有权限查看此提交")
+
+    context = {
+        'submission': submission,
+    }
+
+    return render(request, 'submission_detail.html', context)

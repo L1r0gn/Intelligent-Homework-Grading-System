@@ -69,6 +69,23 @@ def process_and_grade_submission(submission_id):
         print(f"❌ 找不到 ID 为 {submission_id} 的提交记录")
         return
 
+    print(submission.problem.problem_type)
+    #选择题逻辑
+    if submission.problem.problem_type.name == "选择":
+        print('正在判选择题')
+        student_choose = submission.choose_answer
+        if student_choose == submission.problem.answer.content:
+            submission.status = 'ACCEPTED'
+            submission.score = submission.problem.points
+            submission.save()
+            return
+        else:
+            submission.status = 'WRONG_ANSWER'
+            submission.score = submission.problem.points
+            submission.save()
+            return
+
+    print('正在判大题')
     # 1. 从图片中提取文本
     if not submission.submitted_image:
         submission.status = 'RUNTIME_ERROR'
