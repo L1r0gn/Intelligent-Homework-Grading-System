@@ -1,5 +1,3 @@
-from cgi import maxlen
-
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
@@ -16,10 +14,12 @@ class User(AbstractUser):
     user_attribute_choices = [
         (1, 'student'),
         (2, 'teacher'),
+        (3, 'administrator'),
     ]
     phone = models.BigIntegerField(verbose_name="手机号",null=True,blank=True)
     gender = models.SmallIntegerField(verbose_name="性别", choices=genders_choices,null=True,blank=True)
     user_attribute = models.SmallIntegerField(verbose_name="属性", choices=user_attribute_choices,null=True,blank=True)
+    # password = models.CharField(verbose_name="密码", max_length=128,default='12345678')
     #微信字段
     openid = models.CharField(max_length=64,unique=True,null=True,blank=True, verbose_name="微信OpenID")
     unionid = models.CharField(max_length=64,null=True,blank=True,verbose_name="微信UnionID")

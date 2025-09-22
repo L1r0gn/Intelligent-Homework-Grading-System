@@ -21,6 +21,8 @@
                 <tr>
                     <th>Id</th>
                     <th>NickName</th>
+                    <th>Username</th>
+                    <th>Password</th>
                     <th>Phone</th>
                     <th>Gender</th>
                     <th>操作</th>
@@ -33,6 +35,8 @@
 
                     <td>{{ obj.id }}</td>
                     <td>{{ obj.wx_nickName }}</td>
+                    <td>{{ obj.username }}</td>
+                    <td>{{ obj.password }}</td>
                     <td>{{ obj.phone }}</td>
                     <td>
                     {% if obj.gender == 1 %}男

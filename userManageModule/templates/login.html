@@ -1,0 +1,73 @@
+{% extends 'user_base.html' %}
+
+{% block title %}用户登录{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">智能作业评分系统 - 登录</h4>
+                </div>
+                <div class="card-body">
+                    {# --- 在这里添加消息显示代码 --- #}
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-danger" role="alert">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    {# --- 添加结束 --- #}
+                    <form method="post" action="{% url 'login' %}">
+                        {% csrf_token %}
+                        
+                        <input type="hidden" name="next" value="{{ request.GET.next }}">
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.username.id_for_label }}" class="form-label">用户名</label>
+                            {{ form.username }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.password.id_for_label }}" class="form-label">密码</label>
+                            {{ form.password }}
+                        </div>
+                        
+                        <div class="d-grid">
+                           <button type="submit" class="btn btn-primary">登 录</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* 为Django表单控件添加Bootstrap样式 */
+input[type="text"], input[type="password"] {
+    display: block;
+    width: 100%;
+    padding: .375rem .75rem;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #212529;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid #ced4da;
+    border-radius: .25rem;
+    transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+}
+
+input[type="text"]:focus, input[type="password"]:focus {
+    color: #212529;
+    background-color: #fff;
+    border-color: #86b7fe;
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(13,110,253,.25);
+}
+</style>
+{% endblock %}

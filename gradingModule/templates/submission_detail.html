@@ -98,7 +98,12 @@
                 </a>
 
                 {% if request.user.is_staff %}
-                    <button class="btn btn-warning"><i class="fas fa-sync-alt me-2"></i>重新批改</button>
+                    <form action="{% url 'regrade_submission' submission.id %}" method="POST" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-sync-alt me-2"></i>重新批改
+                        </button>
+                    </form>
                     <button class="btn btn-danger"><i class="fas fa-trash-alt me-2"></i>删除记录</button>
                 {% endif %}
             </div>

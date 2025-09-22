@@ -76,8 +76,9 @@ class Answer(models.Model):
     class Meta:
         verbose_name = "题目答案"
         verbose_name_plural = "题目答案"
+
     def __str__(self):
-        return f"答案-{self.id}"
+        return self.content[:50]  # 返回内容的前50个字符作为预览
 class ScoringPoint(models.Model):
     """题目得分点表"""             """暂时不太需要，现在用ai评分"""
     # problem = models.ForeignKey(Problem, on_delete=models.CASCADE, related_name="scoring_points")

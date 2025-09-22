@@ -1,72 +1,71 @@
 {% extends 'question_view_base.html' %}
 {% load static %}
 
+{% block title %}编辑问题 - {{ question.title }}{% endblock %}
+
 {% block content %}
-<div class="container">
-    <form method="post" >
-        {% csrf_token %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-9"> <div class="card shadow-sm">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>编辑问题 #{{ question.id }}: {{ question.title|truncatechars:30 }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-danger" role="alert">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
 
-        <!-- 题目名称 -->
-        <div class="form-group">
-            <label for="title">题目标题</label>
-            <input type="text" class="form-control" id="title" name="title" value="{{ question.title }}" placeholder="请输入题目标题" required>
-        </div>
+                    <form method="post">
+                        {% csrf_token %}
 
-        <!-- 题目内容 -->
-        <div class="form-group">
-            <label for="content">题目内容</label>
-            <textarea class="form-control" id="content" name="content" required>{{ question.content.content }}</textarea>
-        </div>
+                        <div class="mb-3">
+                            <label for="title" class="form-label">题目标题</label>
+                            <input type="text" class="form-control" id="title" name="title" value="{{ question.title }}" required>
+                        </div>
 
-        <!-- 难度等级 -->
-        <div class="form-group">
-            <label for="difficulty">难度等级</label>
-            <select class="form-control" id="difficulty" name="difficulty" required>
-                 <option value="">请选择难度</option>
-                <!-- 编辑时默认选中当前难度，使用selected属性实现 -->
-                <option value="1" {% if question.difficulty == 1 %}selected{% endif %}>简单</option>
-                <option value="2" {% if question.difficulty == 2 %}selected{% endif %}>中等</option>
-                <option value="3" {% if question.difficulty == 3 %}selected{% endif %}>困难</option>
-            </select>
-        </div>
+                        <div class="mb-3">
+                            <label for="content" class="form-label">题目内容</label>
+                            <textarea class="form-control" id="content" name="content" rows="8" required>{{ question.content.content }}</textarea>
+                        </div>
 
-        <!-- 题型选择 -->
-        <div class="form-group">
-            <label for="problem_type">题目类型</label>
-            <select class="form-control" id="problem_type" name="problem_type" required>
-                <option value="">请选择题型</option>
-                {% for problem_type in problem_types %}
-                <option value="{{ problem_type.id }}" {% if question.problem_type.id == problem_type.id %}selected{% endif %}>
-                    {{ problem_type.name }}
-                </option>
-                {% endfor %}
-            </select>
-        </div>
+                        <hr class="my-4"> <h5 class="mb-3">答案与解析</h5>
+                        <div class="mb-3">
+                            <label for="answer_content" class="form-label">简洁答案</label>
+                            <input type="text" class="form-control" id="answer_content" name="answer_content" placeholder="例如：A, B, C / 42 / 巴黎" value="{{ question.answer.content }}">
+                            <small class="form-text text-muted">用于快速展示的简短答案，如选择题选项、填空题结果等。</small>
+                        </div>
 
-        <!-- 学科选择 -->
-        <div class="form-group">
-            <label for="subject">所属学科</label>
-            <select class="form-control" id="subject" name="subject" required>
-                <option value="">请选择学科</option>
-                {% for subject in subjects %}
-                <option value="{{ subject.id }}" {% if question.subject.id == subject.id %}selected{% endif %}>
-                    {{ subject.name }}
-                </option>
-                {% endfor %}
-            </select>
-        </div>
+                        <div class="mb-3">
+                            <label for="answer_explanation" class="form-label">详细解析</label>
+                            <textarea class="form-control" id="answer_explanation" name="answer_explanation" rows="5" placeholder="请详细说明解题思路和步骤...">{{ question.answer.explanation }}</textarea>
+                        </div>
 
-        <!-- 预估时间 -->
-        <div class="form-group">
-            <label for="estimated_time">预估时间（分钟）</label>
-            <input type="number" class="form-control" id="estimated_time" name="estimated_time" min="1" value="{{ question.estimated_time|default:10 }}">
-        </div>
+                        <div class="mb-3">
+                            <label for="answer_content_data" class="form-label">答案数据 (JSON格式)</label>
+                            <textarea class="form-control" id="answer_content_data" name="answer_content_data" rows="5" placeholder='例如：{"correct_option": "A", "points": 10}'>{{ question.answer.content_data|safe }}</textarea>
+                            <small class="form-text text-muted">用于程序化评分的结构化数据，必须是合法的JSON格式。</small>
+                        </div>
+                        <hr class="my-4">
 
-        <!-- 修改提交按钮 -->
-        <div class="d-flex justify-content-end mt-4">
-            <a href="{% url 'question_list' %}" class="btn btn-info btn-sm">返回列表</a>
-            <button type="submit" class="btn btn-primary" >保存题目</button>
+                        <div class="row">
+                            </div>
+
+                        <div class="d-flex justify-content-end mt-4">
+                            <a href="{% url 'question_list' %}" class="btn btn-secondary me-2">取消</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>更新题目
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-    </form>
+    </div>
 </div>
 {% endblock %}

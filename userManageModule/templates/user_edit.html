@@ -18,6 +18,14 @@
                 <label>昵称</label>
                 <input type="text" class="form-control" name="nickName" value="{{ user.nickName }}">
             </div>
+            <div class="form-group">
+                <label>用户名</label>
+                <input type="text" class="form-control" name="username" value="{{ user.username }}">
+            </div>
+            <div class="form-group">
+                <label>密码</label>
+                <input type="text" class="form-control" name="password" value="{{ user.password }}">
+            </div>
 
             <div class="form-group">
                 <label>手机号</label>
@@ -37,6 +45,7 @@
                 <select class="form-control" name="userAttribute">
                     <option value="1" {% if user.user_attribute == 1 %}selected{% endif %}>学生</option>
                     <option value="2" {% if user.user_attribute == 2 %}selected{% endif %}>老师</option>
+                    <option value="3" {% if user.user_attribute == 3 %}selected{% endif %}>管理员</option>
                 </select>
             </div>
 

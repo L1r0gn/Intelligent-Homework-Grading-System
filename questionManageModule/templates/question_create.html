@@ -1,106 +1,103 @@
 {% extends 'question_view_base.html' %}
 {% load static %}
 
+{% block title %}创建新问题{% endblock %}
+
 {% block content %}
-<div class="container">
-    <div class="row">
-        <!-- 左侧：创建问题表单 -->
-        <div class="col-md-6">
-            <h3>创建新问题</h3>
-            <form method="post" action="{% url 'question_create' %}">
-                {% csrf_token %}
-
-                <!-- 题目名称 -->
-                <div class="form-group">
-                    <label for="title">题目标题</label>
-                    <input type="text" class="form-control" id="title" name="title" placeholder="请输入题目标题" required>
+<div class="container mt-4">
+    <div class="row g-4"> <div class="col-lg-7">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="fas fa-plus-circle me-2"></i>创建新问题</h4>
                 </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'question_create' %}">
+                        {% csrf_token %}
 
-                <!-- 题目内容 -->
-                <div class="form-group">
-                    <label for="content">题目内容</label>
-                    <textarea class="form-control" id="content" name="content" rows="5" required></textarea>
-                </div>
+                        <div class="mb-3">
+                            <label for="title" class="form-label">题目标题</label>
+                            <input type="text" class="form-control" id="title" name="title" placeholder="请输入题目标题" required>
+                        </div>
 
-                <!-- 难度等级 -->
-                <div class="form-group">
-                    <label for="difficulty">难度等级</label>
-                    <select class="form-control" id="difficulty" name="difficulty" required>
-                        <option value="">请选择难度</option>
-                        <option value="1">简单</option>
-                        <option value="2">中等</option>
-                        <option value="3">困难</option>
-                    </select>
-                </div>
+                        <div class="mb-3">
+                            <label for="content" class="form-label">题目内容</label>
+                            <textarea class="form-control" id="content" name="content" rows="6" placeholder="请详细描述题目..." required></textarea>
+                        </div>
 
-                <!-- 题型选择 -->
-                <div class="form-group">
-                    <label for="problem_type">题目类型</label>
-                    <select class="form-control" id="problem_type" name="problem_type" required>
-                        <option value="">请选择题型</option>
-                        {% for problem_type in problem_types %}
-                        <option value="{{ problem_type.id }}">{{ problem_type.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="difficulty" class="form-label">难度等级</label>
+                                <select class="form-select" id="difficulty" name="difficulty" required>
+                                    <option value="" selected disabled>请选择难度</option>
+                                    <option value="1">简单</option>
+                                    <option value="2">中等</option>
+                                    <option value="3">困难</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="problem_type" class="form-label">题目类型</label>
+                                <select class="form-select" id="problem_type" name="problem_type" required>
+                                    <option value="" selected disabled>请选择题型</option>
+                                    {% for type in problem_types %}
+                                    <option value="{{ type.id }}">{{ type.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
 
-                <!-- 学科选择 -->
-                <div class="form-group">
-                    <label for="subject">所属学科</label>
-                    <select class="form-control" id="subject" name="subject" required>
-                        <option value="">请选择学科</option>
-                        {% for subject in subjects %}
-                        <option value="{{ subject.id }}">{{ subject.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="subject" class="form-label">所属学科</label>
+                                <select class="form-select" id="subject" name="subject" required>
+                                    <option value="" selected disabled>请选择学科</option>
+                                    {% for sub in subjects %}
+                                    <option value="{{ sub.id }}">{{ sub.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="estimated_time" class="form-label">预估时间（分钟）</label>
+                                <input type="number" class="form-control" id="estimated_time" name="estimated_time" min="1" value="10">
+                            </div>
+                        </div>
 
-                <!-- 预估时间 -->
-                <div class="form-group">
-                    <label for="estimated_time">预估时间（分钟）</label>
-                    <input type="number" class="form-control" id="estimated_time" name="estimated_time" min="1" value="10">
+                        <div class="d-flex justify-content-end mt-4">
+                            <a href="{% url 'question_list' %}" class="btn btn-secondary me-2">返回列表</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>保存题目
+                            </button>
+                        </div>
+                    </form>
                 </div>
-
-                <!-- 提交按钮 -->
-                <div class="d-flex justify-content-end mt-4">
-                    <a href="{% url 'question_list' %}" class="btn btn-secondary mr-2">返回列表</a>
-                    <button type="submit" class="btn btn-primary">保存题目</button>
-                </div>
-            </form>
+            </div>
         </div>
 
-        <!-- 右侧：已有问题列表（数据集导入的问题） -->
-        <div class="col-md-6">
-            <h3>已有问题参考</h3>
-            <div class="card">
-                <div class="card-body">
+        <div class="col-lg-5">
+            <div class="card shadow-sm h-100">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="fas fa-book-open me-2"></i>已有问题参考</h4>
+                </div>
+                <div class="card-body" style="max-height: 80vh; overflow-y: auto;">
                     {% if existing_questions %}
-                        <div class="list-group">
+                        <div class="list-group list-group-flush">
                             {% for question in existing_questions %}
-                                <div class="list-group-item mb-3">
+                                <div class="list-group-item px-1 py-3">
+                                    <h6 class="mb-1">{{ question.title }}</h6>
+                                    <p class="mb-1 text-muted small" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                        {{ question.content.content }}
+                                    </p>
                                     <div class="d-flex justify-content-between align-items-center">
-                                        <h5 class="mb-1">{{ question.title }}</h5>
-                                        <small>
-                                            难度：{{ question.get_difficulty_display }} |
-                                            题型：{{ question.problem_type.name }}
-                                        </small>
+                                         <small class="text-muted">{{ question.subject.name }} | {{ question.get_difficulty_display }}</small>
+                                         <button type="button" class="btn btn-sm btn-outline-primary"
+                                                 onclick="useExistingQuestion('{{ question.title|escapejs }}', '{{ question.content.content|escapejs }}')">
+                                             <i class="fas fa-copy me-1"></i>复用
+                                         </button>
                                     </div>
-                                    <p class="mb-1 text-truncate">{{ question.content.content }}</p>
-                                    <small class="text-muted">
-                                        学科：{{ question.subject.name }} |
-                                        创建时间：{{ question.create_time|date:"Y-m-d" }}
-                                    </small>
-
-                                    <!-- 快捷复用按钮（可选） -->
-                                    <button type="button" class="btn btn-sm btn-outline-primary mt-2"
-                                            onclick="useExistingQuestion('{{ question.title }}', '{{ question.content.content|escapejs }}')">
-                                        复用此问题
-                                    </button>
                                 </div>
                             {% endfor %}
                         </div>
                     {% else %}
-                        <p class="text-center text-muted">暂无已有问题，请先导入数据集或创建问题</p>
+                        <div class="text-center text-muted p-5">暂无已有问题</div>
                     {% endif %}
                 </div>
             </div>
@@ -108,12 +105,17 @@
     </div>
 </div>
 
-<!-- 复用问题的JavaScript -->
 <script>
-    // 点击"复用此问题"时，将已有问题的标题和内容填充到表单
     function useExistingQuestion(title, content) {
         document.getElementById('title').value = title;
         document.getElementById('content').value = content;
+        // 可以在这里添加一个提示，比如让标题框闪烁一下
+        const titleInput = document.getElementById('title');
+        titleInput.focus();
+        titleInput.classList.add('is-valid');
+        setTimeout(() => {
+            titleInput.classList.remove('is-valid');
+        }, 1500);
     }
 </script>
 {% endblock %}

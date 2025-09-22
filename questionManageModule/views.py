@@ -1,5 +1,6 @@
 from statistics import quantiles
 
+from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -7,18 +8,16 @@ from django.contrib import messages
 from .models import *
 import json,logging
 logger = logging.getLogger(__name__)
-
-
+@login_required(login_url="login")
 def question_list(request):
     """问题列表"""
     questions = Problem.objects.all()
     return render(request, 'question_list.html', {'questions': questions})
-
+@login_required(login_url="login")
 def question_detail(request, question_id):
     """问题详情"""
     question = get_object_or_404(Problem, id=question_id)
     return render(request, 'question_detail.html', {'question': question})
-
 def wx_question_detail_random(request):
     """问题详情"""
     if request.method == 'GET':
@@ -41,7 +40,7 @@ def wx_question_detail_random(request):
             # 记录异常到日志，便于调试
             logger.error(f"Error in random_question view: {str(e)}")
             return JsonResponse({'error': 'Internal server error'}, status=500)
-
+@login_required(login_url="login")
 # 1. 核心处理函数：复用的单条问题创建逻辑
 def handle_problem_creation(
         title, content, difficulty, problem_type, subject,
@@ -92,8 +91,7 @@ def handle_problem_creation(
         )
 
         return problem
-
-
+@login_required(login_url="login")
 # 2. 原单条创建函数：调用核心处理函数
 def question_create(request):
     # 设置默认值
@@ -167,8 +165,7 @@ def question_create(request):
         'subjects': Subject.objects.all(),
         'existing_questions': existing_questions,  # 新增：传递已有问题列表到模板
     })
-
-
+@login_required(login_url="login")
 # 3. 批量导入函数：调用核心处理函数
 def question_batch_import_json(request):
     if request.method == 'POST':
@@ -225,19 +222,103 @@ def question_batch_import_json(request):
     return render(request, 'question_batch_import_json.html')
 
 
-def question_update(request, question_id):
-    """更新问题"""
-    question = get_object_or_404(Problem, id=question_id)
-    if request.method == 'POST':
-        # 处理更新逻辑
-        messages.success(request, '问题更新成功')
-        return redirect('question_detail', question_id=question.id)
-    return render(request, 'question_update.html', {
-        'question': question,
-        'problem_types': ProblemType.objects.all(),
-        'subjects': Subject.objects.all(),
-    })
+# a.py (views.py)
 
+import json
+from django.db import transaction
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from .models import Problem, ProblemContent, Answer, ProblemType, Subject  # 确保导入所有需要的模型
+
+
+@login_required(login_url="login")
+def question_update(request, question_id):
+    """更新问题及其关联的答案和内容"""
+    question = get_object_or_404(Problem, id=question_id)
+
+    # 准备GET请求时需要的数据
+    problem_types = ProblemType.objects.all()
+    subjects = Subject.objects.all()
+    context = {
+        'question': question,
+        'problem_types': problem_types,
+        'subjects': subjects,
+    }
+
+    if request.method == 'POST':
+        # 使用数据库事务，确保所有操作要么全部成功，要么全部失败回滚
+        try:
+            with transaction.atomic():
+                # --- 1. 更新 Problem 自身的字段 ---
+                question.title = request.POST.get('title', '').strip()
+                question.difficulty = request.POST.get('difficulty')
+                question.estimated_time = request.POST.get('estimated_time') or 0
+
+                # 更新外键字段时，直接赋ID值更高效
+                question.problem_type_id = request.POST.get('problem_type')
+                question.subject_id = request.POST.get('subject')
+
+                # --- 2. 更新关联的 ProblemContent 对象 ---
+                content_text = request.POST.get('content', '').strip()
+                if question.content:
+                    # 如果已存在内容对象，则更新
+                    question.content.content = content_text
+                    question.content.save()
+                elif content_text:
+                    # 如果不存在但表单提交了内容，则创建
+                    new_content = ProblemContent.objects.create(content=content_text)
+                    question.content = new_content
+
+                # --- 3. 更新/创建/删除关联的 Answer 对象 ---
+                answer_content = request.POST.get('answer_content', '').strip()
+                answer_explanation = request.POST.get('answer_explanation', '').strip()
+                answer_content_data_str = request.POST.get('answer_content_data', '').strip()
+
+                # 验证JSON数据
+                answer_data = {}
+                if answer_content_data_str:
+                    try:
+                        answer_data = json.loads(answer_content_data_str)
+                    except json.JSONDecodeError:
+                        # 如果JSON格式错误，则中断并返回错误信息
+                        messages.error(request, "答案数据 (JSON) 格式无效，更新失败。")
+                        return render(request, 'question_update.html', context)
+
+                # 如果有任何答案信息，则创建或更新Answer对象
+                if answer_content or answer_explanation or answer_data:
+                    if question.answer:
+                        answer_obj = question.answer
+                        answer_obj.content = answer_content
+                        answer_obj.explanation = answer_explanation
+                        answer_obj.content_data = answer_data
+                        answer_obj.save()
+                    else:
+                        new_answer = Answer.objects.create(
+                            content=answer_content,
+                            explanation=answer_explanation,
+                            content_data=answer_data
+                        )
+                        question.answer = new_answer
+                # 如果所有答案字段都为空，则删除关联的答案
+                elif question.answer:
+                    question.answer.delete()
+                    question.answer = None
+
+                # --- 4. 最后，保存对 question 对象的所有修改 ---
+                question.save()
+
+        except Exception as e:
+            # 捕获任何可能的异常，防止程序崩溃
+            messages.error(request, f"更新过程中发生未知错误: {e}")
+            return render(request, 'question_update.html', context)
+
+        messages.success(request, f'问题 #{question.id} 更新成功')
+        return redirect('question_detail', question_id=question.id)
+
+    # 如果是GET请求，正常渲染页面
+    return render(request, 'question_update.html', context)
+@login_required(login_url="login")
 def question_delete(request, question_id):
     """删除问题"""
     question = get_object_or_404(Problem, id=question_id)

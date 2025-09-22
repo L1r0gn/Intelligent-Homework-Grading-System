@@ -1,7 +1,9 @@
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.http import JsonResponse, HttpResponseBadRequest
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.csrf import csrf_exempt
+from pyexpat.errors import messages
 
 from userManageModule.models import User
 from .forms import SubmissionFilterForm
@@ -74,8 +76,7 @@ def submissionprocess(request):
         return JsonResponse(response_data, status=201)
     else:
         return JsonResponse({'error': '不支持的请求方法'}, status=405)
-
-
+@login_required(login_url="login")
 def submission_list(request):
     # 获取所有提交记录，按时间倒序排列
     submissions = Submission.objects.all().order_by('-submitted_time')
@@ -108,8 +109,7 @@ def submission_list(request):
     }
 
     return render(request, 'submission_list.html', context)
-
-
+@login_required(login_url="login")
 def submission_detail(request, submission_id):
     submission = get_object_or_404(Submission, id=submission_id)
 
@@ -123,3 +123,23 @@ def submission_detail(request, submission_id):
     }
 
     return render(request, 'submission_detail.html', context)
+@login_required
+def regrade_submission_view(request, submission_id):
+    """处理重新批改作业的视图函数"""
+    # 我们只处理POST请求
+    if request.method == 'POST':
+        # 安全地获取指定的提交对象，如果不存在则会返回404错误
+        submission = get_object_or_404(Submission, pk=submission_id)
+        # (推荐) 在重新提交任务前，可以先重置一下状态
+        submission.status = 'PENDING'  # 例如，重置为“待处理”
+        submission.score = None  # 清空之前的分数
+        submission.grading_result = "正在重新加入批改队列..."
+        submission.save()
+        print(submission,'is regrading')
+        print(submission.id)
+        # --- 这里是核心：调用您已有的Celery异步任务 ---
+        process_and_grade_submission.delay(submission.id)
+        # 将用户重定向回作业详情页
+        return redirect('submission_list')
+    # 如果是GET或其他方法的请求，直接重定向走，不处理
+    return redirect('submission_list')

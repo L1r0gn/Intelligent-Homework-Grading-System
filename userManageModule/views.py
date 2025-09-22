@@ -1,5 +1,7 @@
 import requests
-import json
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import AuthenticationForm
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -8,14 +10,59 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import status
 from IntelligentHomeworkGradingSystem import settings
 from django.http import JsonResponse
+
+from .forms import UserAddForm
 from .models import className,User
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
+#登录验证
+def login_view(request):
+    """
+    处理用户登录请求
+    """
+    if request.user.is_authenticated:
+        return redirect('user_list')
+    if request.method == 'POST':
+        form = AuthenticationForm(request, data=request.POST)
+        username = form.cleaned_data.get('username')
+        password = form.cleaned_data.get('password')
+        print(username, password)
+        if form.is_valid():
+            username = form.cleaned_data.get('username')
+            password = form.cleaned_data.get('password')
+            # 1. 使用 Django 的标准方式安全地验证用户名和密码
+            # 它会自动处理密码哈希的比较，非常安全
+            if not username:
+                print('username error')
+            user = authenticate(request, username=username, password=password)
+            # 2. 检查用户是否存在
+            if user is not None:
+                login(request, user)
+                next_url = request.GET.get('next', 'user_list')
+                return redirect(next_url)
+            else:
+                # 用户名或密码错误，显示通用错误信息
+                messages.error(request, "用户名或密码错误，请重试。")
+        else:
+            # 表单本身无效（例如字段为空），也显示错误信息
+            messages.error(request, "用户名或密码无效。")
+            print(form.errors)
+    else:
+        form = AuthenticationForm()
 
+    return render(request, 'login.html', {'form': form})
+# 建议同时添加一个注销视图
+def logout_view(request):
+    """
+    处理用户注销请求
+    """
+    logout(request)
+    # 注销后重定向到登录页面
+    return redirect('login')
+@login_required(login_url="login")
 def user_list(request):
     queryset = User.objects.all()
     return render(request, "user_list.html", {'queryset': queryset})
-
 def wx_user_list(request, user_id):
     try:
         # 用 get 直接获取单个用户，更符合“查询单个用户”场景
@@ -52,70 +99,36 @@ def wx_user_list(request, user_id):
     }
     print(data)
     return JsonResponse({'data': data}, status=200)  # 直接返回单个对象
-
+@login_required(login_url="login")
 def user_add(request):
-    if request.method == "GET":
-        # 获取所有班级信息，用于表单下拉选择（外键关联需要）
-        class_list = className.objects.all()
-        return render(request, "user_add.html", {'class_list': class_list})
+    if request.method == 'POST':
+        # 如果是POST请求，用提交的数据实例化表单
+        form = UserAddForm(request.POST)
+        if form.is_valid(): # is_valid() 会自动运行所有验证逻辑
+            form.save() # 调用我们重写的save方法，安全地创建用户
+            messages.success(request, '用户添加成功！')
+            return redirect('/user/list/') # 建议使用URL名称: redirect('user_list')
+    else:
+        # 如果是GET请求，创建一个空的表单
+        form = UserAddForm()
 
-    # 处理POST请求
-    nickName = request.POST.get('nickName')
-    phone = request.POST.get('phone')
-    gender = request.POST.get('gender')  # 此时获取的是字符串，需转换为整数
-    user_attribute = request.POST.get('userAttribute')  # 对应表单的name="userAttribute"
-    class_in_id = request.POST.get('classInfo')  # 对应表单的name="classInfo"
-
-    try:
-        # 数据类型转换
-        phone = int(phone) if phone else None  # 手机号转为整数
-        gender  = int(gender) if gender else None  # 性别转为整数（1/2）
-        user_attribute = int(user_attribute) if user_attribute else None  # 属性转为整数（1/2）
-        class_in = className.objects.get(id=class_in_id) if class_in_id else None  # 外键关联班级
-
-        # 创建用户（字段名与模型完全匹配）
-        User.objects.create(
-            username=nickName,
-            wx_nickName=nickName,
-            phone=phone,
-            gender=gender,
-            user_attribute=user_attribute,
-            class_in=class_in  # 正确关联外键字段class_in
-        )
-        messages.success(request, '用户添加成功')
-        return redirect('/user/list') # 重定向到列表页，避免重复提交
-
-    except Exception as e:
-        print(request, f'添加失败: {str(e)}')
-        messages.error(request, f'添加失败: {str(e)}')
-        # 回传数据到表单，保留用户输入
-        return render(request, 'user_add.html', {
-            'nickName': nickName,
-            'phone': phone,
-            'gender': gender,
-            'user_attribute': user_attribute,
-            'class_in_id': class_in_id,
-            'class_list': className.objects.all()  # 回传班级列表
-        })
-
-
-
+    # 无论是GET请求还是表单验证失败，都渲染同一个页面
+    # 如果验证失败，form对象会包含错误信息，并自动在模板中显示
+    return render(request, "user_add.html", {'form': form})
+@login_required(login_url="login")
 def class_add(request):
     if request.method == "GET":
         return render(request,  "class_add.html")
     name = request.POST.get('name')
     className.objects.create(name=name)
     return render(request, 'user_list.html')
-
-
+@login_required(login_url="login")
 def user_delete(request, user_id):
     user = get_object_or_404(User, id=user_id)
     user.delete()
     messages.success(request, '用户删除成功')
     return redirect('user_list')
-
-
-
+@login_required(login_url="login")
 def user_edit(request, user_id):
     user = get_object_or_404(User, id=user_id)  # 获取要编辑的用户
 
@@ -129,6 +142,8 @@ def user_edit(request, user_id):
 
     # 处理 POST 请求（表单提交）
     nickName = request.POST.get('nickName')
+    password = request.POST.get('password')
+    username = request.POST.get('username')
     phone = request.POST.get('phone')
     gender = request.POST.get('gender')
     user_attribute = request.POST.get('userAttribute')
@@ -138,7 +153,11 @@ def user_edit(request, user_id):
         user.nickName = nickName
         user.phone = int(phone) if phone else None
         user.gender = int(gender) if gender else None
+        user.username = username
+        user.password = password
         user.user_attribute = int(user_attribute) if user_attribute else None
+        if user.user_attribute == 3:
+            user.is_staff = True
         user.class_in = className.objects.get(id=class_in_id) if class_in_id else None
         user.save()  # 保存到数据库
 
@@ -151,10 +170,6 @@ def user_edit(request, user_id):
             'user': user,
             'class_list': className.objects.all()
         })
-
-
-
-
 @csrf_exempt  # 禁用 CSRF 检查（适用于 API 接口）
 def wx_user_edit(request, user_id):
     # 获取指定用户

@@ -28,7 +28,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-41xk46xx!z4lq&xjl*r-@7@c3yot*y$=$-*&8)$d@=abvoeye)'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 AUTH_USER_MODEL = 'userManageModule.User'  # 格式：app名称.模型类名
 

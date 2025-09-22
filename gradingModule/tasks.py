@@ -62,7 +62,7 @@ def grade_submission_with_ai(standard_answer, student_submission, total_score):
 
 # --- 核心异步任务 ---
 @shared_task
-def process_and_grade_submission(submission_id):
+def     process_and_grade_submission(submission_id):
     try:
         submission = Submission.objects.get(id=submission_id)
     except Submission.DoesNotExist:
@@ -74,6 +74,11 @@ def process_and_grade_submission(submission_id):
     if submission.problem.problem_type.name == "选择":
         print('正在判选择题')
         student_choose = submission.choose_answer
+        if not submission.problem.answer.content:
+            submission.status = 'RUNTIME_ERROR'
+            submission.justification = '错误：该题还未设置答案，无法批改。'
+            submission.save()
+            return
         if student_choose == submission.problem.answer.content:
             submission.status = 'ACCEPTED'
             submission.score = submission.problem.points

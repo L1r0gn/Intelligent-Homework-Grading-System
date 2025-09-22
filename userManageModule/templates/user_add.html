@@ -1,71 +1,115 @@
-<!DOCTYPE html>
 {% extends 'user_base.html' %}
 {% load static %}
-<html lang="en">
-<head>
-    <title>{% block title%}添加用户{% endblock %}</title>
-</head>
-    {% block content %}
-    <div class="container">
-        <form method="post">
-            {% csrf_token %}
 
-            <!-- 昵称：正确 -->
-            <div class="form-group">
-                <label for="nickName">昵称</label>
-                <input type="text" class="form-control" id="nickName" name="nickName" placeholder="请输入昵称">
-            </div>
+{% block title %}添加用户{% endblock %}
 
-            <!-- 手机号：正确 -->
-            <div class="form-group">
-                <label for="phone">手机号</label>
-                <input type="tel" class="form-control" id="phone" name="phone" placeholder="请输入手机号">
-            </div>
-
-            <!-- 性别：value改为1/2（与模型choices匹配） -->
-            <div class="form-group">
-                <label>性别</label>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="gender" id="male" value="1" checked>
-                    <label class="form-check-label" for="male">男</label>
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="fas fa-user-plus me-2"></i>添加新用户</h4>
                 </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="gender" id="female" value="2">
-                    <label class="form-check-label" for="female">女</label>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    <p class="mb-0">{{ error }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <label for="{{ form.username.id_for_label }}" class="form-label">用户名</label>
+                            {{ form.username }}
+                            {% for error in form.username.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.password.id_for_label }}" class="form-label">密码</label>
+                            {{ form.password }}
+                            {% if form.password.help_text %}<small class="form-text text-muted">{{ form.password.help_text }}</small>{% endif %}
+                            {% for error in form.password.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.password_confirm.id_for_label }}" class="form-label">确认密码</label>
+                            {{ form.password_confirm }}
+                            {% for error in form.password_confirm.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+                        
+                        <hr class="my-4">
+
+                        <div class="mb-3">
+                            <label for="{{ form.wx_nickName.id_for_label }}" class="form-label">昵称</label>
+                            {{ form.wx_nickName }}
+                            {% for error in form.wx_nickName.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.phone.id_for_label }}" class="form-label">手机号</label>
+                            {{ form.phone }}
+                            {% for error in form.phone.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.gender.id_for_label }}" class="form-label">性别</label>
+                                {{ form.gender }}
+                                {% for error in form.gender.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.user_attribute.id_for_label }}" class="form-label">用户属性</label>
+                                {{ form.user_attribute }}
+                                {% for error in form.user_attribute.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.class_in.id_for_label }}" class="form-label">班级信息</label>
+                            {{ form.class_in }}
+                             {% if not form.fields.class_in.queryset.exists %}
+                                <div class="alert alert-warning mt-2">
+                                    暂无可用班级，请先 <a href="#" class="alert-link">创建班级</a>
+                                </div>
+                            {% endif %}
+                            {% for error in form.class_in.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-4">
+                            <a href="{% url 'user_list' %}" class="btn btn-secondary me-2">取消</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus-circle me-2"></i>创建用户
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
-
-            <!-- 用户属性：value改为1/2（与模型choices匹配） -->
-            <div class="form-group">
-                <label for="userAttribute">用户属性</label>
-                <select class="form-control" id="userAttribute" name="userAttribute">
-                    <option value="">请选择用户属性</option>
-                    <option value="1">student</option>  <!-- 1对应student -->
-                    <option value="2">teacher</option>   <!-- 2对应teacher -->
-                </select>
-            </div>
-
-            <!-- 班级信息：下拉选择已存在的班级（外键关联必须） -->
-            <div class="form-group">
-                <label for="classInfo">班级信息</label>
-                {% if class_list %}
-                    <select class="form-control" id="classInfo" name="classInfo">
-                        <option value="">请选择班级</option>
-                        {% for class in class_list %}
-                            <option value="{{ class.id }}">{{ class.name }}</option>
-                        {% endfor %}
-                    </select>
-                {% else %}
-                    <div class="alert alert-warning">
-                        暂无可用班级，请先 <a href="{% url 'class_add' %}" class="alert-link">创建班级</a>
-                    </div>
-                {% endif %}
-            </div>
-
-            <div class="d-flex justify-content-end">
-                <button type="reset" class="btn btn-secondary mr-2">重置</button>
-                <button type="submit" class="btn btn-primary" href="user/list/">提交</button>
-            </div>
-        </form>
+        </div>
     </div>
-    {% endblock %}
+</div>
+
+<style>
+    /* 让Django Form生成的控件自动适配Bootstrap 5样式 */
+    select, input[type='text'], input[type='tel'], input[type='password'] {
+        display: block;
+        width: 100%;
+        padding: .375rem .75rem;
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #212529;
+        background-color: #fff;
+        background-clip: padding-box;
+        border: 1px solid #ced4da;
+        border-radius: .25rem;
+        transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+    }
+</style>
+
+{% endblock %}
