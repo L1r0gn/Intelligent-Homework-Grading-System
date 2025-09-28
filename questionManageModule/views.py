@@ -1,23 +1,37 @@
-from statistics import quantiles
-
-from django.contrib.auth.decorators import login_required
-from django.db import transaction
+from functools import wraps
 from django.http import JsonResponse
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from .models import *
+from django.urls import reverse
 import json,logging
+from django.db import transaction
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from .models import Problem, ProblemContent, Answer, ProblemType, Subject  # 确保导入所有需要的模型
 logger = logging.getLogger(__name__)
+def admin_required(view_func):
+    """自定义装饰器：仅允许管理员（user_attribute >= 3）访问"""
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect(f"{reverse('login')}?next={request.path}")
+        if request.user.user_attribute < 3:
+            print(request.user.username,'没有权限访问该页面')
+            messages.error(request, "您没有权限访问该页面。")
+            return redirect('question_list')  # 或重定向到首页
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
 @login_required(login_url="login")
 def question_list(request):
     """问题列表"""
     questions = Problem.objects.all()
     return render(request, 'question_list.html', {'questions': questions})
+# @admin_required
 @login_required(login_url="login")
 def question_detail(request, question_id):
     """问题详情"""
     question = get_object_or_404(Problem, id=question_id)
     return render(request, 'question_detail.html', {'question': question})
+@login_required(login_url="login")
 def wx_question_detail_random(request):
     """问题详情"""
     if request.method == 'GET':
@@ -40,7 +54,7 @@ def wx_question_detail_random(request):
             # 记录异常到日志，便于调试
             logger.error(f"Error in random_question view: {str(e)}")
             return JsonResponse({'error': 'Internal server error'}, status=500)
-@login_required(login_url="login")
+@admin_required
 # 1. 核心处理函数：复用的单条问题创建逻辑
 def handle_problem_creation(
         title, content, difficulty, problem_type, subject,
@@ -91,7 +105,7 @@ def handle_problem_creation(
         )
 
         return problem
-@login_required(login_url="login")
+@admin_required
 # 2. 原单条创建函数：调用核心处理函数
 def question_create(request):
     # 设置默认值
@@ -165,8 +179,8 @@ def question_create(request):
         'subjects': Subject.objects.all(),
         'existing_questions': existing_questions,  # 新增：传递已有问题列表到模板
     })
-@login_required(login_url="login")
 # 3. 批量导入函数：调用核心处理函数
+@admin_required
 def question_batch_import_json(request):
     if request.method == 'POST':
         json_file = request.FILES.get('json_file')
@@ -220,19 +234,7 @@ def question_batch_import_json(request):
 
     # GET请求显示导入页面
     return render(request, 'question_batch_import_json.html')
-
-
-# a.py (views.py)
-
-import json
-from django.db import transaction
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from .models import Problem, ProblemContent, Answer, ProblemType, Subject  # 确保导入所有需要的模型
-
-
-@login_required(login_url="login")
+@admin_required
 def question_update(request, question_id):
     """更新问题及其关联的答案和内容"""
     question = get_object_or_404(Problem, id=question_id)
@@ -318,7 +320,7 @@ def question_update(request, question_id):
 
     # 如果是GET请求，正常渲染页面
     return render(request, 'question_update.html', context)
-@login_required(login_url="login")
+@admin_required
 def question_delete(request, question_id):
     """删除问题"""
     question = get_object_or_404(Problem, id=question_id)

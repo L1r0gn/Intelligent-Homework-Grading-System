@@ -33,7 +33,7 @@ class UserAddForm(forms.ModelForm):
         fields = ['username', 'wx_nickName', 'phone', 'gender', 'user_attribute', 'class_in']
         labels = {
             'username': '用户名',
-            'wx_nickName': '昵称',
+            'wx_nickName': '微信昵称',
             'phone': '手机号',
             'gender': '性别',
             'user_attribute': '用户属性',

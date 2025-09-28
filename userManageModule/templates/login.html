@@ -1,4 +1,4 @@
-{% extends 'user_base.html' %}
+{% extends 'page_base.html' %}
 
 {% block title %}用户登录{% endblock %}
 
@@ -34,10 +34,15 @@
                             <label for="{{ form.password.id_for_label }}" class="form-label">密码</label>
                             {{ form.password }}
                         </div>
-                        
-                        <div class="d-grid">
-                           <button type="submit" class="btn btn-primary">登 录</button>
-                        </div>
+
+                            <div class="d-grid">
+                               <button type="submit" class="btn btn-primary">登 录</button>
+                            </div>
+
+                            <div class="d-grid mt-3">
+                               <a  class="btn btn-outline-primary" href="{% url 'user_register' %}" >注 册</a>
+                            </div>
+
                     </form>
                 </div>
             </div>

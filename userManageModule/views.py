@@ -27,20 +27,15 @@ def admin_required(view_func):
         if request.user.user_attribute < 3:
             print(request.user.username,'没有权限访问该页面')
             messages.error(request, "您没有权限访问该页面。")
-            return redirect('login')  # 或重定向到首页
+            return redirect('question_list')  # 或重定向到首页
         return view_func(request, *args, **kwargs)
     return _wrapped_view
 def login_view(request):
-    """
-    处理用户登录请求
-    """
-    if request.user.is_authenticated:
-        return redirect('user_list')
+    """处理用户登录请求"""
+    # if request.user.is_authenticated:
+    #     return redirect('user_list')
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
-        username = form.cleaned_data.get('username')
-        password = form.cleaned_data.get('password')
-        print(username, password)
         if form.is_valid():
             username = form.cleaned_data.get('username')
             password = form.cleaned_data.get('password')
@@ -67,16 +62,16 @@ def login_view(request):
     return render(request, 'login.html', {'form': form})
 # 建议同时添加一个注销视图
 def logout_view(request):
-    """
-    处理用户注销请求
-    """
+    """处理用户注销请求"""
     logout(request)
+    request.user.is_authenticated = False
     # 注销后重定向到登录页面
     return redirect('login')
 @admin_required
 def user_list(request):
     queryset = User.objects.all()
     return render(request, "user_list.html", {'queryset': queryset})
+@admin_required
 def wx_user_list(request, user_id):
     try:
         # 用 get 直接获取单个用户，更符合“查询单个用户”场景
@@ -202,7 +197,8 @@ def user_edit(request, user_id):
                 'user': user,
                 'class_list': className.objects.all()
             })
-@csrf_exempt  # 禁用 CSRF 检查（适用于 API 接口）
+@csrf_exempt
+@admin_required# 禁用 CSRF 检查（适用于 API 接口）
 def wx_user_edit(request, user_id):
     # 获取指定用户
     user = get_object_or_404(User, id=user_id)
@@ -263,6 +259,7 @@ def wx_user_edit(request, user_id):
         return JsonResponse(response_data)
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@admin_required
 def wechat_login(request):
     """微信小程序登录接口 - 函数视图实现"""
     code = request.data.get('code')  # 从前端获取code
@@ -343,3 +340,48 @@ def wechat_login(request):
     except Exception as e:  # 其他未捕获异常
         print(f"登录接口未知错误：{str(e)}")
         return Response({'error': '服务器内部错误'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+def user_register(request):
+    if request.method == 'GET':
+        # if(request.user.is_authenticated):
+        #     return redirect('user_list')
+        form = UserAddForm()  # 不传 request.POST！GET 时是空表单
+        return render(request, 'user_register.html', {'form': form})
+    elif request.method == 'POST':
+        form = UserAddForm(request.POST)
+        if form.is_valid():
+            # 获取干净的数据
+            username = form.cleaned_data['username']
+            password = form.cleaned_data['password']
+            phone = form.cleaned_data.get('phone')
+            gender = form.cleaned_data.get('gender')
+            user_attribute = form.cleaned_data.get('user_attribute')
+            class_in_id = form.cleaned_data.get('class_in')
+            print(username, password, phone, gender, user_attribute, class_in_id)
+
+            if user_attribute >= 3:
+                messages.error(request, "权限不足，不可设置该权限。")
+                return render(request, 'user_register.html', {'form': form})
+
+            try:
+                # 创建新用户（不是更新！）
+                user = User(
+                    username=username,
+                    phone=int(phone) if phone else 13500000000,
+                    gender=int(gender) if gender is not None else None,
+                    user_attribute=user_attribute if user_attribute in(1,2) else 0,
+                    is_staff=user_attribute in (3, 4),  # 管理员和超级管理员有后台权限
+                )
+                user.set_password(password)  # ✅ 正确加密密码！
+                if class_in_id:
+                    user.class_in = class_in_id  # 注意：如果 class_in 是外键，Django 会自动处理
+                user.save()
+
+                messages.success(request, '用户创建成功！')
+                return redirect('user_list')
+
+            except Exception as e:
+                messages.error(request, f'创建用户失败：{str(e)}')
+                return render(request, 'user_register.html', {'form': form})
+        else:
+            # 表单验证失败，返回带错误信息的表单
+            return render(request, 'user_register.html', {'form': form})

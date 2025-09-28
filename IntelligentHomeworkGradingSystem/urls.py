@@ -23,6 +23,6 @@ urlpatterns = [
     path('question/', include('questionManageModule.urls')),  # 添加这一行
     path('user/',include('userManageModule.urls')),
     path('grading/', include('gradingModule.urls')),
-
+    path('',user_views.user_register,name='user_register'),
 ]
 

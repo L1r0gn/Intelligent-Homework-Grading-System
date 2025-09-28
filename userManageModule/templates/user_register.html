@@ -1,7 +1,7 @@
 {% extends 'page_base.html' %}
 {% load static %}
 
-{% block title %}添加用户{% endblock %}
+{% block title %}用户注册{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
@@ -9,7 +9,7 @@
         <div class="col-md-8 col-lg-7">
             <div class="card shadow-sm">
                 <div class="card-header">
-                    <h4 class="mb-0"><i class="fas fa-user-plus me-2"></i>添加新用户</h4>
+                    <h4 class="mb-0"><i class="fas fa-user-plus me-2"></i>用户注册</h4>
                 </div>
                 <div class="card-body">
                     <form method="post" novalidate>
@@ -35,7 +35,7 @@
                             {% if form.password.help_text %}<small class="form-text text-muted">{{ form.password.help_text }}</small>{% endif %}
                             {% for error in form.password.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
                         </div>
-                        
+
                         <div class="mb-3">
                             <label for="{{ form.password_confirm.id_for_label }}" class="form-label">确认密码</label>
                             {{ form.password_confirm }}
@@ -73,18 +73,18 @@
                         <div class="mb-3">
                             <label for="{{ form.class_in.id_for_label }}" class="form-label">班级信息</label>
                             {{ form.class_in }}
-                             {% if not form.fields.class_in.queryset.exists %}
+                            {% if not form.fields.class_in.queryset.exists %}
                                 <div class="alert alert-warning mt-2">
-                                    暂无可用班级，请先 <a href="#" class="alert-link">创建班级</a>
+                                    暂无可用班级，请先 <a href="{% url 'class_add' %}" class="alert-link">创建班级</a>
                                 </div>
                             {% endif %}
                             {% for error in form.class_in.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
                         </div>
 
                         <div class="d-flex justify-content-end mt-4">
-                            <a href="{% url 'user_list' %}" class="btn btn-secondary me-2">取消</a>
+                            <a href="{% url 'login' %}" class="btn btn-secondary me-2">返回登录</a>
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-plus-circle me-2"></i>创建用户
+                                <i class="fas fa-user-check me-2"></i>注册账号
                             </button>
                         </div>
                     </form>
@@ -108,7 +108,7 @@
         background-clip: padding-box;
         border: 1px solid #ced4da;
         border-radius: .25rem;
-        transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+        transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
     }
 </style>
 

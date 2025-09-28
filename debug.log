@@ -2563,3 +2563,1241 @@ Traceback (most recent call last):
     raise new from exc
 django.template.exceptions.TemplateDoesNotExist: your_base.html
 "GET /user/add/ HTTP/1.1" 500 146273
+Internal Server Error: /user/edit/4/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 31, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 151, in user_edit
+    return render(request, "user_edit.html", {
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\shortcuts.py", line 24, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\backends\django.py", line 61, in render
+    return self.template.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 175, in render
+    return self._render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 167, in _render
+    return self.nodelist.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 966, in render_annotated
+    return self.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\defaulttags.py", line 471, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\base.py", line 88, in reverse
+    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'add_class' not found. 'add_class' is not a valid view function or pattern name.
+"GET /user/edit/4/ HTTP/1.1" 500 133513
+Internal Server Error: /user/edit/4/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 31, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 158, in user_edit
+    return render(request, "user_edit.html", {
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\shortcuts.py", line 24, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\backends\django.py", line 61, in render
+    return self.template.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 175, in render
+    return self._render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 167, in _render
+    return self.nodelist.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 966, in render_annotated
+    return self.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\defaulttags.py", line 471, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\base.py", line 88, in reverse
+    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'add_class' not found. 'add_class' is not a valid view function or pattern name.
+"GET /user/edit/4/ HTTP/1.1" 500 133650
+Internal Server Error: /user/edit/4/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 31, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 158, in user_edit
+    return render(request, "user_edit.html", {
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\shortcuts.py", line 24, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\backends\django.py", line 61, in render
+    return self.template.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 175, in render
+    return self._render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 167, in _render
+    return self.nodelist.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 966, in render_annotated
+    return self.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\defaulttags.py", line 471, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\base.py", line 88, in reverse
+    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'add_class' not found. 'add_class' is not a valid view function or pattern name.
+"GET /user/edit/4/ HTTP/1.1" 500 133650
+Internal Server Error: /user/edit/4/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 31, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 158, in user_edit
+    return render(request, "user_edit.html", {
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\shortcuts.py", line 24, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\backends\django.py", line 61, in render
+    return self.template.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 175, in render
+    return self._render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 167, in _render
+    return self.nodelist.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 966, in render_annotated
+    return self.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\defaulttags.py", line 471, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\base.py", line 88, in reverse
+    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'add_class' not found. 'add_class' is not a valid view function or pattern name.
+"GET /user/edit/4/ HTTP/1.1" 500 133650
+Internal Server Error: /user/edit/4/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 31, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 158, in user_edit
+    return render(request, "user_edit.html", {
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\shortcuts.py", line 24, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\backends\django.py", line 61, in render
+    return self.template.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 175, in render
+    return self._render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 167, in _render
+    return self.nodelist.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 966, in render_annotated
+    return self.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\defaulttags.py", line 471, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\base.py", line 88, in reverse
+    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'add_class' not found. 'add_class' is not a valid view function or pattern name.
+"GET /user/edit/4/ HTTP/1.1" 500 133650
+Internal Server Error: /user/edit/4/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 31, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 158, in user_edit
+    return render(request, "user_edit.html", {
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\shortcuts.py", line 24, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\backends\django.py", line 61, in render
+    return self.template.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 175, in render
+    return self._render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 167, in _render
+    return self.nodelist.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 966, in render_annotated
+    return self.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\defaulttags.py", line 471, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\base.py", line 88, in reverse
+    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'add_class' not found. 'add_class' is not a valid view function or pattern name.
+"GET /user/edit/4/ HTTP/1.1" 500 133527
+Internal Server Error: /user/edit/4/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 31, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 158, in user_edit
+    return render(request, "user_edit.html", {
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\shortcuts.py", line 24, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\backends\django.py", line 61, in render
+    return self.template.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 175, in render
+    return self._render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 167, in _render
+    return self.nodelist.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 966, in render_annotated
+    return self.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\defaulttags.py", line 471, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\base.py", line 88, in reverse
+    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'add_class' not found. 'add_class' is not a valid view function or pattern name.
+"GET /user/edit/4/ HTTP/1.1" 500 133527
+Internal Server Error: /user/edit/4/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 31, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 158, in user_edit
+    return render(request, "user_edit.html", {
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\shortcuts.py", line 24, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\backends\django.py", line 61, in render
+    return self.template.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 175, in render
+    return self._render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 167, in _render
+    return self.nodelist.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 966, in render_annotated
+    return self.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\defaulttags.py", line 471, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\base.py", line 88, in reverse
+    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'add_class' not found. 'add_class' is not a valid view function or pattern name.
+"GET /user/edit/4/ HTTP/1.1" 500 133527
+Internal Server Error: /user/edit/4/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 31, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 158, in user_edit
+    return render(request, "user_edit.html", {
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\shortcuts.py", line 24, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\backends\django.py", line 61, in render
+    return self.template.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 175, in render
+    return self._render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 167, in _render
+    return self.nodelist.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 966, in render_annotated
+    return self.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\defaulttags.py", line 471, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\base.py", line 88, in reverse
+    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'add_class' not found. 'add_class' is not a valid view function or pattern name.
+"GET /user/edit/4/ HTTP/1.1" 500 133670
+Internal Server Error: /user/edit/4/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 31, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 158, in user_edit
+    return render(request, "user_edit.html", {
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\shortcuts.py", line 24, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\backends\django.py", line 61, in render
+    return self.template.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 175, in render
+    return self._render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 167, in _render
+    return self.nodelist.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 966, in render_annotated
+    return self.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\defaulttags.py", line 471, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\base.py", line 88, in reverse
+    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'add_class' not found. 'add_class' is not a valid view function or pattern name.
+"GET /user/edit/4/ HTTP/1.1" 500 133670
+Internal Server Error: /user/edit/4/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 31, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 158, in user_edit
+    return render(request, "user_edit.html", {
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\shortcuts.py", line 24, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\backends\django.py", line 61, in render
+    return self.template.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 175, in render
+    return self._render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 167, in _render
+    return self.nodelist.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 966, in render_annotated
+    return self.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\defaulttags.py", line 471, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\base.py", line 88, in reverse
+    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'add_class' not found. 'add_class' is not a valid view function or pattern name.
+"GET /user/edit/4/ HTTP/1.1" 500 133670
+Internal Server Error: /user/edit/4/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 31, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 158, in user_edit
+    return render(request, "user_edit.html", {
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\shortcuts.py", line 24, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\backends\django.py", line 61, in render
+    return self.template.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 175, in render
+    return self._render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 167, in _render
+    return self.nodelist.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 966, in render_annotated
+    return self.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\defaulttags.py", line 471, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\base.py", line 88, in reverse
+    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'add_class' not found. 'add_class' is not a valid view function or pattern name.
+"GET /user/edit/4/ HTTP/1.1" 500 133670
+Internal Server Error: /user/edit/4/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 32, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 162, in user_edit
+    return render(request, "user_edit.html", {
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\shortcuts.py", line 24, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\backends\django.py", line 61, in render
+    return self.template.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 175, in render
+    return self._render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 167, in _render
+    return self.nodelist.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 966, in render_annotated
+    return self.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\defaulttags.py", line 471, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\base.py", line 88, in reverse
+    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'add_class' not found. 'add_class' is not a valid view function or pattern name.
+"GET /user/edit/4/ HTTP/1.1" 500 133670
+Internal Server Error: /user/edit/4/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 32, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 162, in user_edit
+    return render(request, "user_edit.html", {
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\shortcuts.py", line 24, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\backends\django.py", line 61, in render
+    return self.template.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 175, in render
+    return self._render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 167, in _render
+    return self.nodelist.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 966, in render_annotated
+    return self.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\defaulttags.py", line 471, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\base.py", line 88, in reverse
+    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'add_class' not found. 'add_class' is not a valid view function or pattern name.
+"GET /user/edit/4/ HTTP/1.1" 500 133670
+Internal Server Error: /user/edit/4/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 32, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 162, in user_edit
+    return render(request, "user_edit.html", {
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\shortcuts.py", line 24, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\backends\django.py", line 61, in render
+    return self.template.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 175, in render
+    return self._render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 167, in _render
+    return self.nodelist.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 966, in render_annotated
+    return self.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\defaulttags.py", line 471, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\base.py", line 88, in reverse
+    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'add_class' not found. 'add_class' is not a valid view function or pattern name.
+"GET /user/edit/4/ HTTP/1.1" 500 133670
+Internal Server Error: /user/edit/4/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 32, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 162, in user_edit
+    return render(request, "user_edit.html", {
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\shortcuts.py", line 24, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\backends\django.py", line 61, in render
+    return self.template.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 175, in render
+    return self._render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 167, in _render
+    return self.nodelist.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 966, in render_annotated
+    return self.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\defaulttags.py", line 471, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\base.py", line 88, in reverse
+    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'add_class' not found. 'add_class' is not a valid view function or pattern name.
+"GET /user/edit/4/ HTTP/1.1" 500 133670
+Internal Server Error: /user/edit/4/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 32, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 162, in user_edit
+    return render(request, "user_edit.html", {
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\shortcuts.py", line 24, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\backends\django.py", line 61, in render
+    return self.template.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 175, in render
+    return self._render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 167, in _render
+    return self.nodelist.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 966, in render_annotated
+    return self.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\defaulttags.py", line 471, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\base.py", line 88, in reverse
+    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'add_class' not found. 'add_class' is not a valid view function or pattern name.
+"GET /user/edit/4/ HTTP/1.1" 500 133670
+Internal Server Error: /user/edit/4/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 32, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 167, in user_edit
+    return render(request, "user_edit.html", {
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\shortcuts.py", line 24, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\backends\django.py", line 61, in render
+    return self.template.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 175, in render
+    return self._render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 167, in _render
+    return self.nodelist.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 966, in render_annotated
+    return self.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\defaulttags.py", line 471, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\base.py", line 88, in reverse
+    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'add_class_no_js' not found. 'add_class_no_js' is not a valid view function or pattern name.
+"GET /user/edit/4/ HTTP/1.1" 500 134596
+Internal Server Error: /user/edit/4/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 32, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 167, in user_edit
+    return render(request, "user_edit.html", {
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\shortcuts.py", line 24, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\backends\django.py", line 61, in render
+    return self.template.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 175, in render
+    return self._render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 167, in _render
+    return self.nodelist.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 966, in render_annotated
+    return self.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\defaulttags.py", line 471, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\base.py", line 88, in reverse
+    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'add_class_no_js' not found. 'add_class_no_js' is not a valid view function or pattern name.
+"GET /user/edit/4/ HTTP/1.1" 500 134596
+Internal Server Error: /user/edit/4/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 32, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 167, in user_edit
+    return render(request, "user_edit.html", {
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\shortcuts.py", line 24, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\backends\django.py", line 61, in render
+    return self.template.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 175, in render
+    return self._render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 167, in _render
+    return self.nodelist.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 966, in render_annotated
+    return self.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\defaulttags.py", line 471, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\base.py", line 88, in reverse
+    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'add_class_no_js' not found. 'add_class_no_js' is not a valid view function or pattern name.
+"GET /user/edit/4/ HTTP/1.1" 500 134596
+Internal Server Error: /user/edit/4/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 32, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 167, in user_edit
+    return render(request, "user_edit.html", {
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\shortcuts.py", line 24, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\backends\django.py", line 61, in render
+    return self.template.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 175, in render
+    return self._render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 167, in _render
+    return self.nodelist.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 966, in render_annotated
+    return self.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\defaulttags.py", line 471, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\base.py", line 88, in reverse
+    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'add_class_no_js' not found. 'add_class_no_js' is not a valid view function or pattern name.
+"GET /user/edit/4/ HTTP/1.1" 500 134596
+Internal Server Error: /user/register
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 349, in user_register
+    return render(request,'user_register.html')
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\shortcuts.py", line 24, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\backends\django.py", line 61, in render
+    return self.template.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 175, in render
+    return self._render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 167, in _render
+    return self.nodelist.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 966, in render_annotated
+    return self.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\loader_tags.py", line 157, in render
+    return compiled_parent._render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 167, in _render
+    return self.nodelist.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 966, in render_annotated
+    return self.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\loader_tags.py", line 63, in render
+    result = block.nodelist.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 966, in render_annotated
+    return self.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\defaulttags.py", line 321, in render
+    return nodelist.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 1005, in <listcomp>
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\base.py", line 966, in render_annotated
+    return self.render(context)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\defaulttags.py", line 471, in render
+    url = reverse(view_name, args=args, kwargs=kwargs, current_app=current_app)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\base.py", line 88, in reverse
+    return resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\urls\resolvers.py", line 828, in _reverse_with_prefix
+    raise NoReverseMatch(msg)
+django.urls.exceptions.NoReverseMatch: Reverse for 'class_create' not found. 'class_create' is not a valid view function or pattern name.
+"GET /user/register HTTP/1.1" 500 192321
+Internal Server Error: /user/register
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 350, in user_register
+    return render(request,'user_register.html',class_list)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\shortcuts.py", line 24, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\backends\django.py", line 57, in render
+    context = make_context(
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\context.py", line 278, in make_context
+    raise TypeError(
+TypeError: context must be a dict rather than QuerySet.
+"GET /user/register HTTP/1.1" 500 87949
+Internal Server Error: /user/register
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 350, in user_register
+    return render(request,'user_register.html',class_list)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\shortcuts.py", line 24, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\backends\django.py", line 57, in render
+    context = make_context(
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\template\context.py", line 278, in make_context
+    raise TypeError(
+TypeError: context must be a dict rather than QuerySet.
+"GET /user/register HTTP/1.1" 500 87949
+Internal Server Error: /user/register
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 204, in _get_response
+    self.check_response(response, callback)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 332, in check_response
+    raise ValueError(
+ValueError: The view userManageModule.views.user_register didn't return an HttpResponse object. It returned None instead.
+"POST /user/register HTTP/1.1" 500 74500
+Internal Server Error: /user/login/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 41, in login_view
+    username = form.cleaned_data.get('username')
+AttributeError: 'AuthenticationForm' object has no attribute 'cleaned_data'
+"POST /user/login/ HTTP/1.1" 500 73058
+Internal Server Error: /user/login/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 41, in login_view
+    username = form.cleaned_data.get('username')
+AttributeError: 'AuthenticationForm' object has no attribute 'cleaned_data'
+"POST /user/login/ HTTP/1.1" 500 73058
+Internal Server Error: /user/logout/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 67, in logout_view
+    request.user.is_authenticated = False
+AttributeError: can't set attribute
+"GET /user/logout/ HTTP/1.1" 500 71554
+Internal Server Error: /user/logout/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 67, in logout_view
+    request.user.is_authenticated = False
+AttributeError: can't set attribute
+"GET /user/logout/ HTTP/1.1" 500 71542
+Internal Server Error: /user/logout/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 67, in logout_view
+    request.user.is_authenticated = False
+AttributeError: can't set attribute
+"GET /user/logout/ HTTP/1.1" 500 71542
+Internal Server Error: /user/logout/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 67, in logout_view
+    request.user.is_authenticated = False
+AttributeError: can't set attribute
+"GET /user/logout/ HTTP/1.1" 500 71542
+Internal Server Error: /user/logout/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 67, in logout_view
+    request.user.is_authenticated = False
+AttributeError: can't set attribute
+"GET /user/logout/ HTTP/1.1" 500 71542
+Internal Server Error: /user/logout/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 67, in logout_view
+    request.user.is_authenticated = False
+AttributeError: can't set attribute
+"GET /user/logout/ HTTP/1.1" 500 71542
+Internal Server Error: /user/list/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\userManageModule\views.py", line 26, in _wrapped_view
+    return redirect(f"{reverse('login')}?next={request.path}")
+TypeError: reverse expected 2 arguments, got 1
+"GET /user/list/ HTTP/1.1" 500 72206
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72562
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72699
+Internal Server Error: /grading/submissions/
+Traceback (most recent call last):
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\.venv\lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "F:\code\Intelligent Homework Grading System\IntelligentHomeworkGradingSystem\gradingModule\views.py", line 24, in _wrapped_view
+    messages.error(request, "您没有权限访问该页面。")
+AttributeError: 'dict' object has no attribute 'error'
+"GET /grading/submissions/ HTTP/1.1" 500 72562

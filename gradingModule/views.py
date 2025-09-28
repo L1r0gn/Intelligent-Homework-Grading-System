@@ -1,16 +1,30 @@
+from audioop import reverse
+from functools import wraps
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.csrf import csrf_exempt
-from pyexpat.errors import messages
-
+from django.contrib import messages
 from userManageModule.models import User
 from .forms import SubmissionFilterForm
 from .models import Submission, Problem
 from .tasks import process_and_grade_submission # 导入你的异步任务
 import json
+def admin_required(view_func):
+    """自定义装饰器：仅允许管理员（user_attribute >= 3）访问"""
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect(f"{reverse('login')}?next={request.path}")
+        if request.user.user_attribute < 3:
+            print(request.user.username,'没有权限访问该页面')
+            messages.error(request, "您没有权限访问该页面。")
+            return redirect('question_list')  # 或重定向到首页
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
 @csrf_exempt
+@login_required(login_url="login")
 def submissionprocess(request):
     if request.method == 'GET':
         # GET 请求逻辑保持不变
@@ -76,7 +90,7 @@ def submissionprocess(request):
         return JsonResponse(response_data, status=201)
     else:
         return JsonResponse({'error': '不支持的请求方法'}, status=405)
-@login_required(login_url="login")
+@admin_required
 def submission_list(request):
     # 获取所有提交记录，按时间倒序排列
     submissions = Submission.objects.all().order_by('-submitted_time')
@@ -109,7 +123,7 @@ def submission_list(request):
     }
 
     return render(request, 'submission_list.html', context)
-@login_required(login_url="login")
+@admin_required
 def submission_detail(request, submission_id):
     submission = get_object_or_404(Submission, id=submission_id)
 
@@ -123,7 +137,7 @@ def submission_detail(request, submission_id):
     }
 
     return render(request, 'submission_detail.html', context)
-@login_required
+@admin_required
 def regrade_submission_view(request, submission_id):
     """处理重新批改作业的视图函数"""
     # 我们只处理POST请求

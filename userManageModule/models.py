@@ -19,7 +19,7 @@ class User(AbstractUser):
             (2, '老师'),
             (3, '管理员'),
             (4, '超级管理员'),
-        ],null=True,blank=True)
+        ],default=0)
     # password = models.CharField(verbose_name="密码", max_length=128,default='12345678')
     #微信字段
     openid = models.CharField(max_length=64,unique=True,null=True,blank=True, verbose_name="微信OpenID")
