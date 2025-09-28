@@ -45,7 +45,9 @@
                     </td>
                     <td>  <!-- 操作列的内容 -->
                     <a href="{% url 'user_edit' obj.id %}" class="btn btn-sm btn-primary">编辑</a>
-                <a href="{% url 'user_delete' obj.id %}" class="btn btn-sm btn-danger" onclick="return confirm('确定删除吗？')">删除</a>
+                    {% if request.user.user_attribute >= 3 %}
+                        <a href="{% url 'user_delete' obj.id %}" class="btn btn-sm btn-danger" onclick="return confirm('确定删除吗？')">删除</a>
+                    {% endif %}
 
     {#                    <td></td>#}
                 </tr>

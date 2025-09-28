@@ -4,7 +4,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>{%block title %}%编辑用户{% endblock %}</title>
+    <title>{%block title %}编辑用户{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'plugins/bootstrap/css/bootstrap.css' %}">
 </head>
 
@@ -43,9 +43,12 @@
             <div class="form-group">
                 <label>用户属性</label>
                 <select class="form-control" name="userAttribute">
-                    <option value="1" {% if user.user_attribute == 1 %}selected{% endif %}>学生</option>
-                    <option value="2" {% if user.user_attribute == 2 %}selected{% endif %}>老师</option>
-                    <option value="3" {% if user.user_attribute == 3 %}selected{% endif %}>管理员</option>
+                    <option value=1 {% if user.user_attribute == 1 %}selected{% endif %}>学生</option>
+                    <option value=2 {% if user.user_attribute == 2 %}selected{% endif %}>老师</option>
+                    <option value=3 {% if user.user_attribute == 3 %}selected{% endif %}>管理员</option>
+                    {% if request.user.user_attribute >= 3 %}
+                        <option value=4 {% if user.user_attribute == 4 %}selected{% endif %}>超级管理员</option>
+                    {% endif %}
                 </select>
             </div>
 

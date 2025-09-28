@@ -11,14 +11,15 @@ class User(AbstractUser):
         (1, '男'),
         (2, '女'),
     ]
-    user_attribute_choices = [
-        (1, 'student'),
-        (2, 'teacher'),
-        (3, 'administrator'),
-    ]
-    phone = models.BigIntegerField(verbose_name="手机号",null=True,blank=True)
+    phone = models.BigIntegerField(verbose_name="手机号",null=True,blank=True,default=13500000000)
     gender = models.SmallIntegerField(verbose_name="性别", choices=genders_choices,null=True,blank=True)
-    user_attribute = models.SmallIntegerField(verbose_name="属性", choices=user_attribute_choices,null=True,blank=True)
+    user_attribute = models.SmallIntegerField(verbose_name="属性", choices=[
+            (0,'未定义'),
+            (1, '学生'),
+            (2, '老师'),
+            (3, '管理员'),
+            (4, '超级管理员'),
+        ],null=True,blank=True)
     # password = models.CharField(verbose_name="密码", max_length=128,default='12345678')
     #微信字段
     openid = models.CharField(max_length=64,unique=True,null=True,blank=True, verbose_name="微信OpenID")

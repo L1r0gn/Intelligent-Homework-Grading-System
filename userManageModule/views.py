@@ -1,6 +1,8 @@
+from audioop import reverse
+from functools import wraps
+
 import requests
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes
@@ -16,6 +18,18 @@ from .models import className,User
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 #登录验证
+def admin_required(view_func):
+    """自定义装饰器：仅允许管理员（user_attribute >= 3）访问"""
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect(f"{reverse('login')}?next={request.path}")
+        if request.user.user_attribute < 3:
+            print(request.user.username,'没有权限访问该页面')
+            messages.error(request, "您没有权限访问该页面。")
+            return redirect('login')  # 或重定向到首页
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
 def login_view(request):
     """
     处理用户登录请求
@@ -59,7 +73,7 @@ def logout_view(request):
     logout(request)
     # 注销后重定向到登录页面
     return redirect('login')
-@login_required(login_url="login")
+@admin_required
 def user_list(request):
     queryset = User.objects.all()
     return render(request, "user_list.html", {'queryset': queryset})
@@ -72,7 +86,6 @@ def wx_user_list(request, user_id):
 
         # 处理关联字段和枚举值转换（关键优化）
     class_name = user.class_in.name if user.class_in else None  # 处理班级为空的情况
-
     # 性别转换：1→男，2→女，其他→None
     gender_map = {1: '男', 2: '女'}
     gender = gender_map.get(user.gender)
@@ -99,7 +112,7 @@ def wx_user_list(request, user_id):
     }
     print(data)
     return JsonResponse({'data': data}, status=200)  # 直接返回单个对象
-@login_required(login_url="login")
+@admin_required
 def user_add(request):
     if request.method == 'POST':
         # 如果是POST请求，用提交的数据实例化表单
@@ -115,23 +128,23 @@ def user_add(request):
     # 无论是GET请求还是表单验证失败，都渲染同一个页面
     # 如果验证失败，form对象会包含错误信息，并自动在模板中显示
     return render(request, "user_add.html", {'form': form})
-@login_required(login_url="login")
+@admin_required
 def class_add(request):
     if request.method == "GET":
         return render(request,  "class_add.html")
     name = request.POST.get('name')
     className.objects.create(name=name)
     return render(request, 'user_list.html')
-@login_required(login_url="login")
+@admin_required
 def user_delete(request, user_id):
     user = get_object_or_404(User, id=user_id)
     user.delete()
     messages.success(request, '用户删除成功')
     return redirect('user_list')
-@login_required(login_url="login")
+@admin_required
 def user_edit(request, user_id):
     user = get_object_or_404(User, id=user_id)  # 获取要编辑的用户
-
+    print('正在编辑',user.username,'的数据')
     if request.method == "GET":
         # 显示预填充的表单
         class_list = className.objects.all()  # 获取所有班级
@@ -141,35 +154,54 @@ def user_edit(request, user_id):
         })
 
     # 处理 POST 请求（表单提交）
-    nickName = request.POST.get('nickName')
-    password = request.POST.get('password')
-    username = request.POST.get('username')
-    phone = request.POST.get('phone')
-    gender = request.POST.get('gender')
-    user_attribute = request.POST.get('userAttribute')
-    class_in_id = request.POST.get('classInfo')
-    try:
-        # 更新用户字段
-        user.nickName = nickName
-        user.phone = int(phone) if phone else None
-        user.gender = int(gender) if gender else None
-        user.username = username
-        user.password = password
-        user.user_attribute = int(user_attribute) if user_attribute else None
-        if user.user_attribute == 3:
-            user.is_staff = True
-        user.class_in = className.objects.get(id=class_in_id) if class_in_id else None
-        user.save()  # 保存到数据库
-
-        messages.success(request, '用户信息更新成功')
-        return redirect('user_list')  # 重定向到列表页
-
-    except Exception as e:
-        messages.error(request, f'更新失败: {str(e)}')
-        return render(request, "user_edit.html", {
-            'user': user,
-            'class_list': className.objects.all()
-        })
+    if request.method == "POST":
+        nickname = request.POST.get('nickName')
+        password = request.POST.get('password')
+        username = request.POST.get('username')
+        phone = request.POST.get('phone')
+        gender = request.POST.get('gender')
+        user_attribute = request.POST.get('userAttribute')
+        print(user_attribute)
+        class_in_id = request.POST.get('classInfo')
+        try:
+            # 更新用户字段
+            user.nickName = nickname
+            user.phone = int(phone) if phone!=None else 13500000000
+            user.gender = int(gender) if gender else None
+            user.username = username
+            user.password = password
+            user.user_attribute = user_attribute if user_attribute else 0
+            if user_attribute == 4 and request.user.user_attribute != 4:
+                print(user,"只有超级管理员可以设置超级管理员权限。")
+                messages.error(request, "只有超级管理员可以设置超级管理员权限。")
+                return redirect('user_list')
+            user.is_staff = user_attribute in (3, 4)
+            user.class_in = className.objects.get(id=class_in_id) if class_in_id else None
+            user.save()  # 保存到数据库
+            print(user,'用户信息更新成功')
+            messages.success(request, '用户信息更新成功')
+            return redirect('user_list')  # 重定向到列表页
+        except ValueError as e:
+            # 特别处理 int() 转换错误
+            print(request, f"输入数据格式错误：{str(e)}")
+            return render(request, "user_edit.html", {
+                'user': user,
+                'class_list': className.objects.all()
+            })
+        except className.DoesNotExist:
+            print(request, "班级不存在")
+            return render(request, "user_edit.html", {
+                'user': user,
+                'class_list': className.objects.all()
+            })
+        except Exception as e:
+            # 记录日志（生产环境用 logging）
+            print(f"更新用户 {user.id} 失败: {e}")
+            print(request, f"更新失败：{str(e)}")
+            return render(request, "user_edit.html", {
+                'user': user,
+                'class_list': className.objects.all()
+            })
 @csrf_exempt  # 禁用 CSRF 检查（适用于 API 接口）
 def wx_user_edit(request, user_id):
     # 获取指定用户
@@ -187,8 +219,6 @@ def wx_user_edit(request, user_id):
                     'name': user.class_in.name if user.class_in else ''
                 },
                 'phone': user.phone,
-                'nickName': user.nickName,
-                'avatarUrl': user.avatarUrl,
                 'last_login_time': user.last_login_time
             },
             'classNameList': list(classNameList)

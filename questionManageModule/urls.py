@@ -7,6 +7,7 @@ urlpatterns = [
     path('detail/<int:question_id>/', question_views.question_detail, name='question_detail'),
     path('update/<int:question_id>/', question_views.question_update, name='question_update'),
     path('delete/<int:question_id>/', question_views.question_delete, name='question_delete'),
+    path('batch-import-json/', question_views.question_batch_import_json, name='question_batch_import_json'),
     path('wx/detail/random/',question_views.wx_question_detail_random,name='wx_question_detail'),
 ]
 

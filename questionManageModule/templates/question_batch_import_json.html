@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>批量导入题目</title>
+</head>
+<body>
+    <h1>批量导入题目（JSON格式）</h1>
+    <!-- 显示Django消息框架的提示（成功/失败信息） -->
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <!-- 确保li标签正确闭合：这里将class的条件判断写在标签内，标签本身闭合 -->
+                <li {% if message.tags %}class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <!-- 表单：上传JSON文件，注意enctype必须为multipart/form-data -->
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %} <!-- 必须添加，防止CSRF攻击 -->
+        <label for="json_file">选择JSON文件：</label>
+        <input type="file" name="json_file" id="json_file" accept=".json">
+        <br><br>
+        <button type="submit">上传并导入</button>
+    </form>
+</body>
+</html>

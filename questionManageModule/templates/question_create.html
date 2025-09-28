@@ -117,5 +117,17 @@
             titleInput.classList.remove('is-valid');
         }, 1500);
     }
+    // 新增：展开/折叠详细内容的函数
+    function toggleDetail(questionId) {
+        // 获取当前问题的详细内容容器
+        const detailContainer = document.getElementById('detail-' + questionId);
+        // 切换显示/隐藏：如果当前隐藏则显示，显示则隐藏
+        if (detailContainer.style.display === 'none') {
+            detailContainer.style.display = 'block';
+        } else {
+            detailContainer.style.display = 'none';
+        }
+    }
+
 </script>
 {% endblock %}
