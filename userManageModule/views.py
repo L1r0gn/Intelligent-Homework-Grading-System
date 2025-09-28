@@ -17,6 +17,8 @@ from .forms import UserAddForm
 from .models import className,User
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
+import logging
+logger = logging.getLogger(__name__)
 #登录验证
 def admin_required(view_func):
     """自定义装饰器：仅允许管理员（user_attribute >= 3）访问"""
@@ -25,7 +27,7 @@ def admin_required(view_func):
         if not request.user.is_authenticated:
             return redirect(f"{reverse('login')}?next={request.path}")
         if request.user.user_attribute < 3:
-            print(request.user.username,'没有权限访问该页面')
+            logger.info(request.user.username,'没有权限访问该页面')
             messages.error(request, "您没有权限访问该页面。")
             return redirect('question_list')  # 或重定向到首页
         return view_func(request, *args, **kwargs)
@@ -42,7 +44,7 @@ def login_view(request):
             # 1. 使用 Django 的标准方式安全地验证用户名和密码
             # 它会自动处理密码哈希的比较，非常安全
             if not username:
-                print('username error')
+                logger.info('username error')
             user = authenticate(request, username=username, password=password)
             # 2. 检查用户是否存在
             if user is not None:
@@ -55,7 +57,7 @@ def login_view(request):
         else:
             # 表单本身无效（例如字段为空），也显示错误信息
             messages.error(request, "用户名或密码无效。")
-            print(form.errors)
+            logger.info(form.errors)
     else:
         form = AuthenticationForm()
 
@@ -64,7 +66,7 @@ def login_view(request):
 def logout_view(request):
     """处理用户注销请求"""
     logout(request)
-    request.user.is_authenticated = False
+    # request.user.is_authenticated = False
     # 注销后重定向到登录页面
     return redirect('login')
 @admin_required
@@ -105,7 +107,7 @@ def wx_user_list(request, user_id):
         'wx_city': user.wx_city,
         'last_login_time': user.last_login_time.strftime('%Y-%m-%d %H:%M:%S')  # 格式化时间
     }
-    print(data)
+    logger.info(data)
     return JsonResponse({'data': data}, status=200)  # 直接返回单个对象
 @admin_required
 def user_add(request):
@@ -139,7 +141,7 @@ def user_delete(request, user_id):
 @admin_required
 def user_edit(request, user_id):
     user = get_object_or_404(User, id=user_id)  # 获取要编辑的用户
-    print('正在编辑',user.username,'的数据')
+    logger.info('正在编辑',user.username,'的数据')
     if request.method == "GET":
         # 显示预填充的表单
         class_list = className.objects.all()  # 获取所有班级
@@ -156,7 +158,7 @@ def user_edit(request, user_id):
         phone = request.POST.get('phone')
         gender = request.POST.get('gender')
         user_attribute = request.POST.get('userAttribute')
-        print(user_attribute)
+        logger.info(user_attribute)
         class_in_id = request.POST.get('classInfo')
         try:
             # 更新用户字段
@@ -167,32 +169,32 @@ def user_edit(request, user_id):
             user.password = password
             user.user_attribute = user_attribute if user_attribute else 0
             if user_attribute == 4 and request.user.user_attribute != 4:
-                print(user,"只有超级管理员可以设置超级管理员权限。")
+                logger.info(user,"只有超级管理员可以设置超级管理员权限。")
                 messages.error(request, "只有超级管理员可以设置超级管理员权限。")
                 return redirect('user_list')
             user.is_staff = user_attribute in (3, 4)
             user.class_in = className.objects.get(id=class_in_id) if class_in_id else None
             user.save()  # 保存到数据库
-            print(user,'用户信息更新成功')
+            logger.info(user,'用户信息更新成功')
             messages.success(request, '用户信息更新成功')
             return redirect('user_list')  # 重定向到列表页
         except ValueError as e:
             # 特别处理 int() 转换错误
-            print(request, f"输入数据格式错误：{str(e)}")
+            logger.info(request, f"输入数据格式错误：{str(e)}")
             return render(request, "user_edit.html", {
                 'user': user,
                 'class_list': className.objects.all()
             })
         except className.DoesNotExist:
-            print(request, "班级不存在")
+            logger.info(request, "班级不存在")
             return render(request, "user_edit.html", {
                 'user': user,
                 'class_list': className.objects.all()
             })
         except Exception as e:
             # 记录日志（生产环境用 logging）
-            print(f"更新用户 {user.id} 失败: {e}")
-            print(request, f"更新失败：{str(e)}")
+            logger.info(f"更新用户 {user.id} 失败: {e}")
+            logger.info(request, f"更新失败：{str(e)}")
             return render(request, "user_edit.html", {
                 'user': user,
                 'class_list': className.objects.all()
@@ -266,14 +268,14 @@ def wechat_login(request):
     nickName = request.data.get('nickName')  # 从前端获取nickName
     avatarUrl = request.data.get('avatarUrl')  # 从前端获取avatarUrl
     if not code:
-        print("登录请求缺少code参数")  # 记录警告日志
+        logger.info("登录请求缺少code参数")  # 记录警告日志
         return Response({'error': '缺少code参数'}, status=status.HTTP_400_BAD_REQUEST)
 
     # 读取微信配置（提前检查配置是否存在）
     appid = getattr(settings, 'WECHAT_APPID', None)
     secret = getattr(settings, 'WECHAT_SECRET', None)
     if not appid or not secret:
-        print("微信登录配置缺失：WECHAT_APPID或WECHAT_SECRET未设置")
+        logger.info("微信登录配置缺失：WECHAT_APPID或WECHAT_SECRET未设置")
         return Response({'error': '服务器配置错误'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     # 微信code2Session接口URL
@@ -288,7 +290,7 @@ def wechat_login(request):
         # 处理微信接口返回的错误
         if 'errcode' in response_data and response_data['errcode'] != 0:
             err_msg = response_data.get('errmsg', '未知错误')
-            print(f"微信code2Session失败：errcode={response_data['errcode']}, errmsg={err_msg}")
+            logger.info(f"微信code2Session失败：errcode={response_data['errcode']}, errmsg={err_msg}")
             return Response({
                 'error': '微信登录失败',
                 'detail': err_msg,
@@ -299,7 +301,7 @@ def wechat_login(request):
         openid = response_data.get('openid')
         session_key = response_data.get('session_key')
         if not openid or not session_key:
-            print(f"微信接口未返回openid或session_key：{response_data}")
+            logger.info(f"微信接口未返回openid或session_key：{response_data}")
             return Response({'error': '获取用户身份失败'}, status=status.HTTP_400_BAD_REQUEST)
 
         # 数据库操作（单独捕获数据库异常）
@@ -310,18 +312,18 @@ def wechat_login(request):
             user.wx_avatar = avatarUrl
             user.save(update_fields=['session_key','wx_nickName','wx_avatar'])  # 只更新需要的字段，提高性能
         except Exception as e:
-            print(f"用户创建/更新失败：{str(e)}")  # 记录堆栈信息
+            logger.info(f"用户创建/更新失败：{str(e)}")  # 记录堆栈信息
             return Response({'error': '用户信息存储失败'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         # 生成JWT（单独捕获JWT相关异常）
         try:
             refresh = RefreshToken.for_user(user)
         except Exception as e:
-            print(f"JWT令牌生成失败：{str(e)}")
+            logger.info(f"JWT令牌生成失败：{str(e)}")
             return Response({'error': '认证令牌生成失败'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         # 登录成功，记录日志
-        print(f"用户登录成功：openid={openid}, 用户ID={user.id}, 新用户={created}")
+        logger.info(f"用户登录成功：openid={openid}, 用户ID={user.id}, 新用户={created}")
         return Response({
             'refresh': str(refresh),
             'access': str(refresh.access_token),
@@ -332,13 +334,13 @@ def wechat_login(request):
 
     # 细分异常类型
     except requests.exceptions.Timeout:
-        print("调用微信接口超时")
+        logger.info("调用微信接口超时")
         return Response({'error': '微信接口响应超时'}, status=status.HTTP_504_GATEWAY_TIMEOUT)
     except requests.exceptions.RequestException as e:  # 网络错误（如连接失败、HTTP 500）
-        print(f"微信接口网络请求失败：{str(e)}")
+        logger.info(f"微信接口网络请求失败：{str(e)}")
         return Response({'error': '微信接口请求失败'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     except Exception as e:  # 其他未捕获异常
-        print(f"登录接口未知错误：{str(e)}")
+        logger.info(f"登录接口未知错误：{str(e)}")
         return Response({'error': '服务器内部错误'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 def user_register(request):
     if request.method == 'GET':
@@ -356,7 +358,7 @@ def user_register(request):
             gender = form.cleaned_data.get('gender')
             user_attribute = form.cleaned_data.get('user_attribute')
             class_in_id = form.cleaned_data.get('class_in')
-            print(username, password, phone, gender, user_attribute, class_in_id)
+            logger.info(username, password, phone, gender, user_attribute, class_in_id)
 
             if user_attribute >= 3:
                 messages.error(request, "权限不足，不可设置该权限。")

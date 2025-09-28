@@ -15,7 +15,7 @@ def admin_required(view_func):
         if not request.user.is_authenticated:
             return redirect(f"{reverse('login')}?next={request.path}")
         if request.user.user_attribute < 3:
-            print(request.user.username,'没有权限访问该页面')
+            logger.info(request.user.username,'没有权限访问该页面')
             messages.error(request, "您没有权限访问该页面。")
             return redirect('question_list')  # 或重定向到首页
         return view_func(request, *args, **kwargs)
@@ -38,8 +38,8 @@ def wx_question_detail_random(request):
         try:
             # 使用order_by('?')随机排序并获取第一条记录
             question = Problem.objects.order_by('?').first()
-            print(question.problem_type.name)
-            print(question.answer)
+            logger.info(question.problem_type.name)
+            logger.info(question.answer)
             if question:
                 # 序列化数据，确保只返回可JSON序列化的对象
                 data = {

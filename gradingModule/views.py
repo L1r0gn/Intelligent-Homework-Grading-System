@@ -11,6 +11,8 @@ from .forms import SubmissionFilterForm
 from .models import Submission, Problem
 from .tasks import process_and_grade_submission # 导入你的异步任务
 import json
+import logging
+logger = logging.getLogger(__name__)
 def admin_required(view_func):
     """自定义装饰器：仅允许管理员（user_attribute >= 3）访问"""
     @wraps(view_func)
@@ -18,7 +20,7 @@ def admin_required(view_func):
         if not request.user.is_authenticated:
             return redirect(f"{reverse('login')}?next={request.path}")
         if request.user.user_attribute < 3:
-            print(request.user.username,'没有权限访问该页面')
+            logger.info(request.user.username,'没有权限访问该页面')
             messages.error(request, "您没有权限访问该页面。")
             return redirect('question_list')  # 或重定向到首页
         return view_func(request, *args, **kwargs)
@@ -65,7 +67,7 @@ def submissionprocess(request):
         except Problem.DoesNotExist:
             return JsonResponse({'error': '指定的题目不存在'}, status=404)
         user = User.objects.get(id=userId)
-        print('用户',user,"创建了新提交")
+        logger.info('用户',user,"创建了新提交")
         if not user:
             return HttpResponseBadRequest({'error':'用户不存在'},status=405)
         # 创建新的 submission 实例，保存图片
@@ -78,7 +80,7 @@ def submissionprocess(request):
             status='PENDING', # 初始状态为判题中
         )
         submissions = Submission.objects.filter(student=user).order_by('-submitted_time')
-        print(submissions)
+        logger.info(submissions)
         # 触发异步任务！使用 .delay() 方法，任务会被发送到 Celery 队列中等待执行
         process_and_grade_submission.delay(submission.id)
         # 立即返回响应给用户
@@ -149,8 +151,8 @@ def regrade_submission_view(request, submission_id):
         submission.score = None  # 清空之前的分数
         submission.grading_result = "正在重新加入批改队列..."
         submission.save()
-        print(submission,'is regrading')
-        print(submission.id)
+        logger.info(submission,'is regrading')
+        logger.info(submission.id)
         # --- 这里是核心：调用您已有的Celery异步任务 ---
         process_and_grade_submission.delay(submission.id)
         # 将用户重定向回作业详情页
