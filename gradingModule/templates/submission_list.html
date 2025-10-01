@@ -49,8 +49,8 @@
                     {% for submission in page_obj %}
                     <tr class="align-middle">
                         <td>{{ submission.id }}</td>
-                        <td>{{ submission.student.username }}</td>
-                        <td>{{ submission.assignment.title }}</td>
+                        <td>{{ submission.student.wx_nickName }}</td>
+                        <td>{{ submission.problem.title }}</td>
                         <td>{{ submission.submitted_time|date:"Y-m-d H:i" }}</td>
                         <td>
                             <span class="badge rounded-pill

@@ -96,16 +96,13 @@
                  <a href="{% url 'submission_list' %}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left me-2"></i>返回列表
                 </a>
-
-                {% if request.user.is_staff %}
-                    <form action="{% url 'regrade_submission' submission.id %}" method="POST" style="display: inline;">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-warning">
-                            <i class="fas fa-sync-alt me-2"></i>重新批改
-                        </button>
-                    </form>
-                    <button class="btn btn-danger"><i class="fas fa-trash-alt me-2"></i>删除记录</button>
-                {% endif %}
+                <form action="{% url 'regrade_submission' submission.id %}" method="POST" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-sync-alt me-2"></i>重新批改
+                    </button>
+                </form>
+                <button class="btn btn-danger"><i class="fas fa-trash-alt me-2"></i>删除记录</button>
             </div>
         </div>
     </div>

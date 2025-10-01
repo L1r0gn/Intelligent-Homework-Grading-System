@@ -1,28 +1,60 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <title>批量导入题目</title>
-</head>
-<body>
-    <h1>批量导入题目（JSON格式）</h1>
-    <!-- 显示Django消息框架的提示（成功/失败信息） -->
-    {% if messages %}
-        <ul class="messages">
-            {% for message in messages %}
-                <!-- 确保li标签正确闭合：这里将class的条件判断写在标签内，标签本身闭合 -->
-                <li {% if message.tags %}class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
+{% extends 'question_view_base.html' %}
+{% load static %}
 
-    <!-- 表单：上传JSON文件，注意enctype必须为multipart/form-data -->
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %} <!-- 必须添加，防止CSRF攻击 -->
-        <label for="json_file">选择JSON文件：</label>
-        <input type="file" name="json_file" id="json_file" accept=".json">
-        <br><br>
-        <button type="submit">上传并导入</button>
-    </form>
-</body>
-</html>
+{% block title %}批量导入题目{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h4 class="mb-0"><i class="fas fa-file-import me-2"></i>批量导入题目 (JSON格式)</h4>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        选择一个JSON文件，并为该文件中的所有题目指定一个默认的所属科目和题目类型。
+                        系统会自动将JSON中的 <code>category</code> 字段添加为题目标签。
+                    </p>
+
+                    <form method="post" enctype="multipart/form-data" class="mt-4">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label for="default_subject_id" class="form-label"><strong>第1步：选择默认科目</strong></label>
+                            <select class="form-select" name="default_subject_id" id="default_subject_id" required>
+                                <option value="" selected disabled>-- 请选择科目 --</option>
+                                {% for subject in subjects %}
+                                    <option value="{{ subject.id }}">{{ subject.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                             <label for="default_problem_type_id" class="form-label"><strong>第2步：选择默认题目类型</strong></label>
+                            <select class="form-select" name="default_problem_type_id" id="default_problem_type_id" required>
+                                <option value="" selected disabled>-- 请选择题目类型 --</option>
+                                {% for p_type in problem_types %}
+                                    <option value="{{ p_type.id }}">{{ p_type.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="json_file" class="form-label"><strong>第3步：选择JSON文件</strong></label>
+                            <input class="form-control" type="file" name="json_file" id="json_file" accept=".json" required>
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-4">
+                            <a href="{% url 'question_list' %}" class="btn btn-secondary me-2">返回列表</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-upload me-2"></i>上传并导入
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

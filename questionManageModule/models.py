@@ -11,20 +11,13 @@ class Problem(models.Model):
     ]
     title = models.CharField(max_length=200, verbose_name="题目标题",blank=True,null=True)
     # 保留正向关联（一个 Problem 关联一个 ProblemContent）
-    content = models.ForeignKey(
-        'ProblemContent',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        verbose_name='题目内容',
-        related_name='problems'  # 反向引用名，避免冲突
-    )
+    content = models.ForeignKey('ProblemContent',on_delete=models.SET_NULL,null=True,blank=True,verbose_name='题目内容',related_name='problems')  # 反向引用名，避免冲突)
     problem_type = models.ForeignKey('ProblemType', on_delete=models.PROTECT, verbose_name="题目类型(选择……)")
     tags = models.ManyToManyField('ProblemTag', blank=True, verbose_name="题目标签")
     creator = models.ForeignKey('userManageModule.User', on_delete=models.PROTECT, verbose_name="创建人", null=True,blank = True)
     create_time = models.DateTimeField(auto_now_add=True, verbose_name="创建时间", null=True,blank = True)
     difficulty = models.PositiveSmallIntegerField(choices=DIF_CHOICES, default=2, verbose_name="难度")
-    #is_active = models.BooleanField(default=True, verbose_name="是否激活") #是否可见
+    is_active = models.BooleanField(default=True, verbose_name="是否激活") #是否可见
     subject = models.ForeignKey('Subject', on_delete=models.PROTECT, verbose_name="所属科目")
     points = models.PositiveIntegerField(default=0, verbose_name="总共的分值" , null=True , blank=True )
     got_points = models.PositiveIntegerField(default=0,verbose_name='获取的分数',null=True , blank=True )

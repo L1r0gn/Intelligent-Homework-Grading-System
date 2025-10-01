@@ -30,6 +30,15 @@
                         </div>
 
                         <div class="mb-3">
+                            <label for="problem_type" class="form-label">题目类型</label>
+                            <select class="form-select" id="problem_type" name="problem_type" required>
+                                <option value="" disabled {% if not question.problem_type %}selected{% endif %}>请选择题目类型...</option>
+                                <option value="1" {% if question.problem_type.name == '选择' %}selected{% endif %}>选择</option>
+                                <option value="6" {% if question.problem_type.name == '问答' %}selected{% endif %}>问答</option>
+                                </select>
+                        </div>
+
+                        <div class="mb-3">
                             <label for="content" class="form-label">题目内容</label>
                             <textarea class="form-control" id="content" name="content" rows="8" required>{{ question.content.content }}</textarea>
                         </div>

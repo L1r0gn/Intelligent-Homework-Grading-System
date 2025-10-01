@@ -60,6 +60,8 @@ INSTALLED_APPS = [
     'userManageModule.apps.UserManageModuleConfig',
     'questionManageModule.apps.QuestionmanagemoduleConfig',
     'gradingModule.apps.GradingmoduleConfig',
+    'rest_framework',
+    'rest_framework_simplejwt',
 ]
 
 MIDDLEWARE = [
@@ -79,6 +81,32 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.FormParser',
         'rest_framework.parsers.MultiPartParser',
     ],
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
+
+# Simple JWT 配置
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=7),  # Access Token 有效期
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=15), # Refresh Token 有效期
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': True,
+
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY, # 使用 Django 的 SECRET_KEY
+    'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': None,
+
+    'AUTH_HEADER_TYPES': ('Bearer',), # 认证头的类型，例如 "Bearer <token>"
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
 }
 
 ROOT_URLCONF = 'IntelligentHomeworkGradingSystem.urls'
@@ -105,18 +133,13 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
-        'file': {
-            'level': 'ERROR',
-            'class': 'logging.FileHandler',
-            'filename': 'debug.log',
+        'console': {
+            'class': 'logging.StreamHandler',
         },
     },
-    'loggers': {
-        'django': {
-            'handlers': ['file'],
-            'level': 'ERROR',
-            'propagate': True,
-        },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
     },
 }
 
@@ -181,3 +204,5 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'  # 生产环境收集静态文件的目�
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+OPENROUTER_API_KEY ='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'

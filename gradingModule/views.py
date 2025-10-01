@@ -6,6 +6,8 @@ from django.http import JsonResponse, HttpResponseBadRequest
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
+
+from userManageModule.decorators import jwt_login_required
 from userManageModule.models import User
 from .forms import SubmissionFilterForm
 from .models import Submission, Problem
@@ -18,15 +20,16 @@ def admin_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return redirect(f"{reverse('login')}?next={request.path}")
+            return redirect('login')
         if request.user.user_attribute < 3:
+            logger.info(request.user.username,'的权限等级为',request.user.user_attribute)
             logger.info(request.user.username,'没有权限访问该页面')
             messages.error(request, "您没有权限访问该页面。")
             return redirect('question_list')  # 或重定向到首页
         return view_func(request, *args, **kwargs)
     return _wrapped_view
 @csrf_exempt
-@login_required(login_url="login")
+@jwt_login_required
 def submissionprocess(request):
     if request.method == 'GET':
         # GET 请求逻辑保持不变
@@ -45,16 +48,13 @@ def submissionprocess(request):
                 'submitted_time': sub.submitted_time.strftime('%Y-%m-%d %H:%M:%S'),
             })
         return JsonResponse(data, safe=False)
-
     elif request.method == 'POST':
-        # 1. 解码并用 json.loads() 解析 request.body
-        data = json.loads(request.body.decode('utf-8'))
-
         # 2. 从解析后的 data 字典中获取数据
-        problem_id = data.get('questionId')
-        submitted_text = data.get('submitted_text')
-        choose_answer = data.get('selectedAnswer')
-        userId = data.get('userId')
+        submitted_text = request.POST.get('submitted_text')
+        problem_id = request.POST.get('questionId')
+        choose_answer = request.POST.get('selectedAnswer')  # 用于选择题
+        userId = request.POST.get('userId')
+        submitted_image = request.FILES.get('submitted_image')  # 用于主观题
 
         if not problem_id:
             return HttpResponseBadRequest("请求必须包含 'problem_id' ")
@@ -76,11 +76,11 @@ def submissionprocess(request):
             problem=problem,
             submitted_text=submitted_text,
             choose_answer=choose_answer,
-            # submitted_image=submitted_image,
+            submitted_image=submitted_image,
             status='PENDING', # 初始状态为判题中
         )
         submissions = Submission.objects.filter(student=user).order_by('-submitted_time')
-        logger.info(submissions)
+        logger.info(user,'做了的题目集合为:',submissions)
         # 触发异步任务！使用 .delay() 方法，任务会被发送到 Celery 队列中等待执行
         process_and_grade_submission.delay(submission.id)
         # 立即返回响应给用户
@@ -128,12 +128,6 @@ def submission_list(request):
 @admin_required
 def submission_detail(request, submission_id):
     submission = get_object_or_404(Submission, id=submission_id)
-
-    # 检查权限：教师可以查看所有，学生只能查看自己的
-    if not request.user.is_staff and submission.student != request.user:
-        from django.http import HttpResponseForbidden
-        return HttpResponseForbidden("您没有权限查看此提交")
-
     context = {
         'submission': submission,
     }

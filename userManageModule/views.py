@@ -1,10 +1,13 @@
+import json
 from audioop import reverse
 from functools import wraps
 
+import jwt
 import requests
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -13,6 +16,7 @@ from rest_framework import status
 from IntelligentHomeworkGradingSystem import settings
 from django.http import JsonResponse
 
+from .decorators import jwt_login_required
 from .forms import UserAddForm
 from .models import className,User
 from django.contrib import messages
@@ -25,13 +29,65 @@ def admin_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return redirect(f"{reverse('login')}?next={request.path}")
+            return redirect('login')
         if request.user.user_attribute < 3:
             logger.info(request.user.username,'没有权限访问该页面')
             messages.error(request, "您没有权限访问该页面。")
             return redirect('question_list')  # 或重定向到首页
         return view_func(request, *args, **kwargs)
     return _wrapped_view
+@csrf_exempt  # API 接口需要禁用 CSRF 保护
+def wx_login(request):
+    """
+    [修改后] 小程序登录：用 code 换取 access 和 refresh token
+    """
+    # --- 修正问题一：解析 JSON 数据 ---
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    try:
+        # 从 request.body 中获取原始 JSON 数据并解析
+        json_data = json.loads(request.body)
+        code = json_data.get('code')
+    except (json.JSONDecodeError, AttributeError):
+        return JsonResponse({'error': 'Invalid JSON or missing request body'}, status=400)
+
+    if not code:
+        return JsonResponse({'error': 'Missing code'}, status=400)
+
+    # 调用微信接口换取 openid (这部分逻辑不变)
+    appid = settings.WECHAT_APPID
+    secret = settings.WECHAT_SECRET
+    url = f"https://api.weixin.qq.com/sns/jscode2session?appid={appid}&secret={secret}&js_code={code}&grant_type=authorization_code"
+
+    try:
+        resp = requests.get(url)
+        data = resp.json()
+        openid = data.get('openid')
+
+        if not openid:
+            logger.error(f"WeChat login failed: {data}")
+            return JsonResponse({'error': f"WeChat login failed: {data.get('errmsg', '')}"}, status=401)
+
+        # --- 修正问题二：使用 simplejwt 生成 token ---
+
+        # 根据 openid 查找或创建用户
+        user, created = User.objects.get_or_create(
+            openid=openid,
+            defaults={'username': openid}  # 首次创建时，可以用 openid 作为默认用户名
+        )
+
+        # 为用户生成 JWT Token
+        refresh = RefreshToken.for_user(user)
+        # 返回 access 和 refresh token，与前端期望一致
+        return JsonResponse({
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+            'user_id': user.id,
+        })
+    except Exception as e:
+        logger.error(f"wx_login internal error: {e}", exc_info=True)
+        return JsonResponse({'error': 'Internal server error'}, status=500)
 def login_view(request):
     """处理用户登录请求"""
     # if request.user.is_authenticated:
@@ -73,7 +129,7 @@ def logout_view(request):
 def user_list(request):
     queryset = User.objects.all()
     return render(request, "user_list.html", {'queryset': queryset})
-@admin_required
+@jwt_login_required
 def wx_user_list(request, user_id):
     try:
         # 用 get 直接获取单个用户，更符合“查询单个用户”场景
@@ -200,11 +256,10 @@ def user_edit(request, user_id):
                 'class_list': className.objects.all()
             })
 @csrf_exempt
-@admin_required# 禁用 CSRF 检查（适用于 API 接口）
+@jwt_login_required# 禁用 CSRF 检查（适用于 API 接口）
 def wx_user_edit(request, user_id):
     # 获取指定用户
     user = get_object_or_404(User, id=user_id)
-
     #前端传过来 ： POST / GET -> 提交至后端 / 从后端获取
     if request.method == "GET":
         classNameList = className.objects.all().values('id', 'name')  # 获取所有班级实例
@@ -222,15 +277,14 @@ def wx_user_edit(request, user_id):
             'classNameList': list(classNameList)
         }
         return JsonResponse(response_data)
-
     elif request.method == "POST":
         # 获取前端传来的数据
         try:
-            import json
             data = json.loads(request.body)
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON format'}, status=400)
-
+        # print('用户要更改为的数据为:',data)
+        # logger.info('用户要更改为的数据为:',data)
         # 更新用户数据
         if 'gender' in data:
             user.gender = data['gender']
@@ -238,13 +292,10 @@ def wx_user_edit(request, user_id):
             user.user_attribute = data['attribute']
         if 'phone' in data:
             user.phone = data['phone']
-        if 'class_in' in data:
-            class_in_id = data['class_in'].get('id')
-            if class_in_id:
-                class_in = get_object_or_404(className, id=class_in_id)
-                user.class_in = class_in
-            else:
-                user.class_in = None
+        if 'nickName' in data:
+            user.wx_nickName = data['nickName']
+        if 'class_in_id' in data:
+            user.class_in = className.objects.get(id=data['class_in_id'])
         user.save()
         response_data = {
             'user': {
@@ -259,89 +310,89 @@ def wx_user_edit(request, user_id):
             }
         }
         return JsonResponse(response_data)
-@api_view(['POST'])
-@permission_classes([AllowAny])
-@admin_required
-def wechat_login(request):
-    """微信小程序登录接口 - 函数视图实现"""
-    code = request.data.get('code')  # 从前端获取code
-    nickName = request.data.get('nickName')  # 从前端获取nickName
-    avatarUrl = request.data.get('avatarUrl')  # 从前端获取avatarUrl
-    if not code:
-        logger.info("登录请求缺少code参数")  # 记录警告日志
-        return Response({'error': '缺少code参数'}, status=status.HTTP_400_BAD_REQUEST)
-
-    # 读取微信配置（提前检查配置是否存在）
-    appid = getattr(settings, 'WECHAT_APPID', None)
-    secret = getattr(settings, 'WECHAT_SECRET', None)
-    if not appid or not secret:
-        logger.info("微信登录配置缺失：WECHAT_APPID或WECHAT_SECRET未设置")
-        return Response({'error': '服务器配置错误'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    # 微信code2Session接口URL
-    url = f'https://api.weixin.qq.com/sns/jscode2session?appid={appid}&secret={secret}&js_code={code}&grant_type=authorization_code'
-
-    try:
-        # 调用微信接口，设置超时时间（避免请求挂起）
-        response = requests.get(url, timeout=10)  # 超时时间10秒
-        response.raise_for_status()  # 触发HTTP错误（如404、500）
-        response_data = response.json()
-
-        # 处理微信接口返回的错误
-        if 'errcode' in response_data and response_data['errcode'] != 0:
-            err_msg = response_data.get('errmsg', '未知错误')
-            logger.info(f"微信code2Session失败：errcode={response_data['errcode']}, errmsg={err_msg}")
-            return Response({
-                'error': '微信登录失败',
-                'detail': err_msg,
-                'errcode': response_data['errcode']  # 返回微信错误码，便于调试
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        # 提取关键信息
-        openid = response_data.get('openid')
-        session_key = response_data.get('session_key')
-        if not openid or not session_key:
-            logger.info(f"微信接口未返回openid或session_key：{response_data}")
-            return Response({'error': '获取用户身份失败'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # 数据库操作（单独捕获数据库异常）
-        try:
-            user, created = User.objects.get_or_create(openid=openid)
-            user.session_key = session_key  # 确保User模型有session_key字段
-            user.wx_nickName = nickName
-            user.wx_avatar = avatarUrl
-            user.save(update_fields=['session_key','wx_nickName','wx_avatar'])  # 只更新需要的字段，提高性能
-        except Exception as e:
-            logger.info(f"用户创建/更新失败：{str(e)}")  # 记录堆栈信息
-            return Response({'error': '用户信息存储失败'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        # 生成JWT（单独捕获JWT相关异常）
-        try:
-            refresh = RefreshToken.for_user(user)
-        except Exception as e:
-            logger.info(f"JWT令牌生成失败：{str(e)}")
-            return Response({'error': '认证令牌生成失败'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        # 登录成功，记录日志
-        logger.info(f"用户登录成功：openid={openid}, 用户ID={user.id}, 新用户={created}")
-        return Response({
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
-            'user_id': user.id,
-            'is_new_user': created,
-            'code':200
-        }, status=status.HTTP_200_OK)
-
-    # 细分异常类型
-    except requests.exceptions.Timeout:
-        logger.info("调用微信接口超时")
-        return Response({'error': '微信接口响应超时'}, status=status.HTTP_504_GATEWAY_TIMEOUT)
-    except requests.exceptions.RequestException as e:  # 网络错误（如连接失败、HTTP 500）
-        logger.info(f"微信接口网络请求失败：{str(e)}")
-        return Response({'error': '微信接口请求失败'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    except Exception as e:  # 其他未捕获异常
-        logger.info(f"登录接口未知错误：{str(e)}")
-        return Response({'error': '服务器内部错误'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+# @api_view(['POST'])
+# @permission_classes([AllowAny])
+# @admin_required
+# def wechat_login(request):
+#     """微信小程序登录接口 - 函数视图实现"""
+#     code = request.data.get('code')  # 从前端获取code
+#     nickName = request.data.get('nickName')  # 从前端获取nickName
+#     avatarUrl = request.data.get('avatarUrl')  # 从前端获取avatarUrl
+#     if not code:
+#         logger.info("登录请求缺少code参数")  # 记录警告日志
+#         return Response({'error': '缺少code参数'}, status=status.HTTP_400_BAD_REQUEST)
+#
+#     # 读取微信配置（提前检查配置是否存在）
+#     appid = getattr(settings, 'WECHAT_APPID', None)
+#     secret = getattr(settings, 'WECHAT_SECRET', None)
+#     if not appid or not secret:
+#         logger.info("微信登录配置缺失：WECHAT_APPID或WECHAT_SECRET未设置")
+#         return Response({'error': '服务器配置错误'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#
+#     # 微信code2Session接口URL
+#     url = f'https://api.weixin.qq.com/sns/jscode2session?appid={appid}&secret={secret}&js_code={code}&grant_type=authorization_code'
+#
+#     try:
+#         # 调用微信接口，设置超时时间（避免请求挂起）
+#         response = requests.get(url, timeout=10)  # 超时时间10秒
+#         response.raise_for_status()  # 触发HTTP错误（如404、500）
+#         response_data = response.json()
+#
+#         # 处理微信接口返回的错误
+#         if 'errcode' in response_data and response_data['errcode'] != 0:
+#             err_msg = response_data.get('errmsg', '未知错误')
+#             logger.info(f"微信code2Session失败：errcode={response_data['errcode']}, errmsg={err_msg}")
+#             return Response({
+#                 'error': '微信登录失败',
+#                 'detail': err_msg,
+#                 'errcode': response_data['errcode']  # 返回微信错误码，便于调试
+#             }, status=status.HTTP_400_BAD_REQUEST)
+#
+#         # 提取关键信息
+#         openid = response_data.get('openid')
+#         session_key = response_data.get('session_key')
+#         if not openid or not session_key:
+#             logger.info(f"微信接口未返回openid或session_key：{response_data}")
+#             return Response({'error': '获取用户身份失败'}, status=status.HTTP_400_BAD_REQUEST)
+#
+#         # 数据库操作（单独捕获数据库异常）
+#         try:
+#             user, created = User.objects.get_or_create(openid=openid)
+#             user.session_key = session_key  # 确保User模型有session_key字段
+#             user.wx_nickName = nickName
+#             user.wx_avatar = avatarUrl
+#             user.save(update_fields=['session_key','wx_nickName','wx_avatar'])  # 只更新需要的字段，提高性能
+#         except Exception as e:
+#             logger.info(f"用户创建/更新失败：{str(e)}")  # 记录堆栈信息
+#             return Response({'error': '用户信息存储失败'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#
+#         # 生成JWT（单独捕获JWT相关异常）
+#         try:
+#             refresh = RefreshToken.for_user(user)
+#         except Exception as e:
+#             logger.info(f"JWT令牌生成失败：{str(e)}")
+#             return Response({'error': '认证令牌生成失败'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#
+#         # 登录成功，记录日志
+#         logger.info(f"用户登录成功：openid={openid}, 用户ID={user.id}, 新用户={created}")
+#         return Response({
+#             'refresh': str(refresh),
+#             'access': str(refresh.access_token),
+#             'user_id': user.id,
+#             'is_new_user': created,
+#             'code':200
+#         }, status=status.HTTP_200_OK)
+#
+#     # 细分异常类型
+#     except requests.exceptions.Timeout:
+#         logger.info("调用微信接口超时")
+#         return Response({'error': '微信接口响应超时'}, status=status.HTTP_504_GATEWAY_TIMEOUT)
+#     except requests.exceptions.RequestException as e:  # 网络错误（如连接失败、HTTP 500）
+#         logger.info(f"微信接口网络请求失败：{str(e)}")
+#         return Response({'error': '微信接口请求失败'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+#     except Exception as e:  # 其他未捕获异常
+#         logger.info(f"登录接口未知错误：{str(e)}")
+#         return Response({'error': '服务器内部错误'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 def user_register(request):
     if request.method == 'GET':
         # if(request.user.is_authenticated):

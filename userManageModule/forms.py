@@ -2,7 +2,6 @@
 
 from django import forms
 from .models import User, className  # 确保导入 User 和 className 模型
-from django.contrib.auth.hashers import make_password
 
 
 class UserAddForm(forms.ModelForm):

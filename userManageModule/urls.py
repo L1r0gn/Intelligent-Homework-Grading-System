@@ -14,6 +14,6 @@ urlpatterns = [
     path('wx/add/', user_views.user_add, name='wx_user_add'),
     path('wx/edit/<int:user_id>', user_views.wx_user_edit, name='wx_user_edit'),
     path('wx/list/<int:user_id>/', user_views.wx_user_list, name='wx_user_list'),
-    path('wx/login',userManageModule.views.wechat_login,name='wx_login'),
+    path('wx/login/',userManageModule.views.wx_login,name='wx_login'),
     # path('register',userManageModule.views.user_register,name='user_register'),
 ]
