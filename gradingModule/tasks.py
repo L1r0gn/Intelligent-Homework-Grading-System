@@ -33,7 +33,7 @@ def grade_submission_with_ai(standard_answer, image_path, total_score,submission
     # base64_image = encode_image_to_base64(image_path)
     # if not base64_image:
     #     return None
-    image_url = f"http://127.0.0.1:8000/grading/submission-image/{submission_id}   "
+    image_url = f"http://119.29.152.140//grading/submission-image/{submission_id}   "
     print('标准答案为',standard_answer)
     print(image_url)
     # 2. 更新 Prompt，告知 AI 直接分析图片
