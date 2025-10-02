@@ -2,7 +2,7 @@ from audioop import reverse
 from functools import wraps
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.http import JsonResponse, HttpResponseBadRequest
+from django.http import JsonResponse, HttpResponseBadRequest, Http404, HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
@@ -153,3 +153,16 @@ def regrade_submission_view(request, submission_id):
         return redirect('submission_list')
     # 如果是GET或其他方法的请求，直接重定向走，不处理
     return redirect('submission_list')
+
+def serve_submission_image(request, submission_id):
+    try:
+        submission = Submission.objects.get(id=submission_id)
+    except Submission.DoesNotExist:
+        raise Http404("Image not found")
+
+    response = HttpResponse(
+        submission.submitted_image,
+        content_type='image/jpeg'
+    )
+    response['Content-Disposition'] = 'inline'  # 在浏览器中直接显示，而非下载
+    return response

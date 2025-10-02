@@ -27,15 +27,15 @@ def encode_image_to_base64(image_path):
         return None
 
 
-def grade_submission_with_ai(standard_answer, image_path, total_score):
+def grade_submission_with_ai(standard_answer, image_path, total_score,submission_id):
     """使用 OpenRouter 的视觉模型进行分析和打分。"""
-
     # 1. 将图片编码为 Base64
-    base64_image = encode_image_to_base64(image_path)
-    if not base64_image:
-        return None
+    # base64_image = encode_image_to_base64(image_path)
+    # if not base64_image:
+    #     return None
+    image_url = f"http://127.0.0.1:8000/grading/submission-image/{submission_id}   "
     print('标准答案为',standard_answer)
-    print()
+    print(image_url)
     # 2. 更新 Prompt，告知 AI 直接分析图片
     prompt = f"""
     # 角色
@@ -63,7 +63,7 @@ def grade_submission_with_ai(standard_answer, image_path, total_score):
         "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
         "Content-Type": "application/json"
     }
-    data = {
+    data = json.dumps({
         # --- 更换为视觉模型 ---
         "model": "google/gemma-3-27b-it:free",
         "messages": [
@@ -77,17 +77,17 @@ def grade_submission_with_ai(standard_answer, image_path, total_score):
                     {
                         "type": "image_url",
                         "image_url": {
-                            "url": image_path
+                            "url": image_url
                         }
                     }
                 ]
             }
         ],
-        "response_format": {"type": "json_object"}
-    }
+        # "response_format": {"type": "json_object"}
+    })
 
     try:
-        response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data,timeout=360)
+        response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data,timeout=180)
         response.raise_for_status()
         print("✅ AI 视觉分析成功！")
     except requests.RequestException as e:
@@ -141,7 +141,8 @@ def process_and_grade_submission(submission_id):
     ai_response_str = grade_submission_with_ai(
         problem.answer.explanation, # 标准答案
         submission.submitted_image.path, # 直接传入图片路径
-        problem.points
+        problem.points,
+        submission_id,
     )
 
     # ... (后续的解析和保存逻辑完全不变) ...

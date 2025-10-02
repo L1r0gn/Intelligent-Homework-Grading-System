@@ -7,7 +7,7 @@ urlpatterns = [
     path('submissions/', views.submission_list, name='submission_list'),
     path('submissions/<int:submission_id>/', views.submission_detail, name='submission_detail'),
     path('submission/<int:submission_id>/regrade/', views.regrade_submission_view, name='regrade_submission'),
-
+    path('submission-image/<int:submission_id>/', views.serve_submission_image, name='serve_submission_image'),
 ]
 
 
