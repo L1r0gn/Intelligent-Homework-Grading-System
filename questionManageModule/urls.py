@@ -10,6 +10,7 @@ urlpatterns = [
     path('batch-import-json/', question_views.question_batch_import_json, name='question_batch_import_json'),
     path('wx/detail/random/',question_views.wx_question_detail_random,name='wx_question_detail'),
     path('questions/batch-action/', question_views.question_batch_action, name='question_batch_action'),
+    path('questions/import/review/',question_views.question_import_review, name='question_import_review'),
 ]
 
 
