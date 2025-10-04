@@ -67,7 +67,7 @@ def submissionprocess(request):
         except Problem.DoesNotExist:
             return JsonResponse({'error': '指定的题目不存在'}, status=404)
         user = User.objects.get(id=userId)
-        logger.info('用户',user,"创建了新提交")
+        logger.info('用户%s创建了新提交',user)
         if not user:
             return HttpResponseBadRequest({'error':'用户不存在'},status=405)
         # 创建新的 submission 实例，保存图片
@@ -80,7 +80,7 @@ def submissionprocess(request):
             status='PENDING', # 初始状态为判题中
         )
         submissions = Submission.objects.filter(student=user).order_by('-submitted_time')
-        logger.info(user,'做了的题目集合为:',submissions)
+        logger.info('%s做了的题目集合为:%s',user,submissions)
         # 触发异步任务！使用 .delay() 方法，任务会被发送到 Celery 队列中等待执行
         process_and_grade_submission.delay(submission.id)
         # 立即返回响应给用户
