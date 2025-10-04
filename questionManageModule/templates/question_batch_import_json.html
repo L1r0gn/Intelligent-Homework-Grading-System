@@ -14,7 +14,6 @@
                 <div class="card-body">
                     <p class="card-text">
                         选择一个JSON文件，并为该文件中的所有题目指定一个默认的所属科目和题目类型。
-                        系统会自动将JSON中的 <code>category</code> 字段添加为题目标签。
                     </p>
 
                     <form method="post" enctype="multipart/form-data" class="mt-4">
@@ -22,22 +21,32 @@
 
                         <div class="mb-3">
                             <label for="default_subject_id" class="form-label"><strong>第1步：选择默认科目</strong></label>
-                            <select class="form-select" name="default_subject_id" id="default_subject_id" required>
-                                <option value="" selected disabled>-- 请选择科目 --</option>
-                                {% for subject in subjects %}
-                                    <option value="{{ subject.id }}">{{ subject.name }}</option>
-                                {% endfor %}
-                            </select>
+                            <div class="input-group">
+                                <select class="form-select" name="default_subject_id" id="default_subject_id" required>
+                                    <option value="" selected disabled>-- 请选择科目 --</option>
+                                    {% for subject in subjects %}
+                                        <option value="{{ subject.id }}">{{ subject.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="button" class="btn btn-outline-secondary js-add-subject-btn" data-bs-toggle="modal" data-bs-target="#addSubjectModal">
+                                    <i class="fas fa-plus"></i> 新建
+                                </button>
+                            </div>
                         </div>
 
                         <div class="mb-3">
                              <label for="default_problem_type_id" class="form-label"><strong>第2步：选择默认题目类型</strong></label>
-                            <select class="form-select" name="default_problem_type_id" id="default_problem_type_id" required>
-                                <option value="" selected disabled>-- 请选择题目类型 --</option>
-                                {% for p_type in problem_types %}
-                                    <option value="{{ p_type.id }}">{{ p_type.name }}</option>
-                                {% endfor %}
-                            </select>
+                            <div class="input-group">
+                                <select class="form-select" name="default_problem_type_id" id="default_problem_type_id" required>
+                                    <option value="" selected disabled>-- 请选择题目类型 --</option>
+                                    {% for p_type in problem_types %}
+                                        <option value="{{ p_type.id }}">{{ p_type.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="button" class="btn btn-outline-secondary js-add-problem-type-btn" data-bs-toggle="modal" data-bs-target="#addProblemTypeModal">
+                                    <i class="fas fa-plus"></i> 新建
+                                </button>
+                            </div>
                         </div>
 
                         <div class="mb-3">
@@ -48,7 +57,7 @@
                         <div class="d-flex justify-content-end mt-4">
                             <a href="{% url 'question_list' %}" class="btn btn-secondary me-2">返回列表</a>
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-upload me-2"></i>上传并导入
+                                <i class="fas fa-upload me-2"></i>上传并审核
                             </button>
                         </div>
                     </form>
@@ -57,4 +66,134 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="addSubjectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">添加新科目</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <form id="addSubjectForm">
+                    <label for="new_subject_name" class="form-label">科目名称</label>
+                    <input type="text" class="form-control" id="new_subject_name" required>
+                    <div id="subject-error" class="text-danger mt-2"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" id="saveSubjectBtn">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addProblemTypeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">添加新题型</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <form id="addProblemTypeForm">
+                    <label for="new_problem_type_name" class="form-label">题型名称</label>
+                    <input type="text" class="form-control" id="new_problem_type_name" required>
+                    <div id="problem-type-error" class="text-danger mt-2"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" id="saveProblemTypeBtn">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_js %}
+<script>
+// This is the exact same reusable script as in question_create.html
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    let activeSelectElement = null;
+
+    // --- Subject adding logic ---
+    const addSubjectModalEl = document.getElementById('addSubjectModal');
+    const addSubjectModal = new bootstrap.Modal(addSubjectModalEl);
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.js-add-subject-btn')) {
+            activeSelectElement = e.target.closest('.input-group').querySelector('select');
+        }
+    });
+    document.getElementById('saveSubjectBtn').addEventListener('click', function() {
+        handleAjaxCreate({
+            nameInputId: 'new_subject_name',
+            errorDivId: 'subject-error',
+            url: "{% url 'ajax_create_subject' %}",
+            modalInstance: addSubjectModal,
+            selectsQuery: '#default_subject_id' // Target specific select
+        });
+    });
+
+    // --- Problem Type adding logic ---
+    const addProblemTypeModalEl = document.getElementById('addProblemTypeModal');
+    const addProblemTypeModal = new bootstrap.Modal(addProblemTypeModalEl);
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.js-add-problem-type-btn')) {
+            activeSelectElement = e.target.closest('.input-group').querySelector('select');
+        }
+    });
+    document.getElementById('saveProblemTypeBtn').addEventListener('click', function() {
+        handleAjaxCreate({
+            nameInputId: 'new_problem_type_name',
+            errorDivId: 'problem-type-error',
+            url: "{% url 'ajax_create_problem_type' %}",
+            modalInstance: addProblemTypeModal,
+            selectsQuery: '#default_problem_type_id' // Target specific select
+        });
+    });
+
+    // --- Generic AJAX creation function ---
+    function handleAjaxCreate(config) {
+        const nameInput = document.getElementById(config.nameInputId);
+        const errorDiv = document.getElementById(config.errorDivId);
+        const name = nameInput.value.trim();
+        errorDiv.textContent = '';
+        if (!name) {
+            errorDiv.textContent = '名称不能为空。';
+            return;
+        }
+        fetch(config.url, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+            body: JSON.stringify({ name: name })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.id) {
+                const newOption = new Option(data.name, data.id, false, true);
+                document.querySelectorAll(config.selectsQuery).forEach(select => {
+                    select.add(newOption.cloneNode(true));
+                });
+                if (activeSelectElement) {
+                    activeSelectElement.value = data.id;
+                }
+                nameInput.value = '';
+                config.modalInstance.hide();
+            } else {
+                errorDiv.textContent = data.error || '发生未知错误。';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            errorDiv.textContent = '网络请求失败，请检查后台服务。';
+        });
+    }
+
+    // --- Cleanup modal state on hide ---
+    [addSubjectModalEl, addProblemTypeModalEl].forEach(modalEl => {
+        modalEl.addEventListener('hidden.bs.modal', function () {
+            this.querySelector('input').value = '';
+            this.querySelector('.text-danger').textContent = '';
+            activeSelectElement = null;
+        });
+    });
+});
+</script>
 {% endblock %}

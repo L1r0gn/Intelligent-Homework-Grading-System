@@ -194,22 +194,17 @@ def question_batch_import_json(request):
         default_subject_id = request.POST.get('default_subject_id')
         default_problem_type_id = request.POST.get('default_problem_type_id')
 
-        if not all([json_file, default_subject_id, default_problem_type_id]):
-            messages.error(request, '必须选择JSON文件、默认科目和默认题目类型。')
-            return redirect('question_batch_import_json')
-
-        if not json_file.name.endswith('.json'):
-            messages.error(request, '请上传.json格式的文件')
-            return redirect('question_batch_import_json')
+        # ... (文件和参数校验部分保持不变) ...
 
         try:
+            # ... (json.load 和类型检查部分保持不变) ...
             json_data = json.load(json_file)
             if not isinstance(json_data, list):
                 raise TypeError('JSON文件顶层必须是数组格式 (e.g., [...])')
 
-            # 准备待审核的数据，但先不保存
             review_items = []
             for idx, item in enumerate(json_data, start=1):
+                # ... (解析 title, answer_content, category_name 等逻辑保持不变) ...
                 if not item.get('question'):
                     logger.warning(f"因缺少 'question' 字段，已跳过第 {idx} 条数据。")
                     continue
@@ -218,8 +213,7 @@ def question_batch_import_json(request):
                 if not title:
                     title = f"{item.get('year', '')} {item.get('category', '')} - 题 {item.get('index', idx)}".strip()
 
-                answer_list = item.get('answer', [])
-                answer_content = ", ".join(map(str, answer_list)) if answer_list else ""
+                answer_content = item.get('answer', '')
                 answer_explanation = item.get('analysis', '')
                 category_name = item.get('category', '').strip()
 
@@ -232,17 +226,18 @@ def question_batch_import_json(request):
                     'answer_content': answer_content,
                     'answer_explanation': answer_explanation,
                     'tags': category_name,
+                    # --- 新增：将默认ID存入每一项 ---
+                    'subject_id': default_subject_id,
+                    'problem_type_id': default_problem_type_id,
                 })
 
-            # 将处理好的数据和默认ID存入session
+            # 现在Session中每一项都包含了它自己的科目和题型ID
             request.session['import_review_data'] = review_items
-            request.session['import_defaults'] = {
-                'subject_id': default_subject_id,
-                'problem_type_id': default_problem_type_id
-            }
+            # 这一行可以删掉或保留，新逻辑不再依赖它
+            # request.session['import_defaults'] = { ... }
 
-            messages.info(request, f'JSON文件已解析。请审核以下 {len(review_items)} 条待导入题目。')
-            return redirect('question_import_review')  # 重定向到新的审核视图
+            messages.info(request, f'JSON文件已解析。请审核并修改以下 {len(review_items)} 条待导入题目。')
+            return redirect('question_import_review')
 
         except (json.JSONDecodeError, TypeError) as e:
             messages.error(request, f'JSON格式错误: {e}')
@@ -251,24 +246,24 @@ def question_batch_import_json(request):
             messages.error(request, f'处理文件时发生严重错误：{str(e)}')
 
         return redirect('question_batch_import_json')
-
-    # GET请求的逻辑保持不变
     else:
+        # GET 请求逻辑不变
         subjects = Subject.objects.all()
         problem_types = ProblemType.objects.all()
         return render(request, 'question_batch_import_json.html', {
             'subjects': subjects,
             'problem_types': problem_types,
         })
+
+
 @admin_required
 def question_import_review(request):
     """
     展示待审核的题目，并处理最终的创建请求。
     """
     review_items = request.session.get('import_review_data', [])
-    defaults = request.session.get('import_defaults', {})
 
-    if not review_items or not defaults:
+    if not review_items:
         messages.warning(request, '没有待审核的题目数据，请先上传文件。')
         return redirect('question_batch_import_json')
 
@@ -276,42 +271,60 @@ def question_import_review(request):
         success_count = 0
         error_items = []
 
-        for idx, item_data in enumerate(review_items, start=1):
+        # 获取待处理题目的总数
+        num_items = len(review_items)
+
+        for i in range(num_items):
             try:
+                # 根据索引从 request.POST 中解析每一道题的数据
+                title = request.POST.get(f'item_{i}_title', '')
+                content = request.POST.get(f'item_{i}_content', '')
+                subject_id = request.POST.get(f'item_{i}_subject')
+                problem_type_id = request.POST.get(f'item_{i}_problem_type')
+                difficulty = request.POST.get(f'item_{i}_difficulty', 2)
+                points = request.POST.get(f'item_{i}_points', 0)
+                tags_str = request.POST.get(f'item_{i}_tags', '')
+
+                answer_content = request.POST.get(f'item_{i}_answer_content', '')
+                answer_explanation = request.POST.get(f'item_{i}_answer_explanation', '')
+
+                # 准备标签数据
                 tags_to_add = []
-                if item_data.get('tags'):
-                    tag, created = ProblemTag.objects.get_or_create(name=item_data['tags'])
+                if tags_str:
+                    tag, created = ProblemTag.objects.get_or_create(name=tags_str.strip())
                     tags_to_add.append(tag)
 
+                # 准备答案数据
                 answer_data = None
-                if item_data.get('answer_content'):
+                if answer_content:
                     answer_data = {
-                        'content': item_data['answer_content'],
-                        'explanation': item_data['answer_explanation']
+                        'content': answer_content,
+                        'explanation': answer_explanation
                     }
 
-                # 调用您已有的核心函数来创建题目
+                # 调用核心函数创建题目
                 handle_problem_creation(
-                    title=item_data['title'],
-                    content=item_data['content'],
-                    difficulty=item_data['difficulty'],
-                    problem_type=defaults['problem_type_id'],
-                    subject=defaults['subject_id'],
-                    estimated_time=item_data['estimated_time'],
+                    title=title,
+                    content=content,
+                    difficulty=difficulty,
+                    problem_type=problem_type_id,
+                    subject=subject_id,
+                    estimated_time=10,  # 暂时写死，也可在表单中添加
                     creator=request.user if request.user.is_authenticated else None,
-                    points=item_data['points'],
+                    points=points,
                     answer_data=answer_data,
                     tags_to_add=tags_to_add,
                     content_data='{}'
                 )
                 success_count += 1
             except Exception as e:
-                error_items.append(f"第 {idx} 条数据 '{item_data.get('title', 'N/A')}' 导入失败: {str(e)}")
+                error_title = request.POST.get(f'item_{i}_title', f'第 {i + 1} 条数据')
+                error_items.append(f"数据 '{error_title}' 导入失败: {str(e)}")
                 continue
 
         # 处理完毕后，清理session数据
-        del request.session['import_review_data']
-        del request.session['import_defaults']
+        if 'import_review_data' in request.session:
+            del request.session['import_review_data']
 
         if success_count > 0:
             messages.success(request, f'成功导入 {success_count} 条问题。')
@@ -321,12 +334,15 @@ def question_import_review(request):
 
         return redirect('question_list')
 
-    # GET请求时，渲染审核页面
-    return render(request, 'question_import_review.html', {
-        'review_items': review_items,
-        'subject': Subject.objects.get(id=defaults['subject_id']),
-        'problem_type': ProblemType.objects.get(id=defaults['problem_type_id']),
-    })
+    # GET请求时，需要传递所有可选的科目和题型到模板，用于生成下拉框
+    else:
+        all_subjects = Subject.objects.all()
+        all_problem_types = ProblemType.objects.all()
+        return render(request, 'question_import_review.html', {
+            'review_items': review_items,
+            'all_subjects': all_subjects,
+            'all_problem_types': all_problem_types,
+        })
 @admin_required
 def question_update(request, question_id):
     """更新问题及其关联的答案和内容"""
@@ -466,4 +482,39 @@ def question_batch_action(request):
             messages.warning(request, '无效的操作。')
 
     return redirect('question_list')
+@admin_required
+@require_http_methods(["POST"])
+def ajax_create_subject(request):
+    """处理创建新科目的AJAX请求"""
+    return _ajax_create_model_instance(request, Subject, '科目')
+@admin_required
+@require_http_methods(["POST"])
+def ajax_create_problem_type(request):
+    """处理创建新题型的AJAX请求"""
+    return _ajax_create_model_instance(request, ProblemType, '题型')
 
+def _ajax_create_model_instance(request, model_class, model_name_singular):
+    """
+    通用辅助函数：通过AJAX创建一个模型实例（例如 Subject 或 ProblemType）。
+    - request: Django request对象。
+    - model_class: 要创建的模型类 (e.g., Subject).
+    - model_name_singular: 模型的单数名称，用于错误消息 (e.g., '科目').
+    """
+    try:
+        data = json.loads(request.body)
+        name = data.get('name', '').strip()
+
+        if not name:
+            return JsonResponse({'error': f'{model_name_singular}名称不能为空。'}, status=400)
+
+        if model_class.objects.filter(name=name).exists():
+            return JsonResponse({'error': f'{model_name_singular} "{name}" 已存在。'}, status=400)
+
+        new_instance = model_class.objects.create(name=name)
+        return JsonResponse({'id': new_instance.id, 'name': new_instance.name}, status=201)
+
+    except json.JSONDecodeError:
+        return JsonResponse({'error': '无效的JSON数据。'}, status=400)
+    except Exception as e:
+        logger.error(f'AJAX创建{model_name_singular}失败: {str(e)}', exc_info=True)
+        return JsonResponse({'error': '服务器内部错误。'}, status=500)

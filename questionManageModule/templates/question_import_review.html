@@ -1,75 +1,241 @@
 {% extends 'question_view_base.html' %}
 {% load static %}
 
-{% block title %}审核导入题目{% endblock %}
+{% block title %}审核并编辑导入题目{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-    <div class="card shadow-sm">
+    <div class="card shadow-sm mb-4">
         <div class="card-header">
-            <h4 class="mb-0"><i class="fas fa-tasks me-2"></i>审核并确认导入</h4>
+            <h4 class="mb-0"><i class="fas fa-edit me-2"></i>审核并编辑导入题目</h4>
         </div>
         <div class="card-body">
-            <div class="alert alert-info">
-                <p class="mb-1"><strong>默认科目:</strong> {{ subject.name }}</p>
-                <p class="mb-0"><strong>默认题目类型:</strong> {{ problem_type.name }}</p>
-            </div>
-            <p>请检查以下从JSON文件中解析出的题目。确认无误后，点击底部的 "确认并全部导入" 按钮。</p>
+            <p>所有题目已全部展开。左侧为主要内容区域，方便阅读和编辑；右侧为属性设置区域，方便快速修改。请完成审核后，点击底部按钮统一导入。</p>
         </div>
     </div>
 
-    {% for item in review_items %}
-    <div class="card shadow-sm mt-3">
-        <div class="card-header bg-light">
-            <strong>题目 #{{ forloop.counter }}: {{ item.title }}</strong>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-8">
-                    <p><strong>题目内容:</strong></p>
-                    <pre class="bg-light p-2 border rounded"><code>{{ item.content }}</code></pre>
-                </div>
-                <div class="col-md-4">
-                    <ul class="list-group">
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            难度
-                            <span class="badge bg-secondary rounded-pill">{{ item.difficulty }}</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            分数
-                            <span class="badge bg-secondary rounded-pill">{{ item.points }}</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            标签 (Category)
-                            <span class="badge bg-info rounded-pill">{{ item.tags|default:"无" }}</span>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-            <hr>
-            <div>
-                <p><strong>答案:</strong> {{ item.answer_content|default:"未提供" }}</p>
-                {% if item.answer_explanation %}
-                <p><strong>解析:</strong> {{ item.answer_explanation }}</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-    {% endfor %}
+    <form method="post" action="{% url 'question_import_review' %}">
+        {% csrf_token %}
 
-    <div class="card shadow-sm mt-4">
-        <div class="card-body text-center">
-             <form method="post" action="{% url 'question_import_review' %}">
-                {% csrf_token %}
-                <p>共 <strong>{{ review_items|length }}</strong> 条题目待导入。 </p>
-                <a href="{% url 'question_batch_import_json' %}" class="btn btn-danger">
-                    <i class="fas fa-times me-2"></i>取消并重新上传
-                </a>
-                <button type="submit" class="btn btn-success btn-lg">
-                    <i class="fas fa-check-circle me-2"></i>确认并全部导入
-                </button>
-            </form>
+        {% for item in review_items %}
+        <div class="card shadow-sm mt-3">
+            <div class="card-body p-4">
+                <div class="row g-5">
+                    <div class="col-lg-8 border-end pe-4">
+                        <div class="mb-4">
+                            <label class="form-label fs-5 fw-bold">题目 #{{ forloop.counter }}：标题</label>
+                            <input type="text" class="form-control" name="item_{{ forloop.counter0 }}_title" value="{{ item.title }}">
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">题目内容</label>
+                            <textarea class="form-control editor" name="item_{{ forloop.counter0 }}_content" id="editor-content-{{ forloop.counter0 }}" rows="6">{{ item.content }}</textarea>
+                        </div>
+                        <hr class="my-4">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">答案</label>
+                            <textarea class="form-control editor" name="item_{{ forloop.counter0 }}_answer_content" id="editor-answer-{{ forloop.counter0 }}" rows="3">{{ item.answer_content }}</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">解析</label>
+                            <textarea class="form-control editor" name="item_{{ forloop.counter0 }}_answer_explanation" id="editor-explanation-{{ forloop.counter0 }}" rows="4">{{ item.answer_explanation }}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <h5 class="mb-3">属性设置</h5>
+                        <div class="mb-3">
+                            <label class="form-label">科目</label>
+                            <div class="input-group">
+                                <select class="form-select" name="item_{{ forloop.counter0 }}_subject">
+                                    {% for subject in all_subjects %}
+                                    <option value="{{ subject.id }}" {% if subject.id == item.subject_id|add:0 %}selected{% endif %}>{{ subject.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="button" class="btn btn-outline-secondary js-add-subject-btn" data-bs-toggle="modal" data-bs-target="#addSubjectModal">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">题型</label>
+                            <div class="input-group">
+                                <select class="form-select" name="item_{{ forloop.counter0 }}_problem_type">
+                                    {% for p_type in all_problem_types %}
+                                    <option value="{{ p_type.id }}" {% if p_type.id == item.problem_type_id|add:0 %}selected{% endif %}>{{ p_type.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="button" class="btn btn-outline-secondary js-add-problem-type-btn" data-bs-toggle="modal" data-bs-target="#addProblemTypeModal">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">难度 (1-5)</label>
+                            <input type="number" class="form-control" name="item_{{ forloop.counter0 }}_difficulty" value="{{ item.difficulty }}" min="1" max="5">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">分数</label>
+                            <input type="number" class="form-control" name="item_{{ forloop.counter0 }}_points" value="{{ item.points }}" min="0">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">标签 (Category)</label>
+                            <input type="text" class="form-control" name="item_{{ forloop.counter0 }}_tags" value="{{ item.tags }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="card shadow-sm mt-4">
+            <div class="card-body text-center sticky-bottom bg-light py-3">
+                <p class="mb-2">共 <strong>{{ review_items|length }}</strong> 条题目待导入。 </p>
+                <a href="{% url 'question_batch_import_json' %}" class="btn btn-danger"><i class="fas fa-times me-2"></i>取消并重新上传</a>
+                <button type="submit" class="btn btn-success btn-lg"><i class="fas fa-check-circle me-2"></i>确认并全部导入</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+
+<div class="modal fade" id="addSubjectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">添加新科目</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <form id="addSubjectForm">
+                    <label for="new_subject_name" class="form-label">科目名称</label>
+                    <input type="text" class="form-control" id="new_subject_name" required>
+                    <div id="subject-error" class="text-danger mt-2"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" id="saveSubjectBtn">保存</button>
+            </div>
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="addProblemTypeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">添加新题型</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <form id="addProblemTypeForm">
+                    <label for="new_problem_type_name" class="form-label">题型名称</label>
+                    <input type="text" class="form-control" id="new_problem_type_name" required>
+                    <div id="problem-type-error" class="text-danger mt-2"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" id="saveProblemTypeBtn">保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_js %}
+<script src="https://cdn.ckeditor.com/ckeditor5/35.4.0/classic/ckeditor.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csrfToken = document.querySelector('form [name=csrfmiddlewaretoken]').value;
+    let activeSelectElement = null; // 用于存储当前操作的下拉框
+
+    // CKEditor 初始化 (保持不变)
+    document.querySelectorAll('.editor').forEach(editorEl => {
+        ClassicEditor.create(editorEl, {
+            toolbar: ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', '|', 'undo', 'redo']
+        }).catch(error => console.error('CKEditor init error', error));
+    });
+
+    // --- 科目添加逻辑 (微调以记录当前下拉框) ---
+    const addSubjectModalEl = document.getElementById('addSubjectModal');
+    const addSubjectModal = new bootstrap.Modal(addSubjectModalEl);
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.js-add-subject-btn')) {
+            activeSelectElement = e.target.closest('.input-group').querySelector('select');
+        }
+    });
+    document.getElementById('saveSubjectBtn').addEventListener('click', function() {
+        handleAjaxCreate({
+            nameInputId: 'new_subject_name',
+            errorDivId: 'subject-error',
+            url: "{% url 'ajax_create_subject' %}",
+            modalInstance: addSubjectModal,
+            selectsQuery: 'select[name^="item_"][name$="_subject"]'
+        });
+    });
+
+    // --- 新增：题型添加逻辑 ---
+    const addProblemTypeModalEl = document.getElementById('addProblemTypeModal');
+    const addProblemTypeModal = new bootstrap.Modal(addProblemTypeModalEl);
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.js-add-problem-type-btn')) {
+            activeSelectElement = e.target.closest('.input-group').querySelector('select');
+        }
+    });
+    document.getElementById('saveProblemTypeBtn').addEventListener('click', function() {
+        handleAjaxCreate({
+            nameInputId: 'new_problem_type_name',
+            errorDivId: 'problem-type-error',
+            url: "{% url 'ajax_create_problem_type' %}",
+            modalInstance: addProblemTypeModal,
+            selectsQuery: 'select[name^="item_"][name$="_problem_type"]'
+        });
+    });
+
+    // --- 通用 AJAX 创建函数 ---
+    function handleAjaxCreate(config) {
+        const nameInput = document.getElementById(config.nameInputId);
+        const errorDiv = document.getElementById(config.errorDivId);
+        const name = nameInput.value.trim();
+        errorDiv.textContent = '';
+
+        if (!name) {
+            errorDiv.textContent = '名称不能为空。';
+            return;
+        }
+
+        fetch(config.url, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+            body: JSON.stringify({ name: name })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.id) {
+                const newOption = new Option(data.name, data.id);
+                // 更新页面上所有的相关下拉框
+                document.querySelectorAll(config.selectsQuery).forEach(select => {
+                    select.add(newOption.cloneNode(true));
+                });
+                // 选中当前操作的那个下拉框的新选项
+                if (activeSelectElement) {
+                    activeSelectElement.value = data.id;
+                }
+                nameInput.value = '';
+                config.modalInstance.hide();
+            } else {
+                errorDiv.textContent = data.error || '发生未知错误。';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            errorDiv.textContent = '网络请求失败，请检查后台服务。';
+        });
+    }
+
+    // 清理弹窗状态
+    [addSubjectModalEl, addProblemTypeModalEl].forEach(modalEl => {
+        modalEl.addEventListener('hidden.bs.modal', function () {
+            this.querySelector('input').value = '';
+            this.querySelector('.text-danger').textContent = '';
+            activeSelectElement = null;
+        });
+    });
+});
+</script>
 {% endblock %}
