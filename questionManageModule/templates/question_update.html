@@ -30,6 +30,11 @@
                         </div>
 
                         <div class="mb-3">
+                            <label for="title" class="form-label">题目总分</label>
+                            <input type="text" class="form-control" id="points" name="points" value="{{ question.points }}" required>
+                        </div>
+
+                        <div class="mb-3">
                             <label for="problem_type" class="form-label">题目类型</label>
                             <select class="form-select" id="problem_type" name="problem_type" required>
                                 <option value="" disabled {% if not question.problem_type %}selected{% endif %}>请选择题目类型...</option>
@@ -60,7 +65,6 @@
                             <textarea class="form-control" id="answer_content_data" name="answer_content_data" rows="5" placeholder='例如：{"correct_option": "A", "points": 10}'>{{ question.answer.content_data|safe }}</textarea>
                             <small class="form-text text-muted">用于程序化评分的结构化数据，必须是合法的JSON格式。</small>
                         </div>
-                        <hr class="my-4">
 
                         <div class="row">
                             </div>

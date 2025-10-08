@@ -41,6 +41,9 @@
                         <dt class="col-sm-4">题目类型:</dt>
                         <dd class="col-sm-8">{{ question.problem_type.name }}</dd>
 
+                        <dt class="col-sm-4">题目总分:</dt>
+                        <dd class="col-sm-8">{{ question.points }}</dd>
+
                         <dt class="col-sm-4">创建人:</dt>
                         <dd class="col-sm-8">{{ question.creator.username|default:"N/A" }}</dd>
                     </dl>

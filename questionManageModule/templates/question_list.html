@@ -5,21 +5,29 @@
 
 {% block content %}
 <div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>问题管理</h2>
+        <div>
+            <a href="{% url 'question_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>创建新问题
+            </a>
+            <a href="{% url 'question_batch_import_json' %}" class="btn btn-info">
+                <i class="fas fa-file-import me-2"></i>批量导入
+            </a>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <form method="GET" action="{% url 'question_list' %}" class="d-flex">
+            <input class="form-control me-2" type="search" placeholder="搜索题目、科目、类型、标签..." name="q" value="{{ search_query|default_if_none:'' }}">
+            <button class="btn btn-outline-secondary" type="submit">
+                <i class="fas fa-search"></i> 搜索
+            </button>
+        </form>
+    </div>
+
     <form method="POST" action="{% url 'question_batch_action' %}" id="batch-action-form">
         {% csrf_token %}
-
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>问题管理</h2>
-            <div>
-                <a href="{% url 'question_create' %}" class="btn btn-primary">
-                    <i class="fas fa-plus me-2"></i>创建新问题
-                </a>
-                <a href="{% url 'question_batch_import_json' %}" class="btn btn-info">
-                    <i class="fas fa-file-import me-2"></i>批量导入
-                </a>
-            </div>
-        </div>
-
         <div class="card shadow-sm">
             <div class="card-header bg-light d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">题目列表</h5>
@@ -33,12 +41,12 @@
                     <button type="submit" class="btn btn-sm btn-secondary">应用</button>
                 </div>
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table table-hover table-striped mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th style="width: 1%;"><input class="form-check-input" type="checkbox" id="select-all-checkbox"></th>
+                                <th style="width: 1%;" class="text-center"><input class="form-check-input" type="checkbox" id="select-all-checkbox"></th>
                                 <th>ID</th>
                                 <th>标题</th>
                                 <th>所属科目</th>
@@ -50,9 +58,9 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for question in questions %}
-                            <tr class {% if not question.is_active %}class="table-secondary text-muted"{% endif %}>
-                                <td><input class="form-check-input row-checkbox" type="checkbox" name="selected_ids" value="{{ question.id }}"></td>
+                            {% for question in page_obj %}
+                            <tr {% if not question.is_active %}class="table-secondary text-muted"{% endif %}>
+                                <td class="text-center"><input class="form-check-input row-checkbox" type="checkbox" name="selected_ids" value="{{ question.id }}"></td>
                                 <td><strong>{{ question.id }}</strong></td>
                                 <td>
                                     <a href="{% url 'question_detail' question.id %}" class="text-decoration-none fw-bold">
@@ -97,8 +105,13 @@
                             <tr>
                                 <td colspan="9" class="text-center py-5">
                                     <div class="text-muted">
-                                        <p class="mb-2">暂无问题数据</p>
-                                        <a href="{% url 'question_create' %}" class="btn btn-sm btn-outline-primary">点击这里，创建第一个问题</a>
+                                        {% if search_query %}
+                                            <p class="mb-2">没有找到与 “<strong>{{ search_query }}</strong>” 相关的结果。</p>
+                                            <a href="{% url 'question_list' %}" class="btn btn-sm btn-outline-secondary">清空搜索条件</a>
+                                        {% else %}
+                                            <p class="mb-2">暂无问题数据</p>
+                                            <a href="{% url 'question_create' %}" class="btn btn-sm btn-outline-primary">点击这里，创建第一个问题</a>
+                                        {% endif %}
                                     </div>
                                 </td>
                             </tr>
@@ -107,6 +120,43 @@
                     </table>
                 </div>
             </div>
+            {% if page_obj.paginator.num_pages > 1 %}
+            <div class="card-footer bg-light">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center mb-0">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1&q={{ search_query|default_if_none:'' }}" aria-label="First">&laquo;&laquo;</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ search_query|default_if_none:'' }}" aria-label="Previous">&laquo;</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><a class="page-link" href="#">&laquo;&laquo;</a></li>
+                            <li class="page-item disabled"><a class="page-link" href="#">&laquo;</a></li>
+                        {% endif %}
+
+                        <li class="page-item disabled">
+                            <span class="page-link">
+                                第 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 页
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ search_query|default_if_none:'' }}" aria-label="Next">&raquo;</a>
+                            </li>
+                             <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&q={{ search_query|default_if_none:'' }}" aria-label="Last">&raquo;&raquo;</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><a class="page-link" href="#">&raquo;</a></li>
+                            <li class="page-item disabled"><a class="page-link" href="#">&raquo;&raquo;</a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
         </div>
     </form>
 </div>
@@ -118,42 +168,50 @@ document.addEventListener('DOMContentLoaded', function() {
     const rowCheckboxes = document.querySelectorAll('.row-checkbox');
     const batchForm = document.getElementById('batch-action-form');
 
-    // “全选”复选框的逻辑
-    selectAllCheckbox.addEventListener('change', function() {
-        rowCheckboxes.forEach(checkbox => {
-            checkbox.checked = this.checked;
+    if (selectAllCheckbox) {
+        // “全选”复选框的逻辑
+        selectAllCheckbox.addEventListener('change', function() {
+            rowCheckboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
         });
-    });
+    }
 
     // 如果取消选中任何一个行复选框，则取消“全选”复选框
     rowCheckboxes.forEach(checkbox => {
         checkbox.addEventListener('change', function() {
             if (!this.checked) {
-                selectAllCheckbox.checked = false;
+                if (selectAllCheckbox) {
+                    selectAllCheckbox.checked = false;
+                }
             } else if (document.querySelectorAll('.row-checkbox:checked').length === rowCheckboxes.length) {
-                selectAllCheckbox.checked = true;
+                if (selectAllCheckbox) {
+                    selectAllCheckbox.checked = true;
+                }
             }
         });
     });
 
     // 表单提交前的确认
-    batchForm.addEventListener('submit', function(event) {
-        const action = this.querySelector('select[name="action"]').value;
-        const selectedCount = document.querySelectorAll('.row-checkbox:checked').length;
+    if (batchForm) {
+        batchForm.addEventListener('submit', function(event) {
+            const action = this.querySelector('select[name="action"]').value;
+            const selectedCount = document.querySelectorAll('.row-checkbox:checked').length;
 
-        if (selectedCount === 0) {
-            alert('请至少选择一个项目！');
-            event.preventDefault(); // 阻止表单提交
-            return;
-        }
-
-        if (action === 'delete') {
-            const confirmation = confirm(`您确定要删除选中的 ${selectedCount} 个问题吗？此操作不可恢复！`);
-            if (!confirmation) {
-                event.preventDefault(); // 如果用户取消，则阻止表单提交
+            if (selectedCount === 0) {
+                alert('请至少选择一个项目！');
+                event.preventDefault(); // 阻止表单提交
+                return;
             }
-        }
-    });
+
+            if (action === 'delete') {
+                const confirmation = confirm(`您确定要删除选中的 ${selectedCount} 个问题吗？此操作不可恢复！`);
+                if (!confirmation) {
+                    event.preventDefault(); // 如果用户取消，则阻止表单提交
+                }
+            }
+        });
+    }
 });
 </script>
 {% endblock %}

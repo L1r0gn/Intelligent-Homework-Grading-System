@@ -1,15 +1,10 @@
 import json
 import logging
-
-import requests
 from celery import shared_task
 from openai import OpenAI
-
 from .models import Submission, Problem
 from IntelligentHomeworkGradingSystem import settings
 import base64
-from PIL import Image
-import pytesseract
 logger = logging.getLogger(__name__)
 def encode_image_to_base64(image_path):
     """将图片文件编码为 Base64 字符串。"""
@@ -25,6 +20,7 @@ def grade_submission_with_ai(standard_answer, total_score,submission_id):
     """使用的语言模型对OCR文本进行分析和打分。"""
     logger.info('标准答案为', standard_answer)
     image_url = f"http://119.29.152.140:8000/grading/submission-image/{submission_id}"
+    # image_url = "http://119.29.152.140:8000/grading/submission-image/1"
     logger.info(image_url)
     # 针对纯文本评分重写的 Prompt
     prompt = f"""
@@ -59,8 +55,8 @@ def grade_submission_with_ai(standard_answer, total_score,submission_id):
                 {
                     "role": "user",
                     "content": [
-                        {"image": image_url},
-                        {"text":prompt}
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": image_url}
                     ]
                 }
             ],

@@ -15,6 +15,8 @@ from django.views.decorators.http import require_http_methods
 from IntelligentHomeworkGradingSystem import settings
 from userManageModule.decorators import jwt_login_required
 from .models import Problem, ProblemContent, Answer, ProblemType, Subject, ProblemTag  # 确保导入所有需要的模型
+from django.core.paginator import Paginator
+from django.db.models import Q
 logger = logging.getLogger(__name__)
 def admin_required(view_func):
     """自定义装饰器：仅允许管理员（user_attribute >= 3）访问"""
@@ -31,9 +33,32 @@ def admin_required(view_func):
 
 @login_required(login_url="login")
 def question_list(request):
-    """问题列表"""
-    questions = Problem.objects.all()
-    return render(request, 'question_list.html', {'questions': questions})
+    """问题列表（支持搜索和分页）"""
+    # 优先获取相关联的对象，以优化性能
+    question_queryset = Problem.objects.select_related(
+        'subject', 'problem_type'
+    ).prefetch_related('tags').order_by('-create_time')
+
+    # 处理搜索请求
+    search_query = request.GET.get('q', '').strip()
+    if search_query:
+        question_queryset = question_queryset.filter(
+            Q(title__icontains=search_query) |
+            Q(subject__name__icontains=search_query) |
+            Q(problem_type__name__icontains=search_query) |
+            Q(tags__name__icontains=search_query)
+        ).distinct()
+
+    # 设置分页
+    paginator = Paginator(question_queryset, 10)  # 每页显示 10 条
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'search_query': search_query,
+    }
+    return render(request, 'question_list.html', context)
 # @admin_required
 @login_required(login_url="login")
 def question_detail(request, question_id):
@@ -106,8 +131,6 @@ def handle_problem_creation(
             problem.tags.add(*tags_to_add)
 
         return problem
-
-
 @admin_required
 def question_create(request):
     # 设置默认值
@@ -254,8 +277,6 @@ def question_batch_import_json(request):
             'subjects': subjects,
             'problem_types': problem_types,
         })
-
-
 @admin_required
 def question_import_review(request):
     """
