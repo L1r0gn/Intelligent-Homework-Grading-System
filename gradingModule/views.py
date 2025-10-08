@@ -22,8 +22,8 @@ def admin_required(view_func):
         if not request.user.is_authenticated:
             return redirect('login')
         if request.user.user_attribute < 3:
-            logger.info(request.user.username,'的权限等级为',request.user.user_attribute)
-            logger.info(request.user.username,'没有权限访问该页面')
+            logger.info("%s 的权限等级为 %s", request.user.username, request.user.user_attribute)
+            logger.info("%s 没有权限访问该页面", request.user.username)
             messages.error(request, "您没有权限访问该页面。")
             return redirect('question_list')  # 或重定向到首页
         return view_func(request, *args, **kwargs)
@@ -67,7 +67,7 @@ def submissionprocess(request):
         except Problem.DoesNotExist:
             return JsonResponse({'error': '指定的题目不存在'}, status=404)
         user = User.objects.get(id=userId)
-        logger.info('用户',user,"创建了新提交")
+        logger.info("用户 %s 创建了新提交", user)
         if not user:
             return HttpResponseBadRequest({'error':'用户不存在'},status=405)
         # 创建新的 submission 实例，保存图片
@@ -80,7 +80,7 @@ def submissionprocess(request):
             status='PENDING', # 初始状态为判题中
         )
         submissions = Submission.objects.filter(student=user).order_by('-submitted_time')
-        logger.info(user,'做了的题目集合为:',submissions)
+        logger.info("用户 %s 当前共有 %d 条提交记录", user, submissions.count())
         # 触发异步任务！使用 .delay() 方法，任务会被发送到 Celery 队列中等待执行
         process_and_grade_submission.delay(submission.id)
         # 立即返回响应给用户
@@ -145,8 +145,8 @@ def regrade_submission_view(request, submission_id):
         submission.score = None  # 清空之前的分数
         submission.grading_result = "正在重新加入批改队列..."
         submission.save()
-        logger.info(submission,'is regrading')
-        logger.info(submission.id)
+        logger.info("%s is regrading", submission)
+        logger.info("Regrading submission ID: %s", submission.id)
         # --- 这里是核心：调用您已有的Celery异步任务 ---
         process_and_grade_submission.delay(submission.id)
         # 将用户重定向回作业详情页
