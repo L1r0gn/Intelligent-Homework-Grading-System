@@ -206,4 +206,4 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'  # 生产环境收集静态文件的目�
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-OPENROUTER_API_KEY ='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'
+OPENROUTER_API_KEY ='sk-a57f72efbd53491f87d3c46eb911ca10'

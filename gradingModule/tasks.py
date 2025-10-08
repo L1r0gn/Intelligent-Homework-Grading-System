@@ -1,25 +1,14 @@
 import json
 import requests
 from celery import shared_task
+from openai import OpenAI
+
 from .models import Submission, Problem
 from IntelligentHomeworkGradingSystem import settings
 import base64
 from PIL import Image
 import pytesseract
 
-
-def extract_text_from_image(image_path):
-    """使用 Tesseract OCR 从图片中提取文本。"""
-    try:
-        image = Image.open(image_path)
-        text = pytesseract.image_to_string(image, lang='chi_sim+eng')
-        print(f"✅ OCR 识别成功！提取文本: {text[:150]}...")
-        return text
-    except Exception as e:
-        print(f"❌ OCR 识别失败: {e}")
-        return None
-
-# encode_image_to_base64 函数在此流程中不再需要，可以保留或删除
 def encode_image_to_base64(image_path):
     """将图片文件编码为 Base64 字符串。"""
     try:
@@ -30,34 +19,27 @@ def encode_image_to_base64(image_path):
         return None
 
 
-def grade_submission_with_ai(standard_answer, total_score, student_answer_text):
-    """(纯文本模式) 使用 OpenRouter 的语言模型对OCR文本进行分析和打分。"""
+def grade_submission_with_ai(standard_answer, total_score, student_answer_text,submission_id):
+    """使用的语言模型对OCR文本进行分析和打分。"""
     print('标准答案为', standard_answer)
-    print('学生答案(OCR)为', student_answer_text)
-
+    image_url = f"http://119.29.152.140//grading/submission-image/{submission_id}"
+    print(image_url)
     # 针对纯文本评分重写的 Prompt
     prompt = f"""
     # 角色
     你是一名经验丰富、严格公正的阅卷老师。
-
     # 任务
-    请根据提供的“标准答案”，对“学生提交的答案文本”进行分析和打分。
-
-    # 重要提示
-    学生提交的答案文本是通过OCR（光学字符识别）技术从图片中提取的，因此可能包含识别错误、乱码或格式问题。请在评分时考虑到这一点，并尽量理解文本的本意。
-
+    请根据提供的“标准答案”，对“学生提交的答案图片”进行分析和打分。
     # 上下文
     - 题目总分: {total_score}分
     - 标准答案: ```{standard_answer}```
     - 学生提交的答案文本 (来自OCR): ```{student_answer_text}```
-
     # 评分要求
-    1.  仔细阅读并比对“标准答案”和“学生提交的答案文本”。
+    1.  仔细阅读并比对“标准答案”和“学生提交的答案图片”。
     2.  识别出学生答对的关键得分点。
     3.  识别出学生遗漏的、或回答错误的地方。
     4.  综合分析，给出一个合理的分数。分数必须是整数。
     5.  用简洁的语言给出评分的理由。
-
     # 输出格式
     请严格按照以下 JSON 格式返回你的评分结果，不要包含任何额外的解释或文字。
     {{
@@ -65,37 +47,32 @@ def grade_submission_with_ai(standard_answer, total_score, student_answer_text):
       "justification": "<你给出的评分理由 (字符串)>"
     }}
     """
-
-    headers = {
-        "Authorization": f"Bearer {settings.OPENROUTER_API_KEY}",
-        "Content-Type": "application/json"
-    }
-    # 纯文本模型的数据结构
-    data = {
-        # 使用一个高效的纯文本模型
-        "model": "mistralai/mistral-7b-instruct:free",
-        "messages": [
-            {
-                "role": "user",
-                "content": prompt
-            }
-        ],
-        "response_format": {"type": "json_object"}
-    }
-
+    client = OpenAI(
+        base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+        api_key=settings.OPENROUTER_API_KEY,
+    )
     try:
-        response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data, timeout=120)
-        response.raise_for_status()
-        ai_response_json = response.json()
-        ai_result_str = ai_response_json.get('choices', [{}])[0].get('message', {}).get('content', '{}')
-        print(f"✅ AI 文本分析成功！返回内容: {ai_result_str}")
-        return ai_result_str
-    except requests.RequestException as e:
+        completion = client.chat.completions.create(
+            model="qwen-vl-plus",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"image": image_url},
+                        {"text":prompt}
+                    ]
+                }
+            ],
+            response_format = {"type": "json_object"},  # 👈 关键！强制 JSON 输出
+            temperature = 0,  # 👈 提高一致性
+            timeout = 120  # 👈 防止无限等待
+        )
+        content = completion.choices[0].message.content
+        print(f"✅ AI 文本分析成功！返回内容: {content}")
+        return content
+    except Exception as e:  # 或更精确地捕获 openai.APIError 等
         print(f"❌ 调用 OpenRouter API 失败: {e}")
-        if e.response is not None:
-            print(f"❌ 响应内容: {e.response.text}")
         return None
-
 @shared_task
 def process_and_grade_submission(submission_id):
     try:
@@ -152,7 +129,8 @@ def process_and_grade_submission(submission_id):
     ai_response_str = grade_submission_with_ai(
         standard_answer=problem.answer.explanation,
         total_score=problem.points,
-        student_answer_text=extracted_text  # 传入OCR识别的文本
+        student_answer_text=extracted_text,  # 传入OCR识别的文本
+        submission_id = submission_id,
     )
 
     # 5. 解析和保存结果
