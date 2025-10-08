@@ -24,7 +24,7 @@ def encode_image_to_base64(image_path):
 def grade_submission_with_ai(standard_answer, total_score,submission_id):
     """使用的语言模型对OCR文本进行分析和打分。"""
     logger.info('标准答案为', standard_answer)
-    image_url = f"http://119.29.152.140/grading/submission-image/{submission_id}"
+    image_url = f"http://119.29.152.140:8000/grading/submission-image/{submission_id}"
     logger.info(image_url)
     # 针对纯文本评分重写的 Prompt
     prompt = f"""
