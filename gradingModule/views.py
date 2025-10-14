@@ -1,5 +1,7 @@
 from audioop import reverse
 from functools import wraps
+from http.client import responses
+
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.http import JsonResponse, HttpResponseBadRequest, Http404, HttpResponse
@@ -96,10 +98,8 @@ def submissionprocess(request):
 def submission_list(request):
     # 获取所有提交记录，按时间倒序排列
     submissions = Submission.objects.all().order_by('-submitted_time')
-
     # 初始化筛选表单
     form = SubmissionFilterForm(request.GET or None)
-
     # 应用筛选
     if form.is_valid():
         status = form.cleaned_data.get('status')
@@ -166,3 +166,13 @@ def serve_submission_image(request, submission_id):
     )
     response['Content-Disposition'] = 'inline'  # 在浏览器中直接显示，而非下载
     return response
+
+
+@jwt_login_required
+def showMySubmissions(request):
+    mySubmissions = Submission.objects.all().order_by('-submitted_time').filter(student=request.user).values('id','status','score','score','submitted_time')
+    if request.method == "GET":
+        response_data = {
+            'mySubmissions': list(mySubmissions),
+        }
+        return JsonResponse(response_data)

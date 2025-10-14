@@ -140,13 +140,9 @@ def wx_user_list(request, user_id):
         # 处理关联字段和枚举值转换（关键优化）
     class_name = user.class_in.name if user.class_in else None  # 处理班级为空的情况
     # 性别转换：1→男，2→女，其他→None
-    gender_map = {1: '男', 2: '女'}
-    gender = gender_map.get(user.gender)
-
+    gender = user.gender
     # 用户属性转换：1→student，2→teacher
-    attribute_map = {1: 'student', 2: 'teacher'}
-    user_attribute = attribute_map.get(user.user_attribute)
-
+    user_attribute = user.user_attribute
     # 构造响应数据（包含前端需要的所有字段）
     data = {
         'id': user.id,
@@ -156,6 +152,7 @@ def wx_user_list(request, user_id):
         'gender': gender,  # 返回转换后的文本（男/女/None）
         'user_attribute': user_attribute,  # 返回转换后的文本（student/teacher/None）
         'class_in': {
+            'id': user.class_in.id,
             'name': class_name  # 班级名称（空则为None）
         },
         'wx_country': user.wx_country,
@@ -265,6 +262,8 @@ def wx_user_edit(request, user_id):
         classNameList = className.objects.all().values('id', 'name')  # 获取所有班级实例
         response_data = {
             'user': {
+                'wx_nickName': user.wx_nickName,
+                'wx_avatar': user.wx_avatar,
                 'gender': user.gender,
                 'user_attribute': user.user_attribute,
                 'class_in': {
@@ -281,6 +280,7 @@ def wx_user_edit(request, user_id):
         # 获取前端传来的数据
         try:
             data = json.loads(request.body)
+            logger.info(data)
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON format'}, status=400)
         # print('用户要更改为的数据为:',data)
@@ -294,11 +294,15 @@ def wx_user_edit(request, user_id):
             user.phone = data['phone']
         if 'nickName' in data:
             user.wx_nickName = data['nickName']
+        if 'avatarUrl' in data:
+            user.wx_avatar = data['avatarUrl']
         if 'class_in_id' in data:
             user.class_in = className.objects.get(id=data['class_in_id'])
         user.save()
         response_data = {
             'user': {
+                'wx_nickName': user.wx_nickName,
+                'wx_avatar': user.wx_avatar,
                 'gender': user.gender,
                 'user_attribute': user.user_attribute,
                 'class_in': {
@@ -438,3 +442,33 @@ def user_register(request):
         else:
             # 表单验证失败，返回带错误信息的表单
             return render(request, 'user_register.html', {'form': form})
+@csrf_exempt
+@jwt_login_required  # 用你已有的装饰器，如 @token_required
+def create_class(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': '仅支持 POST 请求'}, status=405)
+    try:
+        data = json.loads(request.body)
+        class_name = data.get('name', '').strip()
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({'error': '无效的 JSON 格式'}, status=400)
+
+    if not class_name:
+        return JsonResponse({'error': '班级名称不能为空'}, status=400)
+    # 防止重复创建（可选：忽略大小写）
+    class_obj, created = className.objects.get_or_create(
+        name=class_name,
+        defaults={'created_by': request.user}
+    )
+    if created:
+        message = '班级创建成功'
+    else:
+        message = '班级已存在'
+    return JsonResponse({
+        'success': True,
+        'message': message,
+        'class': {
+            'id': class_obj.id,
+            'name': class_obj.name
+        }
+    })

@@ -3,6 +3,14 @@ from django.db import models
 
 class className(models.Model):
     name = models.CharField(verbose_name="班级名称", max_length=30)
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        'User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_classes'
+    )
     def __str__(self):
         return self.name
 

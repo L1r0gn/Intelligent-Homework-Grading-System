@@ -73,7 +73,7 @@ def wx_question_detail_random(request):
         try:
             # 使用order_by('?')随机排序并获取第一条记录
             question = Problem.objects.filter(is_active=True).order_by('?').first()
-            question = Problem.objects.filter(id = 435).first()
+            # question = Problem.objects.filter(id = 435).first()
             logger.info(question.problem_type.name)
             logger.info(question.answer)
             if question:
