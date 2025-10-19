@@ -1,18 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-class className(models.Model):
-    name = models.CharField(verbose_name="班级名称", max_length=30)
-    created_at = models.DateTimeField(auto_now_add=True)
-    created_by = models.ForeignKey(
-        'User',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='created_classes'
-    )
-    def __str__(self):
-        return self.name
 
 class User(AbstractUser):
     genders_choices = [
@@ -22,7 +10,7 @@ class User(AbstractUser):
     phone = models.BigIntegerField(verbose_name="手机号",null=True,blank=True,default=13500000000)
     gender = models.SmallIntegerField(verbose_name="性别", choices=genders_choices,null=True,blank=True)
     user_attribute = models.SmallIntegerField(verbose_name="属性", choices=[
-            (0,'未定义'),
+            (0, '未定义'),
             (1, '学生'),
             (2, '老师'),
             (3, '管理员'),
@@ -43,11 +31,51 @@ class User(AbstractUser):
     last_login_time = models.DateTimeField(auto_now=True, verbose_name="最后登录时间")
 
     # 外键关联班级表，允许为空（如果用户可以不关联班级）
-    class_in = models.ForeignKey(
+    class_in = models.ManyToManyField(
         to="className",
-        to_field="id",
-        null=True,
         blank=True,
-        on_delete=models.SET_NULL,
+        related_name='members',  # 反向查询：class.members.all() 获取所有成员
         verbose_name="所属班级"
     )
+
+
+class className(models.Model):
+    name = models.CharField(max_length=100)
+    code = models.CharField(
+        max_length=6,
+        unique=True,
+        blank=True,
+        null=True  # 先允许为空，稍后填充
+    )
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_classes')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'userManageModule_classname'
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        # 如果是新创建的对象且没有code，生成code
+        if not self.pk and not self.code:
+            self.code = self.generate_unique_code()
+        super().save(*args, **kwargs)
+
+    def generate_unique_code(self):
+        """生成唯一班级码"""
+        import random
+        import string
+
+        letters = [c for c in string.ascii_uppercase if c not in ["I", "O"]]
+        digits = string.digits
+
+        while True:
+            part1 = "".join(random.choice(letters) for _ in range(2))
+            part2 = "".join(random.choice(digits) for _ in range(2))
+            part3 = "".join(random.choice(letters) for _ in range(2))
+            code = part1 + part2 + part3
+
+            # 检查唯一性
+            if not className.objects.filter(code=code).exists():
+                return code

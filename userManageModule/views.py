@@ -1,6 +1,7 @@
 import json
 from audioop import reverse
 from functools import wraps
+from types import new_class
 
 import jwt
 import requests
@@ -22,6 +23,8 @@ from .models import className,User
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 import logging
+import string
+import random
 logger = logging.getLogger(__name__)
 #登录验证
 def admin_required(view_func):
@@ -144,6 +147,14 @@ def wx_user_list(request, user_id):
     # 用户属性转换：1→student，2→teacher
     user_attribute = user.user_attribute
     # 构造响应数据（包含前端需要的所有字段）
+    class1user = [
+        {
+            'id': c.id,
+            'name': c.name,  # 班级名称（空则为None）
+            'code' : c.code,
+        }
+        for c in user.class_in.all()
+    ]
     data = {
         'id': user.id,
         'wx_nickName': user.wx_nickName,
@@ -151,16 +162,13 @@ def wx_user_list(request, user_id):
         'phone': user.phone,
         'gender': gender,  # 返回转换后的文本（男/女/None）
         'user_attribute': user_attribute,  # 返回转换后的文本（student/teacher/None）
-        'class_in': {
-            'id': user.class_in.id,
-            'name': class_name  # 班级名称（空则为None）
-        },
+        'class_in':class1user,
         'wx_country': user.wx_country,
         'wx_province': user.wx_province,
         'wx_city': user.wx_city,
         'last_login_time': user.last_login_time.strftime('%Y-%m-%d %H:%M:%S')  # 格式化时间
     }
-    logger.info(data)
+    logger.info('发送用户数据：%s',data)
     return JsonResponse({'data': data}, status=200)  # 直接返回单个对象
 @admin_required
 def user_add(request):
@@ -260,16 +268,20 @@ def wx_user_edit(request, user_id):
     #前端传过来 ： POST / GET -> 提交至后端 / 从后端获取
     if request.method == "GET":
         classNameList = className.objects.all().values('id', 'name')  # 获取所有班级实例
+        class1user = [
+            {
+                'id': c.id,
+                'name': c.name,  # 班级名称（空则为None）
+            }
+            for c in user.class_in.all()
+        ]
         response_data = {
             'user': {
                 'wx_nickName': user.wx_nickName,
                 'wx_avatar': user.wx_avatar,
                 'gender': user.gender,
                 'user_attribute': user.user_attribute,
-                'class_in': {
-                    'id': user.class_in.id if user.class_in else None,
-                    'name': user.class_in.name if user.class_in else ''
-                },
+                'class_in':class1user,
                 'phone': user.phone,
                 'last_login_time': user.last_login_time
             },
@@ -280,7 +292,7 @@ def wx_user_edit(request, user_id):
         # 获取前端传来的数据
         try:
             data = json.loads(request.body)
-            logger.info(data)
+            logger.info('收到了用户发送的数据：%s',data)
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON format'}, status=400)
         # print('用户要更改为的数据为:',data)
@@ -297,18 +309,26 @@ def wx_user_edit(request, user_id):
         if 'avatarUrl' in data:
             user.wx_avatar = data['avatarUrl']
         if 'class_in_id' in data:
-            user.class_in = className.objects.get(id=data['class_in_id'])
+            try:
+                selected_class = className.objects.get(id=data['class_in_id'])
+                user.class_in.set([selected_class])  # 替换为仅包含这一个班级
+            except className.DoesNotExist:
+                return JsonResponse({'error': '班级不存在'}, status=400)
         user.save()
+        class1user = [
+            {
+                'id': c.id,
+                'name': c.name,  # 班级名称（空则为None）
+            }
+            for c in user.class_in.all()
+        ]
         response_data = {
             'user': {
                 'wx_nickName': user.wx_nickName,
                 'wx_avatar': user.wx_avatar,
                 'gender': user.gender,
                 'user_attribute': user.user_attribute,
-                'class_in': {
-                    'id': user.class_in.id if user.class_in else None,
-                    'name': user.class_in.name if user.class_in else ''
-                },
+                'class_in':class1user,
                 'phone': user.phone,
                 'last_login_time': user.last_login_time
             }
@@ -442,33 +462,105 @@ def user_register(request):
         else:
             # 表单验证失败，返回带错误信息的表单
             return render(request, 'user_register.html', {'form': form})
+import json
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import className  #
+#生成班级码
+def generate_class_code():
+    #letter为大写英文字母,除了I和O;digits为0-9的数字
+    letters = [c for c in string.ascii_uppercase if c not in ["I", "O"]]
+    digits = string.digits
+    #班级码分为三部分
+    part1 = "".join(random.choice(letters) for _ in range(2))
+    part2 = "".join(random.choice(digits) for _ in range(2))
+    part3 = "".join(random.choice(letters) for _ in range(2))
+    class_code = part1 + part2 + part3
+    # 检查唯一性：若已存在则重新生成
+    if className.objects.filter(code=class_code).exists():
+        return generate_class_code()
+    return class_code
 @csrf_exempt
-@jwt_login_required  # 用你已有的装饰器，如 @token_required
+@jwt_login_required
 def create_class(request):
+    """创建班级接口支持 POST 请求，需要班级名称参数"""
+    # 1. 请求方法验证
     if request.method != 'POST':
         return JsonResponse({'error': '仅支持 POST 请求'}, status=405)
+    # 2. 请求数据解析和验证
     try:
         data = json.loads(request.body)
         class_name = data.get('name', '').strip()
     except (json.JSONDecodeError, UnicodeDecodeError):
         return JsonResponse({'error': '无效的 JSON 格式'}, status=400)
 
+    # 3. 参数验证
     if not class_name:
         return JsonResponse({'error': '班级名称不能为空'}, status=400)
-    # 防止重复创建（可选：忽略大小写）
-    class_obj, created = className.objects.get_or_create(
-        name=class_name,
-        defaults={'created_by': request.user}
-    )
-    if created:
-        message = '班级创建成功'
+
+    # 4. 生成唯一班级码
+    try:
+        class_code = generate_class_code()
+    except Exception as e:
+        return JsonResponse({'error': '生成班级码失败'}, status=500)
+
+    # 5. 创建或获取班级
+    try:
+        class_obj, created = className.objects.get_or_create(
+            name=class_name,
+            defaults={
+                'code': class_code,
+                'created_by': request.user
+            }
+        )
+    except Exception as e:
+        return JsonResponse({'error': '创建班级失败'}, status=500)
+
+    # 6. 处理已存在班级的情况
+    if not created:
+        # 如果班级已存在，将用户加入该班级
+        request.user.class_in.add(class_obj)
+        message = '班级已存在，已成功加入'
     else:
-        message = '班级已存在'
+        # 新创建的班级，用户自动加入
+        request.user.class_in.add(class_obj)
+        message = '班级创建成功并已加入'
+
+    # 7. 获取用户所有班级信息
+    try:
+        user_classes = [
+            {
+                'id': c.id,
+                'name': c.name,
+                'created_at': c.created_at.isoformat() if c.created_at else None,
+                'created_by': c.created_by.username if c.created_by else None,
+                'code': c.code  # 包含班级码
+            }
+            for c in request.user.class_in.all()
+        ]
+    except Exception as e:
+        user_classes = []
+
+    # 8. 返回响应
     return JsonResponse({
         'success': True,
         'message': message,
-        'class': {
+        'current_class': {
             'id': class_obj.id,
-            'name': class_obj.name
-        }
+            'name': class_obj.name,
+            'code': class_obj.code
+        },
+        'user_classes': user_classes
     })
+@jwt_login_required
+def class_detail(request, class_id):
+    if request.method == 'GET':
+        c = className.objects.get(id=class_id)
+        thisClass = {
+            'id': c.id,
+            'name': c.name,  # 班级名称（空则为None）
+            'code': c.code,
+            'created_at': c.created_at.isoformat() if c.created_at else None,
+            'created_by': c.created_by.username if c.created_by else None,
+        }
+        return JsonResponse({'data':thisClass}, status=200)  # 直接返回单个对象

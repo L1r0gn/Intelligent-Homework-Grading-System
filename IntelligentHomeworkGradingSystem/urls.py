@@ -28,6 +28,7 @@ urlpatterns = [
     path('grading/', include('gradingModule.urls')),
     path('',user_views.user_register,name='user_register'),
     path('class/create/', user_views.create_class, name='create_class'),
+    path('class/<int:class_id>/',user_views.class_detail,name='class_detail'),
 
 ]
 if settings.DEBUG:
