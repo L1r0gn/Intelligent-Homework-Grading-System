@@ -176,3 +176,23 @@ def showMySubmissions(request):
             'mySubmissions': list(mySubmissions),
         }
         return JsonResponse(response_data)
+
+def getASubmission(request, submission_id):
+        try:
+            # 获取对应的提交记录
+            submission = Submission.objects.get(id=submission_id)
+            # 提取需要的字段
+            data = {
+                "problem_title": submission.problem.title,
+                "submitted_time": submission.submitted_time.strftime("%Y-%m-%d %H:%M:%S"),
+                "submitted_image": submission.submitted_image.url if submission.submitted_image else None,
+                "status": submission.status,
+                "score": submission.score,
+                "feedback": submission.feedback,
+                "justification": submission.justification
+            }
+            # 返回JSON格式的数据
+            return JsonResponse(data)
+        except Submission.DoesNotExist:
+            # 如果提交记录不存在，返回错误信息
+            return JsonResponse({"error": "Submission not found"}, status=404)
