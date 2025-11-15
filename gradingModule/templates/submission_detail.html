@@ -13,25 +13,59 @@
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <div><i class="fas fa-user text-muted me-2"></i><strong>学生</strong></div>
-                        <span>{{ submission.student.get_full_name|default:submission.student.username }}</span>
+                        <span>{{ submission.student.wx_nickName }}</span>
                     </li>
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <div><i class="fas fa-book-open text-muted me-2"></i><strong>作业</strong></div>
-                        <span>{{ submission.assignment.title }}</span>
+                        <span>{{ submission.problem.title }}</span>
                     </li>
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <div><i class="fas fa-clock text-muted me-2"></i><strong>提交时间</strong></div>
                         <span>{{ submission.submitted_time|date:"Y-m-d H:i:s" }}</span>
                     </li>
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <div><i class="fas fa-check-circle text-muted me-2"></i><strong>状态</strong></div>
-                        <span class="badge rounded-pill
-                            {% if submission.status == 'graded' %}bg-success
-                            {% elif submission.status == 'processing' %}bg-warning text-dark
-                            {% elif submission.status == 'error' %}bg-danger
-                            {% else %}bg-secondary{% endif %}">
-                            {{ submission.get_status_display }}
-                        </span>
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div><i class="fas fa-check-circle text-muted me-2"></i><strong>状态（点击展开详情）</strong></div>
+                            <span class="badge rounded-pill
+                                {% if submission.status == 'ACCEPTED' %}bg-success
+                                {% elif submission.status == 'GRADING' %}bg-warning text-dark
+                                {% elif submission.status == 'PENDING' %}bg-secondary
+                                {% else %}bg-danger{% endif %}"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#gradingDetails"
+                                style="cursor: pointer;">
+                                {{ submission.get_status_display }}
+                            </span>
+                        </div>
+
+                        {# 批改详情折叠面板 #}
+                        <div class="collapse mt-3" id="gradingDetails">
+                            <div class="card card-body">
+                                {# 批改反馈 #}
+                                {% if submission.feedback %}
+                                <div class="mb-3">
+                                    <h6 class="text-primary"><i class="fas fa-comment-dots me-2"></i>批改反馈</h6>
+                                    <div class="bg-light p-3 rounded">
+                                        <pre class="mb-0" style="white-space: pre-wrap; font-size: 0.9rem;">{{ submission.feedback }}</pre>
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                {# AI评分理由 #}
+                                {% if submission.justification %}
+                                <div>
+                                    <h6 class="text-primary"><i class="fas fa-robot me-2"></i>AI评分理由</h6>
+                                    <div class="bg-light p-3 rounded">
+                                        <pre class="mb-0" style="white-space: pre-wrap; font-size: 0.9rem;">{{ submission.justification }}</pre>
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                {% if not submission.feedback and not submission.justification %}
+                                <p class="text-muted text-center mb-0">暂无批改详情</p>
+                                {% endif %}
+                            </div>
+                        </div>
                     </li>
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <div><i class="fas fa-star text-muted me-2"></i><strong>分数</strong></div>
@@ -41,6 +75,24 @@
                             <span class="text-muted">-</span>
                         {% endif %}
                     </li>
+                    {% if submission.submitted_image %}
+                    <li class="list-group-item">
+                        <div><i class="fas fa-image text-muted me-2"></i><strong>提交照片</strong></div>
+                        <div class="mt-2 text-center">
+                            <img src="{{ submission.submitted_image.url }}"
+                                 alt="提交的作业照片"
+                                 class="img-fluid rounded shadow-sm"
+                                 style="max-height: 150px;">
+                            <div class="mt-2">
+                                <a href="{{ submission.submitted_image.url }}"
+                                   target="_blank"
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-expand me-1"></i>查看大图
+                                </a>
+                            </div>
+                        </div>
+                    </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
@@ -96,7 +148,7 @@
                  <a href="{% url 'submission_list' %}" class="btn btn-secondary">
                     <i class="fas fa-arrow-left me-2"></i>返回列表
                 </a>
-                <form action="{% url 'regrade_submission' submission.id %}" method="POST" style="display: inline;">
+                <form action="{% url 'regrade_submission' submission.id %}" method="POST" class="btn btn-warning"  >
                     {% csrf_token %}
                     <button type="submit" class="btn btn-warning">
                         <i class="fas fa-sync-alt me-2"></i>重新批改

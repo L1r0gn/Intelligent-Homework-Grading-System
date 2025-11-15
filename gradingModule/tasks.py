@@ -2,6 +2,8 @@ import json
 import logging
 from celery import shared_task
 from openai import OpenAI
+
+from assignmentAndClassModule.models import Assignment, AssignmentStatus
 from .models import Submission, Problem
 from IntelligentHomeworkGradingSystem import settings
 import base64
@@ -70,6 +72,61 @@ def grade_submission_with_ai(standard_answer, total_score,submission_id):
     except Exception as e:  # 或更精确地捕获 openai.APIError 等
         logger.info(f"❌ 调用 OpenRouter API 失败: {e}")
         return None
+
+def grade_submission_with_ai(standard_answer, total_score, assignment_status_id):
+    """
+    使用AI对作业提交进行评分
+    参数:
+        standard_answer: 标准答案
+        total_score: 题目总分
+        assignment_status_id: 作业状态ID
+    返回:
+        AI评分的JSON字符串
+    """
+    try:
+        # 通过assignment_status_id获取作业状态和关联的提交记录
+        assignment_status = AssignmentStatus.objects.get(id=assignment_status_id)
+        submission = assignment_status.submission
+
+        if not submission or not submission.submitted_image:
+            return json.dumps({
+                "score": 0,
+                "justification": "错误：没有找到提交记录或图片"
+            })
+
+        # 获取图片路径
+        image_path = submission.submitted_image.path
+
+        # 这里调用您的OCR处理逻辑
+        # extracted_text = extract_text_from_image(image_path)
+
+        # 这里调用您的AI评分逻辑
+        # 示例代码 - 替换为您的实际AI评分实现
+        # ai_result = call_ai_grading_api(extracted_text, standard_answer, total_score)
+
+        # 临时示例 - 返回一个模拟结果
+        # 实际实现中，您需要调用您的AI服务
+        import random
+        score = round(random.uniform(0.5, 1.0) * total_score, 1)
+
+        return json.dumps({
+            "score": score,
+            "justification": "AI评分完成"
+        })
+
+    except AssignmentStatus.DoesNotExist:
+        logger.error(f"找不到ID为 {assignment_status_id} 的作业状态记录")
+        return json.dumps({
+            "score": 0,
+            "justification": "错误：找不到作业状态记录"
+        })
+    except Exception as e:
+        logger.error(f"AI评分过程中发生错误: {str(e)}")
+        return json.dumps({
+            "score": 0,
+            "justification": f"评分错误: {str(e)}"
+        })
+
 @shared_task
 def process_and_grade_submission(submission_id):
     try:
@@ -138,3 +195,87 @@ def process_and_grade_submission(submission_id):
         submission.justification = f'错误：解析AI返回结果失败。错误信息: {e}. AI原始返回: {ai_response_str}'
         submission.save()
         logger.info(f"❌ 解析AI结果失败: {e}")
+
+
+@shared_task
+def process_and_grade_submission(assignment_status_id):
+    try:
+        assignment_status = AssignmentStatus.objects.get(id=assignment_status_id)
+    except AssignmentStatus.DoesNotExist:
+        logger.info(f"❌ 找不到 ID 为 {assignment_status_id} 的作业状态记录")
+        return
+
+    # 获取关联的提交记录和题目
+    submission = assignment_status.submission
+    problem = assignment_status.assignment.problem
+
+    if not problem:
+        submission.status = 'RUNTIME_ERROR'
+        assignment_status.save()
+        submission.save()
+        return
+
+    # 选择题逻辑 - 使用文本匹配批改
+    if problem.problem_type.name == "选择":
+        logger.info('正在判选择题')
+        student_choose = submission.choose_answer if submission else None
+
+        if not problem.answer.content:
+            submission.status= 'RUNTIME_ERROR'
+            assignment_status.save()
+            submission.save()
+            return
+        logger.info(f'正确答案是{problem.answer.content}，提交的答案是{student_choose}')
+        if student_choose == problem.answer.content:
+            submission.status = 'ACCEPTED'
+            assignment_status.save()
+            submission.save()
+            logger.info(f"✅ 选择题批改完成 - 答案正确")
+            return
+        else:
+            submission.status = 'WRONG_ANSWER'
+            assignment_status.save()
+            submission.save()
+            # logger.info(submission.status)
+            logger.info(f"✅ 选择题批改完成 - 答案错误")
+            return
+
+    # 填空和大题逻辑 - 都使用图片批改方法
+    logger.info('正在判填空/大题 (使用图片批改方法)')
+
+    # 检查是否有提交记录和图片
+    if not submission or not submission.submitted_image or not hasattr(submission.submitted_image, 'path'):
+        submission.status = 'RUNTIME_ERROR'
+        assignment_status.save()
+        submission.save()
+        logger.error(f"❌ 提交记录中没有图片文件或文件路径无效")
+        return
+
+    # 调用 AI 进行图片批改
+    ai_response_str = grade_submission_with_ai(
+        standard_answer=problem.answer.explanation,
+        total_score=problem.points,
+        assignment_status_id=assignment_status_id,
+    )
+
+    # 解析和保存结果
+    if ai_response_str is None:
+        submission.status = 'RUNTIME_ERROR'
+        assignment_status.save()
+        submission.save()
+        logger.error(f"❌ 调用AI评分接口失败")
+        return
+
+    try:
+        ai_result = json.loads(ai_response_str)
+        submission.score = ai_result.get('score')
+        submission.justification = ai_result.get('justification')
+        submission.status = 'GRADED'
+        assignment_status.save()
+        submission.save()
+        logger.info(f"✅ 作业状态 {assignment_status_id} 图片批改完成！")
+    except (json.JSONDecodeError, KeyError) as e:
+        submission.status = 'RUNTIME_ERROR'
+        assignment_status.save()
+        submission.save()
+        logger.error(f"❌ 解析AI结果失败: {e}")

@@ -8,7 +8,9 @@ class Submission(models.Model):
     STATUS_CHOICES = [
         ('PENDING', '待批改'),
         ('GRADING', '批改中'),
-        ('ACCEPTED', '已评分'),
+        ('SUBMITTED','已提交'),
+        ('GRADED', '已批改'),
+        ('ACCEPTED', '答案正确'),
         ('WRONG_ANSWER', '答案错误'),
         ('COMPILE_ERROR', '编译错误'),
         ('RUNTIME_ERROR', '运行错误'),

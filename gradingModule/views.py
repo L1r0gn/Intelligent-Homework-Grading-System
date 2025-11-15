@@ -16,7 +16,7 @@ from .models import Submission, Problem
 from .tasks import process_and_grade_submission # 导入你的异步任务
 import json
 import logging
-logger = logging.getLogger(__name__)
+from  IntelligentHomeworkGradingSystem.views import logger
 def admin_required(view_func):
     """自定义装饰器：仅允许管理员（user_attribute >= 3）访问"""
     @wraps(view_func)
@@ -24,7 +24,7 @@ def admin_required(view_func):
         if not request.user.is_authenticated:
             return redirect('login')
         if request.user.user_attribute < 3:
-            logger.info("%s 的权限等级为 %s", request.user.username, request.user.user_attribute)
+            logger.info("%s 的权限等级为 %s",request.user.username, request.user.user_attribute)
             logger.info("%s 没有权限访问该页面", request.user.username)
             messages.error(request, "您没有权限访问该页面。")
             return redirect('question_list')  # 或重定向到首页
@@ -57,13 +57,8 @@ def submissionprocess(request):
         choose_answer = request.POST.get('selectedAnswer')  # 用于选择题
         userId = request.POST.get('userId')
         submitted_image = request.FILES.get('submitted_image')  # 用于主观题
-
         if not problem_id:
             return HttpResponseBadRequest("请求必须包含 'problem_id' ")
-        # if not submitted_image:
-        #     return HttpResponseBadRequest("请求必须包含 'submitted_image' ")
-        # if not submitted_text:
-        #     return HttpResponseBadRequest("请求必须包含 'submitted_text' ")
         try:
             problem = Problem.objects.get(id=problem_id)
         except Problem.DoesNotExist:
@@ -84,7 +79,7 @@ def submissionprocess(request):
         submissions = Submission.objects.filter(student=user).order_by('-submitted_time')
         logger.info("用户 %s 当前共有 %d 条提交记录", user, submissions.count())
         # 触发异步任务！使用 .delay() 方法，任务会被发送到 Celery 队列中等待执行
-        process_and_grade_submission.delay(submission.id)
+        process_and_grade_submission.delay(submision_id=submission.id)
         # 立即返回响应给用户
         response_data = {
             'id': submission.id,
@@ -148,7 +143,7 @@ def regrade_submission_view(request, submission_id):
         logger.info("%s is regrading", submission)
         logger.info("Regrading submission ID: %s", submission.id)
         # --- 这里是核心：调用您已有的Celery异步任务 ---
-        process_and_grade_submission.delay(submission.id)
+        process_and_grade_submission.delay(submission_id=submission.id)
         # 将用户重定向回作业详情页
         return redirect('submission_list')
     # 如果是GET或其他方法的请求，直接重定向走，不处理
@@ -176,3 +171,27 @@ def showMySubmissions(request):
             'mySubmissions': list(mySubmissions),
         }
         return JsonResponse(response_data)
+@jwt_login_required
+def getASubmission(request, submission_id):
+    try:
+        # 获取对应的提交记录
+        submission = Submission.objects.get(id=submission_id)
+        if submission.submitted_image:
+            image_url = request.build_absolute_uri(submission.submitted_image.url)
+        else:
+            image_url = None
+        # 提取需要的字段
+        data = {
+            "problem_title": submission.problem.title,
+            "submitted_time": submission.submitted_time.strftime("%Y-%m-%d %H:%M:%S"),
+            "submitted_image": image_url,
+            "status": submission.status,
+            "score": submission.score,
+            "feedback": submission.feedback,
+            "justification": submission.justification
+        }
+        # 返回JSON格式的数据
+        return JsonResponse(data)
+    except Submission.DoesNotExist:
+        # 如果提交记录不存在，返回错误信息
+        return JsonResponse({"error": "Submission not found"}, status=404)

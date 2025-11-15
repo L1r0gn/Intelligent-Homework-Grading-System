@@ -16,4 +16,5 @@ urlpatterns = [
     path('wx/list/<int:user_id>/', user_views.wx_user_list, name='wx_user_list'),
     path('wx/login/',userManageModule.views.wx_login,name='wx_login'),
     # path('register',userManageModule.views.user_register,name='user_register'),
+    path('wx/userJoinClass/',userManageModule.views.userAddClass,name='wx_userJoinClass'),
 ]
