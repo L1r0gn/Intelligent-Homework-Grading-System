@@ -29,6 +29,12 @@ class Problem(models.Model):
         help_text="预计学生完成此题需要的时间(分钟)",
         null=True,blank = True
     )
+    knowledge_points = models.ManyToManyField(
+        'KnowledgePoint',
+        blank=True,
+        related_name='problems',
+        verbose_name="涉及知识点"
+    )
     class Meta:
         ordering = ['-create_time']
         indexes = [
@@ -117,3 +123,25 @@ class ProblemAttachment(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
     def __str__(self):
         return f"{self.id}-{self.name}"
+
+
+class KnowledgePoint(models.Model):
+    """
+    知识点模型
+    区别于 ProblemTag，这是教学大纲层面的知识点
+    例如：'正弦定理' (属于 数学), '牛顿第二定律' (属于 物理)
+    """
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, verbose_name="所属科目")
+    name = models.CharField(max_length=200, verbose_name="知识点名称")
+    description = models.TextField(blank=True, verbose_name="知识点描述")
+
+    # 选填：父级知识点（实现树状结构，例如 几何 -> 立体几何）
+    parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='children',
+                               verbose_name="父级知识点")
+
+    def __str__(self):
+        return f"{self.subject.name} - {self.name}"
+
+    class Meta:
+        verbose_name = "知识点"
+        verbose_name_plural = verbose_name

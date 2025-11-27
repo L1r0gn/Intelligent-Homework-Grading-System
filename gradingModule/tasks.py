@@ -1,30 +1,72 @@
 import json
 import logging
+import base64
 from celery import shared_task
 from openai import OpenAI
+from django.conf import settings  # 确保正确引用 settings
 
 from assignmentAndClassModule.models import Assignment, AssignmentStatus
 from .models import Submission, Problem
-from IntelligentHomeworkGradingSystem import settings
-import base64
+
+# === 导入知识点分析服务 ===
+try:
+    from .analysis_logic import MasteryService
+except ImportError:
+    MasteryService = None
+    logging.getLogger(__name__).warning(
+        "Warning: MasteryService not found. Knowledge mastery features will be disabled.")
+
 logger = logging.getLogger(__name__)
+
+
 def encode_image_to_base64(image_path):
     """将图片文件编码为 Base64 字符串。"""
     try:
         with open(image_path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode('utf-8')
     except Exception as e:
-        logger.info(f"❌ 编码图片失败: {e}")
+        logger.error(f"❌ 编码图片失败: {e}")
         return None
 
 
-def grade_submission_with_ai(standard_answer, total_score,submission_id):
-    """使用的语言模型对OCR文本进行分析和打分。"""
-    logger.info('标准答案为', standard_answer)
+def grade_submission_with_ai(standard_answer, total_score, submission_id=None, assignment_status_id=None):
+    """
+    【合并后的核心函数】
+    实现"重载"效果：可以通过 submission_id 或 assignment_status_id 调用。
+    优先使用 submission_id。
+    """
+
+    # 1. 参数解析与对象获取
+    submission = None
+
+    if submission_id:
+        try:
+            submission = Submission.objects.get(id=submission_id)
+        except Submission.DoesNotExist:
+            logger.error(f"❌ 找不到 submission_id: {submission_id}")
+            return None
+    elif assignment_status_id:
+        try:
+            status = AssignmentStatus.objects.get(id=assignment_status_id)
+            submission = status.submission
+            submission_id = submission.id
+        except AssignmentStatus.DoesNotExist:
+            logger.error(f"❌ 找不到 assignment_status_id: {assignment_status_id}")
+            return None
+    else:
+        logger.error("❌ 必须提供 submission_id 或 assignment_status_id")
+        return None
+
+    if not submission:
+        return None
+
+    # 2. 准备 Prompt 和 图片
+    logger.info(f'开始 AI 评分，标准答案: {standard_answer}')
+
+    # 优先使用 URL，如果需要也可以切换为 Base64
     image_url = f"http://119.29.152.140:8000/grading/submission-image/{submission_id}"
-    # image_url = "http://119.29.152.140:8000/grading/submission-image/1"
-    logger.info(image_url)
-    # 针对纯文本评分重写的 Prompt
+    logger.info(f"图片 URL: {image_url}")
+
     prompt = f"""
     # 角色
     你是一名经验丰富、严格公正的阅卷老师。
@@ -46,10 +88,13 @@ def grade_submission_with_ai(standard_answer, total_score,submission_id):
       "justification": "<你给出的评分理由 (字符串)>"
     }}
     """
+
+    # 3. 调用 AI 接口
     client = OpenAI(
         base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-        api_key=settings.OPENROUTER_API_KEY,
+        api_key=settings.OPENROUTER_API_KEY,  # 确保 settings 里有这个 KEY
     )
+
     try:
         completion = client.chat.completions.create(
             model="qwen-vl-plus",
@@ -62,208 +107,110 @@ def grade_submission_with_ai(standard_answer, total_score,submission_id):
                     ]
                 }
             ],
-            response_format = {"type": "json_object"},  # 👈 关键！强制 JSON 输出
-            temperature = 0,  # 👈 提高一致性
-            timeout = 120  # 👈 防止无限等待
+            response_format={"type": "json_object"},
+            temperature=0,  # 降低随机性
+            timeout=120
         )
         content = completion.choices[0].message.content
-        logger.info(f"✅ AI 文本分析成功！返回内容: {content}")
+        logger.info(f"✅ AI 评分成功！返回内容: {content}")
         return content
-    except Exception as e:  # 或更精确地捕获 openai.APIError 等
-        logger.info(f"❌ 调用 OpenRouter API 失败: {e}")
+
+    except Exception as e:
+        logger.error(f"❌ 调用 AI API 失败: {e}")
+        # 如果 API 失败，可以考虑在这里做重试或者返回特定错误格式
         return None
 
-def grade_submission_with_ai(standard_answer, total_score, assignment_status_id):
-    """
-    使用AI对作业提交进行评分
-    参数:
-        standard_answer: 标准答案
-        total_score: 题目总分
-        assignment_status_id: 作业状态ID
-    返回:
-        AI评分的JSON字符串
-    """
-    try:
-        # 通过assignment_status_id获取作业状态和关联的提交记录
-        assignment_status = AssignmentStatus.objects.get(id=assignment_status_id)
-        submission = assignment_status.submission
-
-        if not submission or not submission.submitted_image:
-            return json.dumps({
-                "score": 0,
-                "justification": "错误：没有找到提交记录或图片"
-            })
-
-        # 获取图片路径
-        image_path = submission.submitted_image.path
-
-        # 这里调用您的OCR处理逻辑
-        # extracted_text = extract_text_from_image(image_path)
-
-        # 这里调用您的AI评分逻辑
-        # 示例代码 - 替换为您的实际AI评分实现
-        # ai_result = call_ai_grading_api(extracted_text, standard_answer, total_score)
-
-        # 临时示例 - 返回一个模拟结果
-        # 实际实现中，您需要调用您的AI服务
-        import random
-        score = round(random.uniform(0.5, 1.0) * total_score, 1)
-
-        return json.dumps({
-            "score": score,
-            "justification": "AI评分完成"
-        })
-
-    except AssignmentStatus.DoesNotExist:
-        logger.error(f"找不到ID为 {assignment_status_id} 的作业状态记录")
-        return json.dumps({
-            "score": 0,
-            "justification": "错误：找不到作业状态记录"
-        })
-    except Exception as e:
-        logger.error(f"AI评分过程中发生错误: {str(e)}")
-        return json.dumps({
-            "score": 0,
-            "justification": f"评分错误: {str(e)}"
-        })
 
 @shared_task
-def process_and_grade_submission(submission_id):
+def process_and_grade_submission(assignment_status_id=None, submission_id=None):
+    """
+    【合并后的 Celery 任务】
+    既可以处理作业状态流程 (AssignmentStatus)，也可以处理单纯的提交 (Submission)。
+    如果调用时只传一个参数，默认视为 assignment_status_id (兼容旧代码逻辑)。
+    """
+
+    # 1. 获取 Submission 对象和上下文
+    submission = None
+    assignment_status = None
+    problem = None
+
     try:
-        submission = Submission.objects.get(id=submission_id)
-    except Submission.DoesNotExist:
-        logger.info(f"❌ 找不到 ID 为 {submission_id} 的提交记录")
+        if assignment_status_id:
+            assignment_status = AssignmentStatus.objects.get(id=assignment_status_id)
+            submission = assignment_status.submission
+            # 如果是作业，题目来自 assignment
+            problem = assignment_status.assignment.problem
+        elif submission_id:
+            submission = Submission.objects.get(id=submission_id)
+            # 如果是单独提交，题目直接来自 submission
+            problem = submission.problem
+        else:
+            logger.error("❌ 任务调用错误：未提供 ID")
+            return
+    except Exception as e:
+        logger.error(f"❌ 获取对象失败: {e}")
         return
 
-    # 选择题逻辑保持不变
-    if submission.problem.problem_type.name == "选择":
-        # ... (这部分逻辑完全不变) ...
-        logger.info('正在判选择题')
-        student_choose = submission.choose_answer
-        if not submission.problem.answer.content:
+    if not submission or not problem:
+        logger.error("❌ 数据不完整，无法评分")
+        if submission:
             submission.status = 'RUNTIME_ERROR'
-            submission.justification = '错误：该题还未设置答案，无法批改。'
+            submission.save()
+        return
+
+    # 2. 路由评分逻辑
+
+    # A. 选择题 (文本匹配)
+    if problem.problem_type.name == "选择":
+        logger.info('正在判选择题...')
+        student_choose = submission.choose_answer
+
+        if not problem.answer or not problem.answer.content:
+            submission.status = 'RUNTIME_ERROR'
+            submission.justification = '错误：该题未设置标准答案'
             submission.save()
             return
-        if student_choose == submission.problem.answer.content:
+
+        logger.info(f'标准答案: {problem.answer.content} | 学生答案: {student_choose}')
+
+        if student_choose == problem.answer.content:
             submission.status = 'ACCEPTED'
-            submission.score = submission.problem.points
-            submission.save()
-            return
+            submission.score = problem.points
+            logger.info("✅ 选择题 - 正确")
         else:
             submission.status = 'WRONG_ANSWER'
             submission.score = 0
-            submission.justification = f'正确答案是 {submission.problem.answer.content}'
-            submission.save()
-            return
+            submission.justification = f'正确答案是 {problem.answer.content}'
+            logger.info("❌ 选择题 - 错误")
 
-    logger.info('正在判大题 (纯 OCR + 文本 AI 方案)')
-    # 1. 检查图片是否存在
-    if not submission.submitted_image or not hasattr(submission.submitted_image, 'path'):
+        submission.save()
+        if assignment_status: assignment_status.save()
+
+        # === 核心：更新知识点掌握度 ===
+        if MasteryService:
+            MasteryService.update_mastery_after_grading(submission)
+        return
+
+    # B. 主观题 (AI 图片分析)
+    logger.info('正在判填空/大题 (AI 图片评分)...')
+
+    if not submission.submitted_image:
         submission.status = 'RUNTIME_ERROR'
-        submission.justification = '错误：提交记录中没有图片文件或文件路径无效。'
+        submission.justification = '错误：未找到提交的图片'
         submission.save()
         return
 
-    # 2. 调用OCR提取图片中的文本
-    image_path = submission.submitted_image.path
-
-    # 4. 调用 AI 进行评分 (不再需要 submission_id)
-    problem = submission.problem
+    # 调用上面合并后的 AI 函数
     ai_response_str = grade_submission_with_ai(
-        standard_answer=problem.answer.explanation,
+        standard_answer=problem.answer.explanation if problem.answer else "略",
         total_score=problem.points,
-        submission_id = submission_id,
+        submission_id=submission.id  # 明确传入 submission_id
     )
 
-    # 5. 解析和保存结果
     if ai_response_str is None:
         submission.status = 'RUNTIME_ERROR'
-        submission.justification = '错误：调用AI评分接口失败。'
+        submission.justification = 'AI 评分服务暂时不可用'
         submission.save()
-        return
-
-    try:
-        ai_result = json.loads(ai_response_str)
-        submission.score = ai_result.get('score')
-        submission.justification = ai_result.get('justification')
-        submission.status = 'Graded'
-        submission.save()
-        logger.info(f"✅ 提交 {submission_id} 评分完成！分数: {submission.score}")
-    except (json.JSONDecodeError, KeyError) as e:
-        submission.status = 'RUNTIME_ERROR'
-        submission.justification = f'错误：解析AI返回结果失败。错误信息: {e}. AI原始返回: {ai_response_str}'
-        submission.save()
-        logger.info(f"❌ 解析AI结果失败: {e}")
-
-
-@shared_task
-def process_and_grade_submission(assignment_status_id):
-    try:
-        assignment_status = AssignmentStatus.objects.get(id=assignment_status_id)
-    except AssignmentStatus.DoesNotExist:
-        logger.info(f"❌ 找不到 ID 为 {assignment_status_id} 的作业状态记录")
-        return
-
-    # 获取关联的提交记录和题目
-    submission = assignment_status.submission
-    problem = assignment_status.assignment.problem
-
-    if not problem:
-        submission.status = 'RUNTIME_ERROR'
-        assignment_status.save()
-        submission.save()
-        return
-
-    # 选择题逻辑 - 使用文本匹配批改
-    if problem.problem_type.name == "选择":
-        logger.info('正在判选择题')
-        student_choose = submission.choose_answer if submission else None
-
-        if not problem.answer.content:
-            submission.status= 'RUNTIME_ERROR'
-            assignment_status.save()
-            submission.save()
-            return
-        logger.info(f'正确答案是{problem.answer.content}，提交的答案是{student_choose}')
-        if student_choose == problem.answer.content:
-            submission.status = 'ACCEPTED'
-            assignment_status.save()
-            submission.save()
-            logger.info(f"✅ 选择题批改完成 - 答案正确")
-            return
-        else:
-            submission.status = 'WRONG_ANSWER'
-            assignment_status.save()
-            submission.save()
-            # logger.info(submission.status)
-            logger.info(f"✅ 选择题批改完成 - 答案错误")
-            return
-
-    # 填空和大题逻辑 - 都使用图片批改方法
-    logger.info('正在判填空/大题 (使用图片批改方法)')
-
-    # 检查是否有提交记录和图片
-    if not submission or not submission.submitted_image or not hasattr(submission.submitted_image, 'path'):
-        submission.status = 'RUNTIME_ERROR'
-        assignment_status.save()
-        submission.save()
-        logger.error(f"❌ 提交记录中没有图片文件或文件路径无效")
-        return
-
-    # 调用 AI 进行图片批改
-    ai_response_str = grade_submission_with_ai(
-        standard_answer=problem.answer.explanation,
-        total_score=problem.points,
-        assignment_status_id=assignment_status_id,
-    )
-
-    # 解析和保存结果
-    if ai_response_str is None:
-        submission.status = 'RUNTIME_ERROR'
-        assignment_status.save()
-        submission.save()
-        logger.error(f"❌ 调用AI评分接口失败")
         return
 
     try:
@@ -271,11 +218,17 @@ def process_and_grade_submission(assignment_status_id):
         submission.score = ai_result.get('score')
         submission.justification = ai_result.get('justification')
         submission.status = 'GRADED'
-        assignment_status.save()
         submission.save()
-        logger.info(f"✅ 作业状态 {assignment_status_id} 图片批改完成！")
+        if assignment_status: assignment_status.save()
+
+        logger.info(f"✅ AI 批改完成，分数: {submission.score}")
+
+        # === 核心：更新知识点掌握度 ===
+        if MasteryService:
+            MasteryService.update_mastery_after_grading(submission)
+
     except (json.JSONDecodeError, KeyError) as e:
         submission.status = 'RUNTIME_ERROR'
-        assignment_status.save()
+        submission.justification = f'解析 AI 结果失败: {e}'
         submission.save()
-        logger.error(f"❌ 解析AI结果失败: {e}")
+        logger.error(f"❌ 解析失败: {e}")

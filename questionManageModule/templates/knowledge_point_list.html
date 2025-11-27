@@ -1,0 +1,132 @@
+{% extends "question_view_base.html" %}
+
+{% block title %}知识点管理{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>知识点管理</h2>
+        <div>
+            <a href="{% url 'question_list' %}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left"></i> 返回题目列表
+            </a>
+            <a href="{% url 'knowledge_point_create' %}" class="btn btn-success">
+                <i class="fas fa-plus me-2"></i>新建知识点
+            </a>
+        </div>
+    </div>
+
+    <!-- 搜索栏 -->
+    <div class="mb-4">
+        <form method="GET" action="{% url 'knowledge_point_list' %}" class="d-flex">
+            <input class="form-control me-2" type="search" placeholder="搜索知识点名称、所属科目..." name="q" value="{{ search_query|default_if_none:'' }}">
+            <button class="btn btn-outline-secondary" type="submit">
+                <i class="fas fa-search"></i> 搜索
+            </button>
+        </form>
+    </div>
+
+    <!-- 列表表格 -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>所属科目</th>
+                            <th>知识点名称</th>
+                            <th>描述</th>
+                            <th class="text-center">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for kp in page_obj %}
+                        <tr>
+                            <td>{{ kp.id }}</td>
+                            <td><span class="badge bg-info text-dark">{{ kp.subject.name }}</span></td>
+                            <td class="fw-bold">{{ kp.name }}</td>
+                            <td class="text-muted">{{ kp.description|truncatechars:50 }}</td>
+                            <td class="text-center">
+                                <a href="{% url 'knowledge_point_update' kp.id %}" class="btn btn-sm btn-warning" title="编辑">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteKpModal{{ kp.id }}" title="删除">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+
+                                <!-- 删除确认 Modal -->
+                                <div class="modal fade" id="deleteKpModal{{ kp.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">确认删除</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body text-start">
+                                                <p>确定要删除知识点 <strong>{{ kp.name }}</strong> 吗？</p>
+                                                <p class="text-danger small">注意：删除后，关联此知识点的题目分析数据可能会受到影响。</p>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                                <form action="{% url 'knowledge_point_delete' kp.id %}" method="POST" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-danger">确认删除</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">暂无知识点数据</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- 分页 -->
+        {% if page_obj.paginator.num_pages > 1 %}
+        <div class="card-footer bg-light">
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1&q={{ search_query|default_if_none:'' }}" aria-label="First">&laquo;&laquo;</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ search_query|default_if_none:'' }}" aria-label="Previous">&laquo;</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><a class="page-link" href="#">&laquo;&laquo;</a></li>
+                        <li class="page-item disabled"><a class="page-link" href="#">&laquo;</a></li>
+                    {% endif %}
+
+                    <li class="page-item disabled">
+                        <span class="page-link">
+                            第 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 页
+                        </span>
+                    </li>
+
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ search_query|default_if_none:'' }}" aria-label="Next">&raquo;</a>
+                        </li>
+                         <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&q={{ search_query|default_if_none:'' }}" aria-label="Last">&raquo;&raquo;</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><a class="page-link" href="#">&raquo;</a></li>
+                        <li class="page-item disabled"><a class="page-link" href="#">&raquo;&raquo;</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

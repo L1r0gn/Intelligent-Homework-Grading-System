@@ -6,16 +6,20 @@
 {% block content %}
 <div class="container mt-4">
     <div class="row justify-content-center">
-        <div class="col-lg-9"> <div class="card shadow-sm">
-                <div class="card-header">
+        <div class="col-lg-9">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h4 class="mb-0">
-                        <i class="fas fa-edit me-2"></i>编辑问题 #{{ question.id }}: {{ question.title|truncatechars:30 }}
+                        <i class="fas fa-edit me-2"></i>编辑问题 #{{ question.id }}
                     </h4>
+                    <a href="{% url 'knowledge_point_list' %}" class="btn btn-sm btn-outline-info" target="_blank">
+                        <i class="fas fa-cog"></i> 管理知识点
+                    </a>
                 </div>
                 <div class="card-body">
                     {% if messages %}
                         {% for message in messages %}
-                            <div class="alert alert-danger" role="alert">
+                            <div class="alert alert-{{ message.tags|default:'danger' }}" role="alert">
                                 {{ message }}
                             </div>
                         {% endfor %}
@@ -24,50 +28,105 @@
                     <form method="post">
                         {% csrf_token %}
 
-                        <div class="mb-3">
-                            <label for="title" class="form-label">题目标题</label>
-                            <input type="text" class="form-control" id="title" name="title" value="{{ question.title }}" required>
+                        <!-- 基础信息区 -->
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label for="title" class="form-label">题目标题</label>
+                                <input type="text" class="form-control" id="title" name="title" value="{{ question.title }}" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="points" class="form-label">分值</label>
+                                <input type="number" class="form-control" id="points" name="points" value="{{ question.points }}" required>
+                            </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="title" class="form-label">题目总分</label>
-                            <input type="text" class="form-control" id="points" name="points" value="{{ question.points }}" required>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="problem_type" class="form-label">题目类型</label>
-                            <select class="form-select" id="problem_type" name="problem_type" required>
-                                <option value="" disabled {% if not question.problem_type %}selected{% endif %}>请选择题目类型...</option>
-                                <option value="1" {% if question.problem_type.name == '选择' %}selected{% endif %}>选择</option>
-                                <option value="6" {% if question.problem_type.name == '问答' %}selected{% endif %}>问答</option>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="subject" class="form-label">所属科目</label>
+                                <select class="form-select" id="subject" name="subject" required>
+                                    <option value="" disabled>请选择科目...</option>
+                                    {% for sub in subjects %}
+                                        <option value="{{ sub.id }}" {% if question.subject_id == sub.id %}selected{% endif %}>{{ sub.name }}</option>
+                                    {% endfor %}
                                 </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="problem_type" class="form-label">题目类型</label>
+                                <select class="form-select" id="problem_type" name="problem_type" required>
+                                    {% for pt in problem_types %}
+                                        <option value="{{ pt.id }}" {% if question.problem_type_id == pt.id %}selected{% endif %}>{{ pt.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="difficulty" class="form-label">难度</label>
+                                <select class="form-select" id="difficulty" name="difficulty">
+                                    <option value="1" {% if question.difficulty == 1 %}selected{% endif %}>简单</option>
+                                    <option value="2" {% if question.difficulty == 2 %}selected{% endif %}>中等</option>
+                                    <option value="3" {% if question.difficulty == 3 %}selected{% endif %}>困难</option>
+                                </select>
+                            </div>
                         </div>
 
+                        <!-- 知识点选择区 (新增功能) -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-brain text-success me-1"></i>关联知识点 (用于能力分析)
+                            </label>
+                            <div class="card bg-light border-0">
+                                <div class="card-body p-2" style="max-height: 200px; overflow-y: auto;">
+                                    {% if knowledge_points %}
+                                        <div class="row g-2">
+                                            {% for kp in knowledge_points %}
+                                                <div class="col-md-4 col-sm-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input kp-checkbox"
+                                                               type="checkbox"
+                                                               name="knowledge_points"
+                                                               value="{{ kp.id }}"
+                                                               id="kp_{{ kp.id }}"
+                                                               data-subject="{{ kp.subject.id }}"
+                                                               {% if kp.id in selected_kp_ids %}checked{% endif %}>
+                                                        <label class="form-check-label small" for="kp_{{ kp.id }}">
+                                                            <span class="badge bg-secondary opacity-50 me-1">{{ kp.subject.name }}</span>
+                                                            {{ kp.name }}
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <p class="text-muted small mb-0">暂无知识点，请先<a href="{% url 'knowledge_point_create' %}">创建知识点</a>。</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <small class="text-muted">提示：根据选定的科目，系统会自动高亮相关知识点。</small>
+                        </div>
+
+                        <!-- 题目内容 -->
                         <div class="mb-3">
                             <label for="content" class="form-label">题目内容</label>
-                            <textarea class="form-control" id="content" name="content" rows="8" required>{{ question.content.content }}</textarea>
+                            <textarea class="form-control" id="content" name="content" rows="6" required>{{ question.content.content }}</textarea>
                         </div>
 
-                        <hr class="my-4"> <h5 class="mb-3">答案与解析</h5>
+                        <hr class="my-4">
+                        <h5 class="mb-3">答案与解析</h5>
+
                         <div class="mb-3">
                             <label for="answer_content" class="form-label">简洁答案</label>
-                            <input type="text" class="form-control" id="answer_content" name="answer_content" placeholder="例如：A, B, C / 42 / 巴黎" value="{{ question.answer.content }}">
-                            <small class="form-text text-muted">用于快速展示的简短答案，如选择题选项、填空题结果等。</small>
+                            <input type="text" class="form-control" id="answer_content" name="answer_content"
+                                   value="{{ question.answer.content }}" placeholder="例如：A / 42 / 巴黎">
                         </div>
 
                         <div class="mb-3">
                             <label for="answer_explanation" class="form-label">详细解析</label>
-                            <textarea class="form-control" id="answer_explanation" name="answer_explanation" rows="5" placeholder="请详细说明解题思路和步骤...">{{ question.answer.explanation }}</textarea>
+                            <textarea class="form-control" id="answer_explanation" name="answer_explanation" rows="4">{{ question.answer.explanation }}</textarea>
                         </div>
 
                         <div class="mb-3">
-                            <label for="answer_content_data" class="form-label">答案数据 (JSON格式)</label>
-                            <textarea class="form-control" id="answer_content_data" name="answer_content_data" rows="5" placeholder='例如：{"correct_option": "A", "points": 10}'>{{ question.answer.content_data|safe }}</textarea>
-                            <small class="form-text text-muted">用于程序化评分的结构化数据，必须是合法的JSON格式。</small>
+                            <label for="answer_content_data" class="form-label">答案数据 (JSON)</label>
+                            <textarea class="form-control font-monospace small" id="answer_content_data" name="answer_content_data" rows="3">{{ question.answer.content_data|safe }}</textarea>
                         </div>
-
-                        <div class="row">
-                            </div>
 
                         <div class="d-flex justify-content-end mt-4">
                             <a href="{% url 'question_list' %}" class="btn btn-secondary me-2">取消</a>
@@ -81,4 +140,25 @@
         </div>
     </div>
 </div>
+
+<script>
+// 简单的前端脚本：当选择科目时，高亮显示该科目下的知识点，方便查找
+document.getElementById('subject').addEventListener('change', function() {
+    const selectedSubjectId = this.value;
+    const checkboxes = document.querySelectorAll('.kp-checkbox');
+
+    checkboxes.forEach(cb => {
+        const label = cb.nextElementSibling;
+        const subjectId = cb.getAttribute('data-subject');
+
+        if (subjectId === selectedSubjectId) {
+            label.classList.add('fw-bold', 'text-primary');
+            cb.parentElement.parentElement.style.display = 'block'; // 或者只显示相关的
+        } else {
+            label.classList.remove('fw-bold', 'text-primary');
+            // cb.parentElement.parentElement.style.display = 'none'; // 如果你想隐藏非本科目的
+        }
+    });
+});
+</script>
 {% endblock %}

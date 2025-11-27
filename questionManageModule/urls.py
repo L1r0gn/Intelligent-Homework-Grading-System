@@ -13,6 +13,13 @@ urlpatterns = [
     path('questions/import/review/',question_views.question_import_review, name='question_import_review'),
     path('subjects/ajax_create/', question_views.ajax_create_subject, name='ajax_create_subject'),
     path('problem_types/ajax_create/', question_views.ajax_create_problem_type, name='ajax_create_problem_type'),
+
+    # === 新增：知识点管理路由 ===
+    path('knowledge-points/', question_views.knowledge_point_list, name='knowledge_point_list'),
+    path('knowledge-points/create/', question_views.knowledge_point_create, name='knowledge_point_create'),
+    path('knowledge-points/update/<int:kp_id>/', question_views.knowledge_point_update, name='knowledge_point_update'),
+    path('knowledge-points/delete/<int:kp_id>/', question_views.knowledge_point_delete, name='knowledge_point_delete'),
+
 ]
 
 

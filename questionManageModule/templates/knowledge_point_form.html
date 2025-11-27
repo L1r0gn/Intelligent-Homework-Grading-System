@@ -1,0 +1,49 @@
+{% extends "question_view_base.html" %}
+
+{% block title %}{{ action }}知识点{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-tag me-2"></i>{{ action }}知识点</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label for="name" class="form-label">知识点名称 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ kp.name|default:'' }}" required placeholder="例如：三角函数、牛顿第一定律">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="subject" class="form-label">所属科目 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="subject" name="subject" required>
+                                <option value="" disabled {% if not kp %}selected{% endif %}>请选择科目...</option>
+                                {% for subject in subjects %}
+                                    <option value="{{ subject.id }}" {% if kp.subject_id == subject.id %}selected{% endif %}>
+                                        {{ subject.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">描述 (选填)</label>
+                            <textarea class="form-control" id="description" name="description" rows="3">{{ kp.description|default:'' }}</textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'knowledge_point_list' %}" class="btn btn-secondary">返回列表</a>
+                            <button type="submit" class="btn btn-primary">{{ action }}并保存</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

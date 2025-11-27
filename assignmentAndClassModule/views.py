@@ -9,9 +9,10 @@ from django.db.models import Count
 from gradingModule.models import Submission
 from gradingModule.tasks import process_and_grade_submission
 from gradingModule.views import logger
+# === 修改点 1：确保导入 KnowledgePoint ===
 from questionManageModule.models import (
     ProblemType, Subject, ProblemTag,
-    Problem, ProblemContent, Answer
+    Problem, ProblemContent, Answer, KnowledgePoint
 )
 from rest_framework import status
 from rest_framework.response import Response
@@ -46,6 +47,9 @@ def push_assignment(request):
         subject_id = data.get('subject')
         difficulty = data.get('difficulty')
         tag_ids = data.get('tags', [])  # 标签ID列表
+        # === 修改点 2：接收前端传来的知识点 ID 列表 ===
+        knowledge_point_ids = data.get('knowledge_points', [])
+
         estimated_time = data.get('estimated_time')
         points = data.get('points')
 
@@ -62,17 +66,14 @@ def push_assignment(request):
             # --- 3. 创建 Problem 及其依赖项 ---
 
             # 3.1 创建答案 (Answer)
-            # (假设答案和解析存在 Answer 表中)
             answer_obj = Answer.objects.create(
                 content=answer_text,
                 explanation=explanation_text
-                # content_data={} # 如果您有结构化答案，也在这里处理
             )
 
             # 3.2 创建题目内容 (ProblemContent)
             problem_content_obj = ProblemContent.objects.create(
                 content=problem_content_text
-                # content_data={} # 如果您有结构化内容（如选择题选项），也在这里处理
             )
 
             # 3.3 创建题目 (Problem)
@@ -86,13 +87,17 @@ def push_assignment(request):
                 points=points,
                 answer=answer_obj,
                 estimated_time=estimated_time
-                # got_points, scoringPoint, attachment 暂不处理
             )
 
             # 3.4 关联 题目标签 (Tags)
             if tag_ids:
                 tags = ProblemTag.objects.filter(id__in=tag_ids)
                 new_problem.tags.set(tags)
+
+            # === 修改点 3：关联 知识点 (Knowledge Points) ===
+            if knowledge_point_ids:
+                # 这一步会自动处理多对多关系
+                new_problem.knowledge_points.set(knowledge_point_ids)
 
             # --- 4. 创建 作业 (Assignment) ---
             assignment = Assignment.objects.create(
@@ -120,7 +125,8 @@ def push_assignment(request):
             return Response({
                 'success': True,
                 'assignment_id': assignment.id,
-                'problem_id': new_problem.id
+                'problem_id': new_problem.id,
+                'message': '作业发布成功，知识点已关联'
             })
 
         except className.DoesNotExist:
@@ -143,10 +149,8 @@ def student_assignments(request):
     """学生获取作业列表"""
     student = request.user
     student_classes = student.class_in.all()
-    print(f"学生所在班级: {[cls.name for cls in student_classes]}")
 
     if not student_classes.exists():
-        # 注意：这里应该返回 JsonResponse，或者在 Response 中设置 content_type
         return JsonResponse({
             'success': True,
             'data': [],
@@ -155,23 +159,23 @@ def student_assignments(request):
 
     assignments = Assignment.objects.filter(
         target_class__in=student_classes
-    ).select_related('teacher', 'target_class', 'problem').order_by('-created_at')  # 优化查询
+    ).select_related('teacher', 'target_class', 'problem').order_by('-created_at')
 
-    # 收到header查询特定班级
-    # logger.info(f'收到header{request.headers}')
     class_id = request.headers.get('ClassId')
     if class_id:
-        logger.info(f'查询用户需要查询特定班级的作业，班级id为:{class_id}')
         assignments = assignments.filter(target_class__id=class_id)
 
-    # 一次性获取学生所有作业的状态
     assignments_data = []
     for assignment in assignments:
         assignmentStatusOfThisAssignment = assignment.assignmentstatus_set.filter(assignment=assignment).first()
-        if assignmentStatusOfThisAssignment.submission:
+        if assignmentStatusOfThisAssignment and assignmentStatusOfThisAssignment.submission:
             assignment_status = assignmentStatusOfThisAssignment.submission.status
+            submitted_at = assignmentStatusOfThisAssignment.submitted_at.strftime(
+                '%Y-%m-%d %H:%M') if assignmentStatusOfThisAssignment.submitted_at else None
         else:
-            assignment_status =  'PENDING'
+            assignment_status = 'PENDING'
+            submitted_at = None
+
         assignments_data.append({
             'id': assignment.id,
             'title': assignment.title,
@@ -180,7 +184,6 @@ def student_assignments(request):
             'class_name': assignment.target_class.name,
             'created_at': assignment.created_at.strftime('%Y-%m-%d %H:%M'),
             'deadline': assignment.deadline.strftime('%Y-%m-%d %H:%M') if assignment.deadline else None,
-            # 关联的 Problem 信息
             'problem_id': assignment.problem.id if assignment.problem else None,
             'problem_title': assignment.problem.title if assignment.problem else '传统作业',
             'status': assignment_status,
@@ -189,11 +192,10 @@ def student_assignments(request):
                 'SUBMITTED': '已提交',
                 'GRADED': '已批改',
                 'WRONG_ANSWER': '答案错误',
-                'ACCEPT':'答案正确',
+                'ACCEPTED': '答案正确',  # 修正拼写 ACCEPT -> ACCEPTED
             }.get(assignment_status, '未知'),
-            'submitted_at': assignmentStatusOfThisAssignment.submitted_at.strftime('%Y-%m-%d %H:%M') if assignmentStatusOfThisAssignment.submitted_at else None,
+            'submitted_at': submitted_at,
         })
-    print(f"返回作业数量: {len(assignments_data)}")
     return JsonResponse({
         'success': True,
         'data': assignments_data
@@ -204,10 +206,9 @@ def student_assignments(request):
 def teacher_get_assignments(request, class_id):
     if request.method == 'GET':
         teacher = request.user
-        assignments = Assignment.objects.filter(teacher=teacher, target_class__id=class_id)
+        assignments = Assignment.objects.filter(teacher=teacher, target_class__id=class_id).order_by('-created_at')
         return_assignments = []
         for assignment in assignments:
-            # 获取该作业的所有学生状态统计
             return_assignments.append({
                 'id': assignment.id,
                 'title': assignment.title,
@@ -216,7 +217,6 @@ def teacher_get_assignments(request, class_id):
                 'class_name': assignment.target_class.name,
                 'created_at': assignment.created_at.strftime('%Y-%m-%d %H:%M'),
                 'deadline': assignment.deadline.strftime('%Y-%m-%d %H:%M') if assignment.deadline else None,
-                # 关联的 Problem 信息
                 'problem_id': assignment.problem.id if assignment.problem else None,
                 'problem_title': assignment.problem.title if assignment.problem else '传统作业 (仅附件)',
             })
@@ -226,25 +226,28 @@ def teacher_get_assignments(request, class_id):
 @jwt_login_required
 def problem_meta_data(request):
     """
-    返回题目创建所需的元数据
+    返回题目创建所需的元数据 (选项列表)
     """
     try:
-        # 获取激活的题目类型
         problem_types = ProblemType.objects.filter(is_active=True).values('id', 'name', 'code')
-        # 获取所有科目
         subjects = Subject.objects.all().values('id', 'name', 'code')
-        # 获取所有标签
         tags = ProblemTag.objects.all().values('id', 'name', 'color')
+
+        # === 修改点 4：返回所有知识点 ===
+        # 前端可以根据 subjects[i].id 来过滤显示的知识点，或者在这里直接按科目分组返回
+        # 这里为了通用，返回所有，并带上 subject_id
+        knowledge_points = KnowledgePoint.objects.all().values('id', 'name', 'subject_id')
+
         return JsonResponse({
             'success': True,
             'data': {
                 'problemTypes': list(problem_types),
                 'subjects': list(subjects),
-                'tags': list(tags)
+                'tags': list(tags),
+                'knowledgePoints': list(knowledge_points)  # 新增
             }
         })
     except Exception as e:
-        # 这里使用 JsonResponse 与上面保持一致
         return JsonResponse({
             'success': False,
             'error': str(e)
@@ -258,27 +261,22 @@ def get_student_homework_detail(request, assignment_id):
     学生获取单份作业的详细信息（用于做题页面）
     """
     student = request.user
-    # 1. 获取作业对象，同时验证是否存在
-    # 使用 select_related 优化后续对关联对象的访问
     try:
         assignment = Assignment.objects.select_related(
             'teacher', 'target_class', 'problem', 'problem__problem_type'
         ).get(id=assignment_id)
     except Assignment.DoesNotExist:
         return JsonResponse({'success': False, 'error': '作业不存在'}, status=404)
-    # 2. 验证权限：学生是否在目标班级中
-    # 这是一个安全检查，防止学生通过遍历 ID 访问其他班级的作业
+
     if not student.class_in.filter(id=assignment.target_class.id).exists():
         return JsonResponse({'success': False, 'error': '您不是该班级成员，无法查看此作业'}, status=403)
 
-    # 3. 获取或创建学生的作业状态
-    # 如果学生是后加入班级的，可能还没有状态记录，这里使用 get_or_create 自动修复
     status_obj, created = AssignmentStatus.objects.get_or_create(
         assignment=assignment,
         student=student,
         defaults={'status': 'pending'}
     )
-    # 4. 准备返回数据
+
     problem = assignment.problem
     if status_obj.submission:
         status = status_obj.submission.status
@@ -286,7 +284,7 @@ def get_student_homework_detail(request, assignment_id):
     else:
         status = 'pending'
         score = 0
-    # 基础作业信息
+
     data = {
         'assignment_id': assignment.id,
         'assignment_title': assignment.title,
@@ -294,22 +292,20 @@ def get_student_homework_detail(request, assignment_id):
         'deadline': assignment.deadline.strftime('%Y-%m-%d %H:%M') if assignment.deadline else None,
         'assignment_status_id': status_obj.id,
         'status': status,
-        'score':score,
+        'score': score,
         'submitted_at': status_obj.submitted_at.strftime('%Y-%m-%d %H:%M') if status_obj.submitted_at else None,
     }
 
-    # 如果有提交记录，获取提交相关信息
     if status_obj.submission:
         data.update({
             'submission_id': status_obj.submission.id,
-            # 可以根据需要添加更多提交相关的信息
+            'submission_image': status_obj.submission.submitted_image.url if status_obj.submission.submitted_image else None,
+            'submission_text': status_obj.submission.submitted_text,
+            'ai_justification': status_obj.submission.justification,  # AI 评语
+            'choose_answer': status_obj.submission.choose_answer
         })
 
-    # 题目详细信息（如果有）
     if problem:
-        # 注意：这里假设 problem.content 是一个关联对象，可能需要进一步查询
-        # 如果 problem 模型中 content 就是一个 TextField，则直接使用 problem.content
-        # 根据您之前的描述，ProblemContent 是一个单独的模型
         problem_content_text = ""
         if hasattr(problem, 'content') and problem.content:
             problem_content_text = problem.content.content
@@ -321,10 +317,10 @@ def get_student_homework_detail(request, assignment_id):
             'problem_type': problem.problem_type.name,
             'problem_type_code': problem.problem_type.code if problem.problem_type else '',
             'problem_content': problem_content_text,
-            # 可以在这里添加更多题目信息，如附件等
+            'standard_answer': problem.answer.content if problem.answer else '',  # 在这里返回标准答案可能需要根据业务决定是否在学生提交前隐藏
+            'explanation': problem.answer.explanation if problem.answer else '',
         })
     else:
-        # 如果是传统作业（没有关联在线题目）
         data['problem_content'] = assignment.description or "请查看附件完成作业。"
 
     return JsonResponse({'data': data})
@@ -336,35 +332,39 @@ def homeworkGradingProcess(request, assignment_id):
     if request.method != 'POST':
         return JsonResponse({'error': '只支持POST请求'}, status=405)
     try:
-        # 获取当前用户
         user = request.user
         if not user.is_authenticated:
             return JsonResponse({'error': '用户未登录'}, status=401)
 
-        # 获取作业状态
         assignment_status = AssignmentStatus.objects.get(id=assignment_id, student=user)
 
         # 创建提交记录
-        from gradingModule.models import Submission
-        # logger.info(f'收到了前端发来的数据:{request.POST}')
+        # 注意：这里需要根据前端上传的是文本还是图片做不同处理，这里假设前端上传了 answer_content
+        # 如果是图片，需要在 request.FILES 中获取
+
         submission = Submission.objects.create(
             student=user,
             problem=assignment_status.assignment.problem,
-            # 根据实际需要设置其他提交字段
             submitted_time=timezone.now(),
             choose_answer=request.POST.get('answer_content'),
+            submitted_text=request.POST.get('submitted_text', '')
         )
-        # logger.info(f'收到了后端发来的answe_content:{request.POST.get("answer_content")}')
-        # 更新作业状态
+
+        # 处理上传的图片
+        if 'image' in request.FILES:
+            submission.submitted_image = request.FILES['image']
+            submission.save()
+
         assignment_status.submission = submission
         assignment_status.submission.status = 'SUBMITTED'
         assignment_status.submitted_at = timezone.now()
         assignment_status.submission.save()
         assignment_status.save()
 
-        # 异步调用批改任务
-        logger.info('正在调用异步进程')
+        logger.info('正在调用异步批改进程')
+        # 调用 Celery 任务
         process_and_grade_submission.delay(assignment_status_id=assignment_status.id)
+
         return JsonResponse({
             'success': True,
             'message': '作业提交成功，正在批改中',
@@ -375,33 +375,40 @@ def homeworkGradingProcess(request, assignment_id):
     except Exception as e:
         logger.error(f"提交作业失败: {e}")
         return JsonResponse({'error': f'提交失败，请重试，详情：{e}'}, status=500)
+
+
 @jwt_login_required
 def teacher_get_assignments_detail(request, class_id, assignment_id):
     if request.method == 'GET':
         teacher = request.user
-        assignment = Assignment.objects.filter(id=assignment_id,teacher=teacher, target_class__id=class_id).first()
-        # 获取该作业统计
+        assignment = Assignment.objects.filter(id=assignment_id, teacher=teacher, target_class__id=class_id).first()
+        if not assignment:
+            return JsonResponse({'error': '作业不存在'}, status=404)
+
         submittedCount = 0
+        total_members = assignment.target_class.members.count()
+
         for stu in assignment.target_class.members.all():
-            if AssignmentStatus.objects.filter(id=stu.id).first().submission:
-                if AssignmentStatus.objects.filter(id=stu.id).first().submission.status != 'PENDING':
-                    submittedCount+=1
+            status_obj = AssignmentStatus.objects.filter(student=stu, assignment=assignment).first()
+            if status_obj and status_obj.submission and status_obj.submission.status != 'PENDING':
+                submittedCount += 1
+
         return_data = {
             'id': assignment.id,
-            'subject': assignment.problem.subject.name,
+            'subject': assignment.problem.subject.name if assignment.problem and assignment.problem.subject else '未知',
             'title': assignment.title,
             'description': assignment.description,
             'teacher_name': assignment.teacher.wx_nickName,
             'class_name': assignment.target_class.name,
             'created_at': assignment.created_at.strftime('%Y-%m-%d %H:%M'),
             'deadline': assignment.deadline.strftime('%Y-%m-%d %H:%M') if assignment.deadline else None,
-            'totalCount': assignment.target_class.members.count(),
-            'submittedCount':submittedCount,
-            # 关联的 Problem 信息
+            'totalCount': total_members,
+            'submittedCount': submittedCount,
             'problem_id': assignment.problem.id if assignment.problem else None,
             'problem_title': assignment.problem.title if assignment.problem else '传统作业 (仅附件)',
         }
         return JsonResponse({'data': return_data})
+
 
 @jwt_login_required
 def teacher_get_students_assignments_list(request, class_id, assignment_id):
@@ -412,29 +419,31 @@ def teacher_get_students_assignments_list(request, class_id, assignment_id):
         if not assignment:
             return JsonResponse({'error': '作业不存在或无权访问'}, status=404)
 
-        # 获取该作业统计
-        submittedCount = 0
         student_list = []
 
         for stu in assignment.target_class.members.all():
-            # 修复：应该通过student和assignment来查询AssignmentStatus
             assignment_status = AssignmentStatus.objects.filter(
                 student=stu,
                 assignment=assignment
             ).first()
 
-            if assignment_status and assignment_status.submission:
-                if assignment_status.submission.status != 'PENDING':
-                    submittedCount += 1
+            is_submitted = False
+            status_text = '未提交'
+            score = None
 
-            # 构建学生数据
+            if assignment_status and assignment_status.submission:
+                status_text = assignment_status.submission.status
+                score = assignment_status.submission.score
+                if status_text != 'PENDING':
+                    is_submitted = True
+
             student_data = {
                 'id': stu.id,
                 'name': stu.wx_nickName,
-                # 'studentId': stu.student_id,
-                'submitted': assignment_status and assignment_status.submission and assignment_status.submission.status != 'PENDING',
-                'status': assignment_status.submission.status if assignment_status and assignment_status.submission else '未提交'
+                'submitted': is_submitted,
+                'status': status_text,
+                'score': score
             }
             student_list.append(student_data)
-        # 构建返回数据
+
         return JsonResponse({'data': student_list})
