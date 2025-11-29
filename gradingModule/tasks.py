@@ -5,9 +5,8 @@ from celery import shared_task
 from openai import OpenAI
 from django.conf import settings  # 确保正确引用 settings
 
-from assignmentAndClassModule.models import Assignment, AssignmentStatus
-from .models import Submission, Problem
-
+from assignmentAndClassModule.models import AssignmentStatus
+from .models import Submission
 # === 导入知识点分析服务 ===
 try:
     from .analysis_logic import MasteryService
@@ -37,8 +36,7 @@ def grade_submission_with_ai(standard_answer, total_score, submission_id=None, a
     """
 
     # 1. 参数解析与对象获取
-    submission = None
-
+    # submission = None
     if submission_id:
         try:
             submission = Submission.objects.get(id=submission_id)
@@ -130,9 +128,9 @@ def process_and_grade_submission(assignment_status_id=None, submission_id=None):
     """
 
     # 1. 获取 Submission 对象和上下文
-    submission = None
+    # submission = None
+    # problem = None
     assignment_status = None
-    problem = None
 
     try:
         if assignment_status_id:
@@ -173,7 +171,7 @@ def process_and_grade_submission(assignment_status_id=None, submission_id=None):
 
         logger.info(f'标准答案: {problem.answer.content} | 学生答案: {student_choose}')
 
-        if student_choose == problem.answer.content:
+        if student_choose.upper() == problem.answer.content.upper():
             submission.status = 'ACCEPTED'
             submission.score = problem.points
             logger.info("✅ 选择题 - 正确")

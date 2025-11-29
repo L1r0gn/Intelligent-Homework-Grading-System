@@ -1,6 +1,4 @@
 from functools import wraps
-import jwt
-from django.contrib.sites import requests
 from django.http import JsonResponse
 from django.urls import reverse
 import json, logging
@@ -12,8 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator
 from django.db.models import Q
-
-from IntelligentHomeworkGradingSystem import settings
+from questionManageModule.models import  StudentMastery
 from userManageModule.decorators import jwt_login_required
 # 确保导入 KnowledgePoint
 from .models import Problem, ProblemContent, Answer, ProblemType, Subject, ProblemTag, KnowledgePoint
@@ -591,3 +588,121 @@ def _ajax_create_model_instance(request, model_class, model_name_singular):
     except Exception as e:
         logger.error(f'AJAX创建{model_name_singular}失败: {str(e)}', exc_info=True)
         return JsonResponse({'error': '服务器内部错误。'}, status=500)
+
+
+@jwt_login_required
+def wx_search_questions(request):
+    """
+    微信端：搜索题目接口
+    支持参数：
+    - keyword: 搜索标题、内容
+    - kp_id: 知识点ID
+    - page: 分页
+    """
+    keyword = request.GET.get('keyword', '').strip()
+    kp_id = request.GET.get('kp_id')
+
+    # 只查询激活的题目
+    questions = Problem.objects.filter(is_active=True).select_related('problem_type', 'subject')
+
+    # 按知识点筛选
+    if kp_id:
+        questions = questions.filter(knowledge_points__id=kp_id)
+
+    # 按关键词筛选（同时搜标题、内容、知识点名称）
+    if keyword:
+        questions = questions.filter(
+            Q(title__icontains=keyword) |
+            Q(content__content__icontains=keyword) |
+            Q(knowledge_points__name__icontains=keyword)
+        ).distinct()
+
+    # 默认按时间倒序，限制返回数量防止数据量过大
+    total_count = questions.count()
+    questions = questions.order_by('-create_time')[:50]
+
+    data = []
+    for q in questions:
+        # 获取该题关联的知识点名称
+        kp_names = [kp.name for kp in q.knowledge_points.all()[:3]]
+
+        data.append({
+            'id': q.id,
+            'title': q.title if q.title else f'题目 #{q.id}',
+            'problem_type': q.problem_type.name,
+            'difficulty': q.get_difficulty_display(),
+            'knowledge_points': kp_names,
+            # 截取一部分内容作为预览
+            'content_preview': q.content.content[:40] + '...' if q.content else ''
+        })
+
+    return JsonResponse({'success': True, 'data': data, 'total': total_count})
+
+
+@jwt_login_required
+def wx_get_question_by_id(request, question_id):
+    """
+    微信端：获取指定ID的题目详情 (用于精准练习)
+    """
+    try:
+        question = Problem.objects.get(id=question_id, is_active=True)
+
+        # 构造与 random 接口一致的数据结构
+        data = {
+            'id': question.id,
+            'content': question.content.content,
+            'problem_type': question.problem_type.name,
+            'points': question.points,
+            # 你可以根据需要添加更多字段
+        }
+        return JsonResponse({'success': True, 'question': data})
+    except Problem.DoesNotExist:
+        return JsonResponse({'success': False, 'error': '题目不存在或已下架'}, status=404)
+
+
+@jwt_login_required
+def wx_get_student_stats(request):
+    """微信端：获取学生的学习统计数据 (能力画像)"""
+    student = request.user
+
+    # 1. 获取基础统计
+    # 总做题数 (已批改的提交)
+    from gradingModule.models import Submission
+    total_submissions = Submission.objects.filter(
+        student=student,
+        status__in=['GRADED', 'ACCEPTED', 'WRONG_ANSWER']
+    ).count()
+
+    # 2. 获取知识点掌握度列表
+    stats_list = []
+    radar_data = []  # 用于雷达图的数据 (如果有)
+    if StudentMastery:
+        # 查询该学生的所有掌握度记录，按分数降序排列
+        mastery_records = StudentMastery.objects.filter(
+            student=student
+        ).select_related('knowledge_point').order_by('-mastery_level')
+        logger.info(f"发送的所有知识点掌握记录为{mastery_records}")
+
+        for record in mastery_records:
+            stats_list.append({
+                'id': record.knowledge_point.id,
+                'name': record.knowledge_point.name,
+                'score': round(record.mastery_level, 1),  # 保留1位小数
+                'score_percent': int((record.mastery_level / 5.0) * 100),  # 用于前端进度条宽度
+                'count': record.total_questions_attempted if hasattr(record, 'total_questions_attempted') else 0
+            })
+
+    # 计算平均能力值
+    avg_score = 0
+    if stats_list:
+        total_score = sum(item['score'] for item in stats_list)
+        avg_score = round(total_score / len(stats_list), 1)
+    logger.info(f"发送的用户的能力值数据为{stats_list}")
+    return JsonResponse({
+        'success': True,
+        'data': {
+            'total_questions': total_submissions,
+            'avg_mastery': avg_score,
+            'stats_list': stats_list
+        }
+    })

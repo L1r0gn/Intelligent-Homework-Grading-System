@@ -51,6 +51,12 @@ def submissionprocess(request):
             })
         return JsonResponse(data, safe=False)
     elif request.method == 'POST':
+        #解析json数据
+        if request.content_type == 'application/json':
+            try:
+                request.POST = json.loads(request.body)
+            except json.JSONDecodeError:
+                return HttpResponseBadRequest("JSON 解析错误")
         # 2. 从解析后的 data 字典中获取数据
         submitted_text = request.POST.get('submitted_text')
         problem_id = request.POST.get('questionId')
@@ -58,13 +64,14 @@ def submissionprocess(request):
         userId = request.POST.get('userId')
         submitted_image = request.FILES.get('submitted_image')  # 用于主观题
         if not problem_id:
-            return HttpResponseBadRequest("请求必须包含 'problem_id' ")
+            return HttpResponseBadRequest("请求必须包含 'problem_id'")
         try:
             problem = Problem.objects.get(id=problem_id)
         except Problem.DoesNotExist:
             return JsonResponse({'error': '指定的题目不存在'}, status=404)
+
         user = User.objects.get(id=userId)
-        logger.info("用户 %s 创建了新提交", user)
+        logger.info(f"用户 {user.wx_nickName}创建了新提交")
         if not user:
             return HttpResponseBadRequest({'error':'用户不存在'},status=405)
         # 创建新的 submission 实例，保存图片
@@ -77,9 +84,10 @@ def submissionprocess(request):
             status='PENDING', # 初始状态为判题中
         )
         submissions = Submission.objects.filter(student=user).order_by('-submitted_time')
-        logger.info("用户 %s 当前共有 %d 条提交记录", user, submissions.count())
+        logger.info("用户 %s 当前共有 %d 条提交记录", user.wx_nickName, submissions.count())
         # 触发异步任务！使用 .delay() 方法，任务会被发送到 Celery 队列中等待执行
-        process_and_grade_submission.delay(submision_id=submission.id)
+
+        process_and_grade_submission.delay(submission_id=submission.id)
         # 立即返回响应给用户
         response_data = {
             'id': submission.id,

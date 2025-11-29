@@ -145,3 +145,25 @@ class KnowledgePoint(models.Model):
     class Meta:
         verbose_name = "知识点"
         verbose_name_plural = verbose_name
+
+
+class StudentMastery(models.Model):
+    """
+    学生掌握度模型 (核心分析表)
+    存储：张三 在 '立体几何' 上的得分为 4.2 (1-5分制)
+    """
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='mastery_stats', verbose_name="学生")
+    knowledge_point = models.ForeignKey(KnowledgePoint, on_delete=models.CASCADE, related_name='student_stats',
+                                        verbose_name="知识点")
+
+    # 核心字段：1.0 - 5.0 的评分
+    mastery_level = models.FloatField(default=0.0, verbose_name="掌握度评分(1-5)")
+
+    # 辅助统计字段
+    total_questions_attempted = models.PositiveIntegerField(default=0, verbose_name="练习题数")
+    last_updated = models.DateTimeField(auto_now=True, verbose_name="更新时间")
+
+    class Meta:
+        unique_together = ('student', 'knowledge_point')  # 确保每个学生每个知识点只有一条记录
+        verbose_name = "学生掌握度"
+        verbose_name_plural = verbose_name
