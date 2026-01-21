@@ -27,7 +27,33 @@ from .models import Assignment, className, AssignmentStatus
 @transaction.atomic  # --- 使用事务确保数据一致性 ---
 def push_assignment(request):
     """
-    教师推送作业 (二合一：创建新题目并立即发布)
+    老师发布新作业。
+
+    功能描述:
+        该视图允许教师（已认证）通过一个请求同时完成“创建新题目”和“将该题目作为作业发布给指定班级”两个操作。
+        它在一个数据库事务中处理所有逻辑，确保数据的一致性。
+
+    Args:
+        request (Request): DRF的Request对象，包含以下字段:
+            - class_id (int): 目标班级的ID。
+            - title (str): 作业和题目的标题。
+            - description (str, optional): 作业的描述。
+            - deadline (str): 作业截止日期 (e.g., "YYYY-MM-DDTHH:MM:SSZ")。
+            - content (str): 题目内容。
+            - problem_type (int): 题目类型ID。
+            - subject (int): 科目ID。
+            - difficulty (int): 难度系数。
+            - tags (list[int], optional): 题目标签ID列表。
+            - knowledge_points (list[int], optional): 关联的知识点ID列表。
+            - estimated_time (int, optional): 预计完成时间（分钟）。
+            - points (int): 题目分值。
+            - answer (str): 标准答案。
+            - explanation (str, optional): 答案解析。
+
+    Returns:
+        Response:
+            - 成功 (HTTP 200 OK): 返回包含作业ID和题目ID的成功信息。
+            - 失败 (HTTP 400/500): 返回具体的错误原因，如班级不存在、数据校验失败等。
     """
     if request.method == 'POST':
         teacher = request.user
@@ -146,7 +172,23 @@ def push_assignment(request):
 
 @jwt_login_required
 def student_assignments(request):
-    """学生获取作业列表"""
+    """
+    学生获取自己的作业列表。
+
+    功能描述:
+        该视图供学生（已认证）调用，返回其所有已加入班级的作业列表。
+        可以根据请求头中的 'ClassId' 筛选特定班级的作业。
+        同时，会附带每份作业的当前状态（如待完成、已提交、已批改等）。
+
+    Args:
+        request (Request): DRF的Request对象。
+            - Headers (optional): {'ClassId': '班级ID'} 用于筛选特定班级的作业。
+
+    Returns:
+        JsonResponse:
+            - 成功 (HTTP 200 OK): 返回一个包含作业列表的JSON对象。
+              每个作业对象都包含详细信息及提交状态。
+    """
     student = request.user
     student_classes = student.class_in.all()
 
@@ -204,6 +246,20 @@ def student_assignments(request):
 
 @jwt_login_required
 def teacher_get_assignments(request, class_id):
+    """
+    老师获取指定班级的作业列表。
+
+    功能描述:
+        该视图供教师（已认证）调用，返回其在特定班级（由class_id指定）发布的所有作业列表。
+
+    Args:
+        request (Request): DRF的Request对象。
+        class_id (int): 目标班级的ID。
+
+    Returns:
+        JsonResponse:
+            - 成功 (HTTP 200 OK): 返回一个包含作业列表的JSON对象。
+    """
     if request.method == 'GET':
         teacher = request.user
         assignments = Assignment.objects.filter(teacher=teacher, target_class__id=class_id).order_by('-created_at')
@@ -226,7 +282,19 @@ def teacher_get_assignments(request, class_id):
 @jwt_login_required
 def problem_meta_data(request):
     """
-    返回题目创建所需的元数据 (选项列表)
+    获取创建题目所需的元数据。
+
+    功能描述:
+        该视图为前端提供创建新题目时所需的各种下拉选项数据，
+        包括题目类型、科目、标签以及所有知识点。
+
+    Args:
+        request (Request): DRF的Request对象。
+
+    Returns:
+        JsonResponse:
+            - 成功 (HTTP 200 OK): 返回一个包含problemTypes, subjects, tags, knowledgePoints列表的JSON对象。
+            - 失败 (HTTP 500): 如果查询过程中发生错误。
     """
     try:
         problem_types = ProblemType.objects.filter(is_active=True).values('id', 'name', 'code')
@@ -258,7 +326,21 @@ def problem_meta_data(request):
 @jwt_login_required
 def get_student_homework_detail(request, assignment_id):
     """
-    学生获取单份作业的详细信息（用于做题页面）
+    学生获取单份作业的详细信息。
+
+    功能描述:
+        该视图供学生（已认证）调用，用于在做题页面加载特定作业的详细内容。
+        它会返回作业信息、题目详情，以及学生过往的提交记录（如果存在）。
+
+    Args:
+        request (Request): DRF的Request对象。
+        assignment_id (int): 目标作业的ID。
+
+    Returns:
+        JsonResponse:
+            - 成功 (HTTP 200 OK): 返回包含作业和题目详细信息的JSON对象。
+            - 失败 (HTTP 404 NOT FOUND): 如果作业不存在。
+            - 失败 (HTTP 403 FORBIDDEN): 如果学生不属于该作业对应的班级。
     """
     student = request.user
     try:
@@ -329,6 +411,25 @@ def get_student_homework_detail(request, assignment_id):
 @jwt_login_required
 @csrf_exempt
 def homeworkGradingProcess(request, assignment_id):
+    """
+    学生提交作业答案。
+
+    功能描述:
+        该视图处理学生提交的作业答案（可以是文本或图片）。
+        它会创建一份提交记录（Submission），更新作业状态（AssignmentStatus），
+        然后触发一个异步的Celery任务（process_and_grade_submission）来进行自动批改。
+
+    Args:
+        request (Request): DRF的Request对象。
+            - POST: 包含 'answer_content' (选择题答案) 和/或 'submitted_text' (主观题文本答案)。
+            - FILES: 包含 'image' (上传的图片文件)。
+        assignment_id (int): 对应的作业状态ID (AssignmentStatus ID)。
+
+    Returns:
+        JsonResponse:
+            - 成功 (HTTP 200 OK): 返回成功信息，提示正在批改中。
+            - 失败 (HTTP 404/500): 返回具体的错误原因。
+    """
     if request.method != 'POST':
         return JsonResponse({'error': '只支持POST请求'}, status=405)
     try:
@@ -379,6 +480,23 @@ def homeworkGradingProcess(request, assignment_id):
 
 @jwt_login_required
 def teacher_get_assignments_detail(request, class_id, assignment_id):
+    """
+    老师获取单个作业的统计详情。
+
+    功能描述:
+        该视图供教师（已认证）调用，返回特定班级下单个作业的详细统计信息，
+        包括总人数、已提交人数等。
+
+    Args:
+        request (Request): DRF的Request对象。
+        class_id (int): 目标班级的ID。
+        assignment_id (int): 目标作业的ID。
+
+    Returns:
+        JsonResponse:
+            - 成功 (HTTP 200 OK): 返回包含作业统计信息的JSON对象。
+            - 失败 (HTTP 404 NOT FOUND): 如果作业不存在或教师无权访问。
+    """
     if request.method == 'GET':
         teacher = request.user
         assignment = Assignment.objects.filter(id=assignment_id, teacher=teacher, target_class__id=class_id).first()
@@ -412,6 +530,23 @@ def teacher_get_assignments_detail(request, class_id, assignment_id):
 
 @jwt_login_required
 def teacher_get_students_assignments_list(request, class_id, assignment_id):
+    """
+    老师获取某作业下所有学生的提交列表。
+
+    功能描述:
+        该视图供教师（已认证）调用，返回指定作业下，班级内所有学生的提交状态和分数列表。
+        用于教师查看和管理学生的作业完成情况。
+
+    Args:
+        request (Request): DRF的Request对象。
+        class_id (int): 目标班级的ID。
+        assignment_id (int): 目标作业的ID。
+
+    Returns:
+        JsonResponse:
+            - 成功 (HTTP 200 OK): 返回一个包含学生提交状态列表的JSON对象。
+            - 失败 (HTTP 404 NOT FOUND): 如果作业不存在或教师无权访问。
+    """
     if request.method == 'GET':
         teacher = request.user
         assignment = Assignment.objects.filter(id=assignment_id, teacher=teacher, target_class__id=class_id).first()
