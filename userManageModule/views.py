@@ -117,6 +117,11 @@ def wx_login(request):
             openid=openid,
             defaults={'username': openid}  # 首次创建时，可以用 openid 作为默认用户名
         )
+        
+        # 修复可能存在的用户名为空的情况
+        if not user.username:
+            user.username = openid
+            user.save()
 
         # 为用户生成 JWT Token
         refresh = RefreshToken.for_user(user)
@@ -314,6 +319,7 @@ def wx_user_edit(request, user_id):
         ]
         response_data = {
             'user': {
+                'username': user.username,
                 'wx_nickName': user.wx_nickName,
                 'wx_avatar': user.wx_avatar,
                 'gender': user.gender,
@@ -358,6 +364,7 @@ def wx_user_edit(request, user_id):
         ]
         response_data = {
             'user': {
+                'username': user.username,
                 'wx_nickName': user.wx_nickName,
                 'wx_avatar': user.wx_avatar,
                 'gender': user.gender,

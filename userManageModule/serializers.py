@@ -13,6 +13,7 @@ def serializeUserInfo(user_id):
     class1user = serializeClassInfo(user_id)
     data = {
         'id': user.id,
+        'username': user.username,
         'wx_nickName': user.wx_nickName,
         'wx_avatar': user.wx_avatar,
         'phone': user.phone,

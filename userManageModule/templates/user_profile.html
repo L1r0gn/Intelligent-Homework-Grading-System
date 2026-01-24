@@ -7,12 +7,14 @@
 <div class="container mt-4">
     <!-- Toast Container -->
     <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;">
-        <div id="liveToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div id="liveToast" class="toast align-items-center text-white bg-success border-0" role="alert"
+            aria-live="assertive" aria-atomic="true">
             <div class="d-flex">
                 <div class="toast-body" id="toastMessage">
                     操作成功
                 </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                    aria-label="Close"></button>
             </div>
         </div>
     </div>
@@ -26,7 +28,7 @@
                 <div class="card-body">
                     <form id="profileForm" novalidate>
                         {% csrf_token %}
-                        
+
                         <div class="row mb-3">
                             <label class="col-sm-3 col-form-label text-end fw-bold">用户名 (登录账号)</label>
                             <div class="col-sm-9">
@@ -38,14 +40,16 @@
                         <div class="row mb-3">
                             <label for="nickName" class="col-sm-3 col-form-label text-end fw-bold">姓名 / 昵称</label>
                             <div class="col-sm-9">
-                                <input type="text" class="form-control" id="nickName" name="wx_nickName" value="{{ user.wx_nickName|default:'' }}">
+                                <input type="text" class="form-control" id="nickName" name="wx_nickName"
+                                    value="{{ user.wx_nickName|default:'' }}">
                             </div>
                         </div>
 
                         <div class="row mb-3">
                             <label for="email" class="col-sm-3 col-form-label text-end fw-bold">电子邮箱</label>
                             <div class="col-sm-9">
-                                <input type="email" class="form-control" id="email" name="email" value="{{ user.email|default:'' }}">
+                                <input type="email" class="form-control" id="email" name="email"
+                                    value="{{ user.email|default:'' }}">
                                 <div class="invalid-feedback">请输入有效的电子邮箱地址</div>
                             </div>
                         </div>
@@ -53,7 +57,8 @@
                         <div class="row mb-3">
                             <label for="phone" class="col-sm-3 col-form-label text-end fw-bold">手机号码</label>
                             <div class="col-sm-9">
-                                <input type="text" class="form-control" id="phone" name="phone" value="{{ user.phone|default:'' }}" pattern="^1[3-9]\d{9}$">
+                                <input type="text" class="form-control" id="phone" name="phone"
+                                    value="{{ user.phone|default:'' }}" pattern="^1[3-9]\d{9}$">
                                 <div class="invalid-feedback">请输入有效的11位手机号码</div>
                             </div>
                         </div>
@@ -68,33 +73,36 @@
                                 </select>
                             </div>
                         </div>
-                        
+
                         <div class="row mb-3">
                             <label class="col-sm-3 col-form-label text-end fw-bold">角色</label>
                             <div class="col-sm-9">
-                                <input type="text" class="form-control-plaintext" value="{% if user.user_attribute >= 3 %}管理员{% elif user.user_attribute == 2 %}教师{% else %}学生{% endif %}" readonly>
+                                <input type="text" class="form-control-plaintext"
+                                    value="{%if user.user_attribute == 4 %}超级管理员{% elif user.user_attribute == 3 %}管理员{% elif user.user_attribute == 2 %}教师{% else %}学生{% endif %}"
+                                    readonly>
                             </div>
                         </div>
 
-                         <div class="row mb-3">
+                        <div class="row mb-3">
                             <label class="col-sm-3 col-form-label text-end fw-bold">所属班级</label>
                             <div class="col-sm-9">
                                 {% for class_obj in user.class_in.all %}
-                                    <span class="badge bg-info text-dark me-1">{{ class_obj.name }}</span>
+                                <span class="badge bg-info text-dark me-1">{{ class_obj.name }}</span>
                                 {% empty %}
-                                    <span class="text-muted">暂未加入班级</span>
+                                <span class="text-muted">暂未加入班级</span>
                                 {% endfor %}
                             </div>
                         </div>
 
                         <hr class="my-4">
-                        
+
                         <h6 class="mb-3 fw-bold">修改密码 <small class="text-muted fw-normal">(留空则不修改)</small></h6>
 
                         <div class="row mb-3">
                             <label for="currentPassword" class="col-sm-3 col-form-label text-end">当前密码</label>
                             <div class="col-sm-9">
-                                <input type="password" class="form-control" id="currentPassword" name="current_password">
+                                <input type="password" class="form-control" id="currentPassword"
+                                    name="current_password">
                                 <div class="invalid-feedback">修改密码时必须输入当前密码</div>
                             </div>
                         </div>
@@ -102,7 +110,8 @@
                         <div class="row mb-3">
                             <label for="newPassword" class="col-sm-3 col-form-label text-end">新密码</label>
                             <div class="col-sm-9">
-                                <input type="password" class="form-control" id="newPassword" name="new_password" minlength="8">
+                                <input type="password" class="form-control" id="newPassword" name="new_password"
+                                    minlength="8">
                                 <div class="form-text">密码长度至少8位，包含字母和数字</div>
                                 <div class="invalid-feedback">请输入符合要求的新密码</div>
                             </div>
@@ -111,14 +120,16 @@
                         <div class="row mb-3">
                             <label for="confirmPassword" class="col-sm-3 col-form-label text-end">确认新密码</label>
                             <div class="col-sm-9">
-                                <input type="password" class="form-control" id="confirmPassword" name="confirm_password">
+                                <input type="password" class="form-control" id="confirmPassword"
+                                    name="confirm_password">
                                 <div class="invalid-feedback">两次输入的密码不一致</div>
                             </div>
                         </div>
 
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
                             <button type="submit" class="btn btn-primary" id="saveBtn">
-                                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                <span class="spinner-border spinner-border-sm d-none" role="status"
+                                    aria-hidden="true"></span>
                                 <i class="fas fa-save me-2"></i>保存修改
                             </button>
                         </div>
@@ -130,127 +141,127 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('profileForm');
-    const saveBtn = document.getElementById('saveBtn');
-    const spinner = saveBtn.querySelector('.spinner-border');
-    const toastEl = document.getElementById('liveToast');
-    const toast = new bootstrap.Toast(toastEl);
-    const toastMessage = document.getElementById('toastMessage');
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('profileForm');
+        const saveBtn = document.getElementById('saveBtn');
+        const spinner = saveBtn.querySelector('.spinner-border');
+        const toastEl = document.getElementById('liveToast');
+        const toast = new bootstrap.Toast(toastEl);
+        const toastMessage = document.getElementById('toastMessage');
 
-    form.addEventListener('submit', function(event) {
-        event.preventDefault();
-        event.stopPropagation();
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
 
-        // Client-side validation logic
-        let isValid = true;
-        
-        // Reset validation states
-        form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            // Client-side validation logic
+            let isValid = true;
 
-        // Phone validation
-        const phone = document.getElementById('phone');
-        if (phone.value && !/^1[3-9]\d{9}$/.test(phone.value)) {
-            phone.classList.add('is-invalid');
-            isValid = false;
-        }
+            // Reset validation states
+            form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
 
-        // Password validation logic
-        const currentPwd = document.getElementById('currentPassword');
-        const newPwd = document.getElementById('newPassword');
-        const confirmPwd = document.getElementById('confirmPassword');
-
-        if (newPwd.value || confirmPwd.value) {
-            if (!currentPwd.value) {
-                currentPwd.classList.add('is-invalid');
+            // Phone validation
+            const phone = document.getElementById('phone');
+            if (phone.value && !/^1[3-9]\d{9}$/.test(phone.value)) {
+                phone.classList.add('is-invalid');
                 isValid = false;
             }
-            if (newPwd.value.length < 8) {
-                newPwd.classList.add('is-invalid');
-                isValid = false;
-            }
-            if (newPwd.value !== confirmPwd.value) {
-                confirmPwd.classList.add('is-invalid');
-                isValid = false;
-            }
-        }
 
-        if (!isValid) return;
+            // Password validation logic
+            const currentPwd = document.getElementById('currentPassword');
+            const newPwd = document.getElementById('newPassword');
+            const confirmPwd = document.getElementById('confirmPassword');
 
-        // Prepare data
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData.entries());
-        
-        // Remove empty password fields to avoid sending them
-        if (!data.new_password) {
-            delete data.current_password;
-            delete data.new_password;
-            delete data.confirm_password;
-        }
-
-        // Show loading
-        saveBtn.disabled = true;
-        spinner.classList.remove('d-none');
-
-        // Send API request
-        fetch("{% url 'api_user_profile_update' %}", {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => response.json().then(data => ({status: response.status, body: data})))
-        .then(({status, body}) => {
-            if (status === 200) {
-                showToast('保存成功', 'bg-success');
-                // Clear password fields
-                currentPwd.value = '';
-                newPwd.value = '';
-                confirmPwd.value = '';
-            } else {
-                // Handle errors
-                let errorMsg = '保存失败';
-                if (body.current_password) errorMsg = body.current_password[0];
-                else if (body.new_password) errorMsg = body.new_password[0];
-                else if (body.confirm_password) errorMsg = body.confirm_password[0];
-                else if (body.phone) errorMsg = body.phone[0];
-                else if (body.email) errorMsg = body.email[0];
-                else if (body.detail) errorMsg = body.detail;
-                
-                showToast(errorMsg, 'bg-danger');
-                
-                // Highlight fields if server returns field-specific errors
-                for (const [key, value] of Object.entries(body)) {
-                    // Convert snake_case to matched input name or id
-                    // Note: DRF uses field names, our inputs use same names
-                    const input = form.querySelector(`[name="${key}"]`);
-                    if (input) {
-                        input.classList.add('is-invalid');
-                        const feedback = input.nextElementSibling;
-                        if (feedback && feedback.classList.contains('invalid-feedback')) {
-                            feedback.textContent = value[0];
-                        }
-                    }
+            if (newPwd.value || confirmPwd.value) {
+                if (!currentPwd.value) {
+                    currentPwd.classList.add('is-invalid');
+                    isValid = false;
+                }
+                if (newPwd.value.length < 8) {
+                    newPwd.classList.add('is-invalid');
+                    isValid = false;
+                }
+                if (newPwd.value !== confirmPwd.value) {
+                    confirmPwd.classList.add('is-invalid');
+                    isValid = false;
                 }
             }
-        })
-        .catch(error => {
-            showToast('网络错误，请稍后重试', 'bg-danger');
-            console.error('Error:', error);
-        })
-        .finally(() => {
-            saveBtn.disabled = false;
-            spinner.classList.add('d-none');
-        });
-    });
 
-    function showToast(message, bgClass) {
-        toastMessage.textContent = message;
-        toastEl.className = `toast align-items-center text-white border-0 ${bgClass}`;
-        toast.show();
-    }
-});
+            if (!isValid) return;
+
+            // Prepare data
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            // Remove empty password fields to avoid sending them
+            if (!data.new_password) {
+                delete data.current_password;
+                delete data.new_password;
+                delete data.confirm_password;
+            }
+
+            // Show loading
+            saveBtn.disabled = true;
+            spinner.classList.remove('d-none');
+
+            // Send API request
+            fetch("{% url 'api_user_profile_update' %}", {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify(data)
+            })
+                .then(response => response.json().then(data => ({ status: response.status, body: data })))
+                .then(({ status, body }) => {
+                    if (status === 200) {
+                        showToast('保存成功', 'bg-success');
+                        // Clear password fields
+                        currentPwd.value = '';
+                        newPwd.value = '';
+                        confirmPwd.value = '';
+                    } else {
+                        // Handle errors
+                        let errorMsg = '保存失败';
+                        if (body.current_password) errorMsg = body.current_password[0];
+                        else if (body.new_password) errorMsg = body.new_password[0];
+                        else if (body.confirm_password) errorMsg = body.confirm_password[0];
+                        else if (body.phone) errorMsg = body.phone[0];
+                        else if (body.email) errorMsg = body.email[0];
+                        else if (body.detail) errorMsg = body.detail;
+
+                        showToast(errorMsg, 'bg-danger');
+
+                        // Highlight fields if server returns field-specific errors
+                        for (const [key, value] of Object.entries(body)) {
+                            // Convert snake_case to matched input name or id
+                            // Note: DRF uses field names, our inputs use same names
+                            const input = form.querySelector(`[name="${key}"]`);
+                            if (input) {
+                                input.classList.add('is-invalid');
+                                const feedback = input.nextElementSibling;
+                                if (feedback && feedback.classList.contains('invalid-feedback')) {
+                                    feedback.textContent = value[0];
+                                }
+                            }
+                        }
+                    }
+                })
+                .catch(error => {
+                    showToast('网络错误，请稍后重试', 'bg-danger');
+                    console.error('Error:', error);
+                })
+                .finally(() => {
+                    saveBtn.disabled = false;
+                    spinner.classList.add('d-none');
+                });
+        });
+
+        function showToast(message, bgClass) {
+            toastMessage.textContent = message;
+            toastEl.className = `toast align-items-center text-white border-0 ${bgClass}`;
+            toast.show();
+        }
+    });
 </script>
 {% endblock %}
