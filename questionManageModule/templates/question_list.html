@@ -3,6 +3,61 @@
 
 {% block title %}问题列表{% endblock %}
 
+{% block custom_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const selectAllCheckbox = document.getElementById('select-all-checkbox');
+        const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+        const batchForm = document.getElementById('batch-action-form');
+
+        if (selectAllCheckbox) {
+            // “全选”复选框的逻辑
+            selectAllCheckbox.addEventListener('change', function () {
+                rowCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+            });
+        }
+
+        // 如果取消选中任何一个行复选框，则取消“全选”复选框
+        rowCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function () {
+                if (!this.checked) {
+                    if (selectAllCheckbox) {
+                        selectAllCheckbox.checked = false;
+                    }
+                } else if (document.querySelectorAll('.row-checkbox:checked').length === rowCheckboxes.length) {
+                    if (selectAllCheckbox) {
+                        selectAllCheckbox.checked = true;
+                    }
+                }
+            });
+        });
+
+        // 表单提交前的确认
+        if (batchForm) {
+            batchForm.addEventListener('submit', function (event) {
+                const action = this.querySelector('select[name="action"]').value;
+                const selectedCount = document.querySelectorAll('.row-checkbox:checked').length;
+
+                if (selectedCount === 0) {
+                    alert('请至少选择一个项目！');
+                    event.preventDefault(); // 阻止表单提交
+                    return;
+                }
+
+                if (action === 'delete') {
+                    const confirmation = confirm(`您确定要删除选中的 ${selectedCount} 个问题吗？此操作不可恢复！`);
+                    if (!confirmation) {
+                        event.preventDefault(); // 如果用户取消，则阻止表单提交
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -18,11 +73,50 @@
     </div>
 
     <div class="mb-4">
-        <form method="GET" action="{% url 'question_list' %}" class="d-flex">
-            <input class="form-control me-2" type="search" placeholder="搜索题目、科目、类型、标签..." name="q" value="{{ search_query|default_if_none:'' }}">
-            <button class="btn btn-outline-secondary" type="submit">
-                <i class="fas fa-search"></i> 搜索
-            </button>
+        <form method="GET" action="{% url 'question_list' %}" class="row g-2 align-items-center">
+            <!-- 搜索框 -->
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                    <input class="form-control border-start-0 ps-0" type="search" placeholder="搜索题目、内容、标签..." name="q"
+                        value="{{ search_query|default_if_none:'' }}">
+                </div>
+            </div>
+
+            <!-- 科目筛选 -->
+            <div class="col-md-2">
+                <select name="subject" class="form-select">
+                    <option value="">-- 所有科目 --</option>
+                    {% for subject in all_subjects %}
+                    <option value="{{ subject.id }}" {% if current_subject == subject.id %}selected{% endif %}>{{ subject.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- 题型筛选 -->
+            <div class="col-md-2">
+                <select name="type" class="form-select">
+                    <option value="">-- 所有题型 --</option>
+                    {% for type in all_types %}
+                    <option value="{{ type.id }}" {% if current_type == type.id %}selected{% endif %}>{{ type.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- 难度筛选 -->
+            <div class="col-md-2">
+                <select name="difficulty" class="form-select">
+                    <option value="">-- 所有难度 --</option>
+                    {% for val, label in difficulty_choices %}
+                    <option value="{{ val }}" {% if current_difficulty == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- 按钮 -->
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100" type="submit">筛选</button>
+            </div>
         </form>
     </div>
 
@@ -46,7 +140,8 @@
                     <table class="table table-hover table-striped mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th style="width: 1%;" class="text-center"><input class="form-check-input" type="checkbox" id="select-all-checkbox"></th>
+                                <th style="width: 1%;" class="text-center"><input class="form-check-input"
+                                        type="checkbox" id="select-all-checkbox"></th>
                                 <th>ID</th>
                                 <th>标题</th>
                                 <th>所属科目</th>
@@ -59,11 +154,13 @@
                         </thead>
                         <tbody>
                             {% for question in page_obj %}
-                            <tr {% if not question.is_active %}class="table-secondary text-muted"{% endif %}>
-                                <td class="text-center"><input class="form-check-input row-checkbox" type="checkbox" name="selected_ids" value="{{ question.id }}"></td>
+                            <tr {% if not question.is_active %}class="table-secondary text-muted" {% endif %}>
+                                <td class="text-center"><input class="form-check-input row-checkbox" type="checkbox"
+                                        name="selected_ids" value="{{ question.id }}"></td>
                                 <td><strong>{{ question.id }}</strong></td>
                                 <td>
-                                    <a href="{% url 'question_detail' question.id %}" class="text-decoration-none fw-bold">
+                                    <a href="{% url 'question_detail' question.id %}"
+                                        class="text-decoration-none fw-bold">
                                         {{ question.title|truncatechars:25 }}
                                     </a>
                                 </td>
@@ -71,31 +168,36 @@
                                 <td>{{ question.problem_type.name }}</td>
                                 <td>
                                     {% if question.difficulty == 1 %}
-                                        <span class="badge bg-success">{{ question.get_difficulty_display }}</span>
+                                    <span class="badge bg-success">{{ question.get_difficulty_display }}</span>
                                     {% elif question.difficulty == 2 %}
-                                        <span class="badge bg-warning text-dark">{{ question.get_difficulty_display }}</span>
+                                    <span class="badge bg-warning text-dark">{{ question.get_difficulty_display }}</span>
                                     {% elif question.difficulty == 3 %}
-                                        <span class="badge bg-danger">{{ question.get_difficulty_display }}</span>
+                                    <span class="badge bg-danger">{{ question.get_difficulty_display }}</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ question.get_difficulty_display }}</span>
                                     {% endif %}
                                     {% if not question.is_active %}
-                                        <span class="badge bg-secondary">已禁用</span>
+                                    <span class="badge bg-secondary">已禁用</span>
                                     {% endif %}
                                 </td>
                                 <td>
                                     {% for tag in question.tags.all %}
-                                        <span class="badge rounded-pill bg-light text-dark border">{{ tag.name }}</span>
+                                    <span class="badge rounded-pill bg-light text-dark border">{{ tag.name }}</span>
                                     {% endfor %}
                                 </td>
                                 <td>{{ question.create_time|date:"Y-m-d H:i" }}</td>
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm">
-                                        <a href="{% url 'question_detail' question.id %}" class="btn btn-info" title="查看">
+                                        <a href="{% url 'question_detail' question.id %}" class="btn btn-info"
+                                            title="查看">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        <a href="{% url 'question_update' question.id %}" class="btn btn-warning" title="编辑">
+                                        <a href="{% url 'question_update' question.id %}" class="btn btn-warning"
+                                            title="编辑">
                                             <i class="fas fa-pencil-alt"></i>
                                         </a>
-                                        <button type="button" class="btn btn-danger" title="删除" data-bs-toggle="modal" data-bs-target="#deleteModal{{ question.id }}">
+                                        <button type="button" class="btn btn-danger" title="删除" data-bs-toggle="modal"
+                                            data-bs-target="#deleteModal{{ question.id }}">
                                             <i class="fas fa-trash-alt"></i>
                                         </button>
                                     </div>
@@ -106,11 +208,13 @@
                                 <td colspan="9" class="text-center py-5">
                                     <div class="text-muted">
                                         {% if search_query %}
-                                            <p class="mb-2">没有找到与 “<strong>{{ search_query }}</strong>” 相关的结果。</p>
-                                            <a href="{% url 'question_list' %}" class="btn btn-sm btn-outline-secondary">清空搜索条件</a>
+                                        <p class="mb-2">没有找到与 “<strong>{{ search_query }}</strong>” 相关的结果。</p>
+                                        <a href="{% url 'question_list' %}"
+                                            class="btn btn-sm btn-outline-secondary">清空搜索条件</a>
                                         {% else %}
-                                            <p class="mb-2">暂无问题数据</p>
-                                            <a href="{% url 'question_create' %}" class="btn btn-sm btn-outline-primary">点击这里，创建第一个问题</a>
+                                        <p class="mb-2">暂无问题数据</p>
+                                        <a href="{% url 'question_create' %}"
+                                            class="btn btn-sm btn-outline-primary">点击这里，创建第一个问题</a>
                                         {% endif %}
                                     </div>
                                 </td>
@@ -121,99 +225,66 @@
                 </div>
             </div>
             {% if page_obj.paginator.num_pages > 1 %}
-            <div class="card-footer bg-light">
-                <nav aria-label="Page navigation">
-                    <ul class="pagination justify-content-center mb-0">
-                        {% if page_obj.has_previous %}
+            <div class="card-footer bg-white border-0 py-3">
+                <div class="pagination-container">
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination mb-0">
+                            {% if page_obj.has_previous %}
                             <li class="page-item">
-                                <a class="page-link" href="?page=1&q={{ search_query|default_if_none:'' }}" aria-label="First">&laquo;&laquo;</a>
+                                <a class="page-link"
+                                    href="?page=1&q={{ search_query|default_if_none:'' }}{% if current_subject %}&subject={{ current_subject }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_difficulty %}&difficulty={{ current_difficulty }}{% endif %}"
+                                    aria-label="First">&laquo;</a>
                             </li>
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ search_query|default_if_none:'' }}" aria-label="Previous">&laquo;</a>
+                                <a class="page-link"
+                                    href="?page={{ page_obj.previous_page_number }}&q={{ search_query|default_if_none:'' }}{% if current_subject %}&subject={{ current_subject }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_difficulty %}&difficulty={{ current_difficulty }}{% endif %}"
+                                    aria-label="Previous">&lsaquo;</a>
                             </li>
-                        {% else %}
-                            <li class="page-item disabled"><a class="page-link" href="#">&laquo;&laquo;</a></li>
-                            <li class="page-item disabled"><a class="page-link" href="#">&laquo;</a></li>
-                        {% endif %}
+                            {% else %}
+                            <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                            <li class="page-item disabled"><span class="page-link">&lsaquo;</span></li>
+                            {% endif %}
 
-                        <li class="page-item disabled">
-                            <span class="page-link">
-                                第 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 页
-                            </span>
-                        </li>
+                            <li class="page-item disabled">
+                                <span class="page-link"
+                                    style="border:none; background:transparent; font-weight:normal; color:#6c757d;">
+                                    {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                                </span>
+                            </li>
 
-                        {% if page_obj.has_next %}
+                            {% if page_obj.has_next %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ search_query|default_if_none:'' }}" aria-label="Next">&raquo;</a>
+                                <a class="page-link"
+                                    href="?page={{ page_obj.next_page_number }}&q={{ search_query|default_if_none:'' }}{% if current_subject %}&subject={{ current_subject }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_difficulty %}&difficulty={{ current_difficulty }}{% endif %}"
+                                    aria-label="Next">&rsaquo;</a>
                             </li>
-                             <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&q={{ search_query|default_if_none:'' }}" aria-label="Last">&raquo;&raquo;</a>
+                            <li class="page-item">
+                                <a class="page-link"
+                                    href="?page={{ page_obj.paginator.num_pages }}&q={{ search_query|default_if_none:'' }}{% if current_subject %}&subject={{ current_subject }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_difficulty %}&difficulty={{ current_difficulty }}{% endif %}"
+                                    aria-label="Last">&raquo;</a>
                             </li>
-                        {% else %}
-                            <li class="page-item disabled"><a class="page-link" href="#">&raquo;</a></li>
-                            <li class="page-item disabled"><a class="page-link" href="#">&raquo;&raquo;</a></li>
-                        {% endif %}
-                    </ul>
-                </nav>
+                            {% else %}
+                            <li class="page-item disabled"><span class="page-link">&rsaquo;</span></li>
+                            <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+
+                    <!-- 跳转页码 -->
+                    <form class="jump-page-form" method="GET" action="">
+                        <input type="hidden" name="q" value="{{ search_query|default_if_none:'' }}">
+                        {% if current_subject %}<input type="hidden" name="subject" value="{{ current_subject }}">{% endif %}
+                        {% if current_type %}<input type="hidden" name="type" value="{{ current_type }}">{% endif %}
+                        {% if current_difficulty %}<input type="hidden" name="difficulty" value="{{ current_difficulty }}">{% endif %}
+                        <input type="number" name="page" class="jump-page-input" min="1"
+                            max="{{ page_obj.paginator.num_pages }}" placeholder="页码" required>
+                        <button class="btn-go-simple" type="submit">跳转</button>
+                    </form>
+                </div>
             </div>
             {% endif %}
         </div>
     </form>
 </div>
-
-{% block scripts %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const selectAllCheckbox = document.getElementById('select-all-checkbox');
-    const rowCheckboxes = document.querySelectorAll('.row-checkbox');
-    const batchForm = document.getElementById('batch-action-form');
-
-    if (selectAllCheckbox) {
-        // “全选”复选框的逻辑
-        selectAllCheckbox.addEventListener('change', function() {
-            rowCheckboxes.forEach(checkbox => {
-                checkbox.checked = this.checked;
-            });
-        });
-    }
-
-    // 如果取消选中任何一个行复选框，则取消“全选”复选框
-    rowCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            if (!this.checked) {
-                if (selectAllCheckbox) {
-                    selectAllCheckbox.checked = false;
-                }
-            } else if (document.querySelectorAll('.row-checkbox:checked').length === rowCheckboxes.length) {
-                if (selectAllCheckbox) {
-                    selectAllCheckbox.checked = true;
-                }
-            }
-        });
-    });
-
-    // 表单提交前的确认
-    if (batchForm) {
-        batchForm.addEventListener('submit', function(event) {
-            const action = this.querySelector('select[name="action"]').value;
-            const selectedCount = document.querySelectorAll('.row-checkbox:checked').length;
-
-            if (selectedCount === 0) {
-                alert('请至少选择一个项目！');
-                event.preventDefault(); // 阻止表单提交
-                return;
-            }
-
-            if (action === 'delete') {
-                const confirmation = confirm(`您确定要删除选中的 ${selectedCount} 个问题吗？此操作不可恢复！`);
-                if (!confirmation) {
-                    event.preventDefault(); // 如果用户取消，则阻止表单提交
-                }
-            }
-        });
-    }
-});
-</script>
-{% endblock %}
 
 {% endblock %}

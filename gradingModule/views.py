@@ -15,7 +15,6 @@ from .forms import SubmissionFilterForm
 from .models import Submission, Problem
 from .tasks import process_and_grade_submission # 导入你的异步任务
 import json
-import logging
 from  IntelligentHomeworkGradingSystem.views import logger
 def admin_required(view_func):
     """自定义装饰器：仅允许管理员（user_attribute >= 3）访问"""
@@ -173,12 +172,133 @@ def serve_submission_image(request, submission_id):
 
 @jwt_login_required
 def showMySubmissions(request):
-    mySubmissions = Submission.objects.all().order_by('-submitted_time').filter(student=request.user).values('id','status','score','score','submitted_time')
-    if request.method == "GET":
+    if request.method != "GET":
+        return HttpResponseBadRequest("Method Not Allowed")
+
+    try:
+        # 1. 获取并校验分页参数
+        page = int(request.GET.get('page', 1))
+        limit = int(request.GET.get('limit', 20))
+        offset = int(request.GET.get('offset', 0)) # 支持offset，但优先使用page逻辑
+        
+        # 兼容处理：如果提供了offset但没有page，我们依然基于limit计算切片
+        # 但通常建议使用 page/limit 模式或 offset/limit 模式之一
+        
+        if page < 1:
+            return JsonResponse({'error': 'Page must be greater than 0'}, status=400)
+        if limit < 1 or limit > 100:
+            return JsonResponse({'error': 'Limit must be between 1 and 100'}, status=400)
+        if offset < 0:
+            return JsonResponse({'error': 'Offset must be non-negative'}, status=400)
+
+        # 2. 获取筛选和排序参数
+        sort_by = request.GET.get('sort_by', 'submitted_time:desc')
+        filter_by = request.GET.get('filter_by') # 格式例如 "status:ACCEPTED"
+        user_id = request.GET.get('user_id')
+
+        # 3. 构建基础查询集
+        # 默认查询当前登录用户的记录
+        target_user = request.user
+        
+        # 如果指定了 user_id 且不是当前用户，检查权限 (这里简单处理：仅允许管理员查询他人)
+        if user_id and str(user_id) != str(request.user.id):
+            if request.user.user_attribute >= 3: # 假设 >=3 是管理员
+                 target_user = get_object_or_404(User, id=user_id)
+            else:
+                 return JsonResponse({'error': 'Permission denied'}, status=403)
+
+        queryset = Submission.objects.filter(student=target_user)
+
+        # 4. 应用过滤
+        if filter_by:
+            try:
+                filter_key, filter_value = filter_by.split(':')
+                # 映射允许过滤的字段，防止任意字段查询的安全风险
+                allowed_filters = {
+                    'status': 'status',
+                    'question_type': 'problem__problem_type__name', # 假设关联路径
+                    'problem_id': 'problem__id'
+                }
+                
+                if filter_key in allowed_filters:
+                    # 对于关联字段，可能需要根据实际模型调整
+                    db_field = allowed_filters[filter_key]
+                    queryset = queryset.filter(**{db_field: filter_value})
+            except ValueError:
+                pass # 忽略格式错误的筛选条件
+
+        # 5. 应用排序
+        if sort_by:
+            try:
+                sort_field, sort_order = sort_by.split(':')
+                allowed_sorts = {
+                    'created_at': 'submitted_time',
+                    'score': 'score',
+                    'submitted_time': 'submitted_time'
+                }
+                
+                if sort_field in allowed_sorts:
+                    db_sort_field = allowed_sorts[sort_field]
+                    if sort_order.lower() == 'desc':
+                        db_sort_field = '-' + db_sort_field
+                    queryset = queryset.order_by(db_sort_field)
+            except ValueError:
+                queryset = queryset.order_by('-submitted_time') # 默认排序
+        else:
+             queryset = queryset.order_by('-submitted_time')
+
+        # 6. 计算分页
+        total_count = queryset.count()
+        
+        # 使用 Paginator 处理分页
+        paginator = Paginator(queryset, limit)
+        
+        # 如果传入了 offset，则计算对应的 page
+        if request.GET.get('offset') is not None:
+             page = (offset // limit) + 1
+        
+        try:
+            current_page = paginator.page(page)
+        except Exception:
+            # 如果页码超出范围，返回空列表或最后一页，这里选择返回空列表
+            return JsonResponse({
+                'data': [],
+                'total_count': total_count,
+                'page': page,
+                'limit': limit,
+                'has_more': False
+            })
+
+        # 7. 序列化数据
+        # 关联查询 problem 以获取题目名称
+        submissions_data = []
+        for sub in current_page.object_list:
+            submissions_data.append({
+                'record_id': sub.id,
+                'question_id': sub.problem.id,
+                'question_title': sub.problem.title,
+                'user_answer': sub.submitted_text or sub.choose_answer or (sub.submitted_image.url if sub.submitted_image else ""),
+                'is_correct': sub.status == 'ACCEPTED', # 假设 ACCEPTED 为正确
+                'score': sub.score,
+                'status': sub.status, # 补充返回具体状态
+                'created_at': sub.submitted_time.strftime('%Y-%m-%d %H:%M:%S')
+            })
+
         response_data = {
-            'mySubmissions': list(mySubmissions),
+            'data': submissions_data,
+            'total_count': total_count,
+            'page': page,
+            'limit': limit,
+            'has_more': current_page.has_next()
         }
+
         return JsonResponse(response_data)
+
+    except ValueError:
+        return JsonResponse({'error': 'Invalid parameters'}, status=400)
+    except Exception as e:
+        logger.error(f"Error in showMySubmissions: {str(e)}")
+        return JsonResponse({'error': 'Internal Server Error'}, status=500)
 @jwt_login_required
 def getASubmission(request, submission_id):
     try:

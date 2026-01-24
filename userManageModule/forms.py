@@ -1,8 +1,8 @@
 # userManageModule/forms.py
 
 from django import forms
-from .models import User, className  # 确保导入 User 和 className 模型
-
+from .models import User, className, ClassTeacher  # 确保导入 User 和 className 模型
+import datetime
 
 class UserAddForm(forms.ModelForm):
     # 在模型之外，我们额外定义密码和确认密码字段
@@ -61,6 +61,75 @@ class UserAddForm(forms.ModelForm):
             phone=self.cleaned_data['phone'],
             gender=self.cleaned_data['gender'],
             user_attribute=self.cleaned_data['user_attribute'],
-            class_in=self.cleaned_data.get('class_in')  # .get() 更安全
         )
+        # 处理 M2M 字段
+        if self.cleaned_data.get('class_in'):
+             user.class_in.add(self.cleaned_data.get('class_in'))
+        
         return user
+
+class ClassForm(forms.ModelForm):
+    homeroom_teacher = forms.ModelChoiceField(
+        queryset=User.objects.filter(user_attribute=2),
+        label='班主任',
+        required=False,
+        empty_label="-- 请选择班主任 --",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 动态生成年份选项：当前年份前后5年
+        current_year = datetime.datetime.now().year
+        year_choices = [(f"{y}级", f"{y}级") for y in range(current_year - 5, current_year + 2)]
+        self.fields['grade'].widget = forms.Select(
+            choices=[('', '-- 请选择年级 --')] + year_choices,
+            attrs={'class': 'form-select'}
+        )
+
+    class Meta:
+        model = className
+        fields = ['name', 'code', 'grade', 'homeroom_teacher', 'description']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '请输入班级名称'}),
+            'code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '请输入班级编号（留空则自动生成）'}),
+            # 'grade' widget is set in __init__
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': '请输入班级描述'}),
+        }
+        help_texts = {
+            'code': '班级编号必须唯一。如果不填写，系统将自动生成。',
+        }
+
+    def clean_code(self):
+        code = self.cleaned_data.get('code')
+        if code:
+            # 检查唯一性，排除自身
+            qs = className.objects.filter(code=code)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError("该班级编号已存在，请使用其他编号。")
+        return code
+
+class ClassTeacherForm(forms.ModelForm):
+    teacher = forms.ModelChoiceField(
+        queryset=User.objects.filter(user_attribute=2),
+        label='选择教师',
+        empty_label="-- 请选择教师 --",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    
+    class Meta:
+        model = ClassTeacher
+        fields = ['teacher', 'subject']
+        widgets = {
+            'subject': forms.TextInput(attrs={'class': 'form-control', 'placeholder': '请输入教授科目'}),
+        }
+
+class AddStudentToClassForm(forms.Form):
+    student = forms.ModelChoiceField(
+        queryset=User.objects.filter(user_attribute=1), # 仅筛选学生
+        label='选择学生',
+        empty_label="-- 请选择学生 --",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )

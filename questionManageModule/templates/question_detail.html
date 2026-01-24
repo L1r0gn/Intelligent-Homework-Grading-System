@@ -3,6 +3,33 @@
 
 {% block title %}问题详情 - {{ question.title }}{% endblock %}
 
+{% block custom_js %}
+<!-- MathJax 配置与加载 -->
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      processEscapes: true
+    },
+    options: {
+      skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+    },
+    startup: {
+        ready: () => {
+            MathJax.startup.defaultReady();
+            // 监听模态框显示事件，重新渲染公式
+            const modalEl = document.getElementById('latexPreviewModal');
+            modalEl.addEventListener('shown.bs.modal', function () {
+                MathJax.typesetPromise([modalEl]);
+            });
+        }
+    }
+  };
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
     <div class="card shadow-sm">
@@ -10,6 +37,9 @@
             <div class="d-flex justify-content-between align-items-center">
                 <h3 class="mb-0">问题详情：{{ question.title }}</h3>
                 <div class="btn-group">
+                    <button type="button" class="btn btn-info text-white" data-bs-toggle="modal" data-bs-target="#latexPreviewModal">
+                        <i class="fas fa-calculator me-2"></i>LaTeX预览
+                    </button>
                     <a href="{% url 'question_update' question.id %}" class="btn btn-warning">
                         <i class="fas fa-pencil-alt me-2"></i>编辑
                     </a>
@@ -71,5 +101,28 @@
             </div>
         </div>
     </div>
+</div>
+
+<!-- LaTeX Preview Modal -->
+<div class="modal fade" id="latexPreviewModal" tabindex="-1" aria-labelledby="latexPreviewModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title" id="latexPreviewModalLabel"><i class="fas fa-calculator me-2"></i>题目内容预览 (LaTeX渲染)</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-light border">
+            <!-- 使用 linebreaksbr 过滤器将换行符转换为 <br>，同时保留 LaTeX 格式 -->
+            <div style="font-size: 1.1rem; line-height: 1.8;">
+                {{ question.content.content|linebreaks }}
+            </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}

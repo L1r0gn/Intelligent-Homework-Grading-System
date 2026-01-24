@@ -85,6 +85,7 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
     ),
 }
 
@@ -208,3 +209,6 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'  # 生产环境收集静态文件的目�
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 OPENROUTER_API_KEY ='sk-a57f72efbd53491f87d3c46eb911ca10'
+
+# 图片服务器基础地址
+SERVER_BASE_URL = 'http://119.29.152.140:8000'

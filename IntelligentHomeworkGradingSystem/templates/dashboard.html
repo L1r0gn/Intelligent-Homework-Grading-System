@@ -1,0 +1,119 @@
+{% extends 'backend_sys_base_page.html' %}
+{% load static %}
+
+{% block title %}仪表盘 - 智能作业评分系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-3">欢迎回来, {{ request.user.username }}!</h2>
+            <p class="text-muted">这是系统的概览数据。</p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 bg-primary text-white h-100">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="card-title mb-1">总用户数</h6>
+                        <h2 class="mb-0">{{ user_count }}</h2>
+                    </div>
+                    <i class="fas fa-users fa-3x opacity-50"></i>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a href="{% url 'user_list' %}" class="text-white text-decoration-none small">查看详情 <i class="fas fa-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 bg-success text-white h-100">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="card-title mb-1">题目总数</h6>
+                        <h2 class="mb-0">{{ question_count }}</h2>
+                    </div>
+                    <i class="fas fa-book fa-3x opacity-50"></i>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a href="{% url 'question_list' %}" class="text-white text-decoration-none small">查看详情 <i class="fas fa-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 bg-info text-white h-100">
+                <div class="card-body d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="card-title mb-1">提交记录</h6>
+                        <h2 class="mb-0">{{ submission_count }}</h2>
+                    </div>
+                    <i class="fas fa-file-alt fa-3x opacity-50"></i>
+                </div>
+                <div class="card-footer bg-transparent border-0">
+                    <a href="{% url 'submission_list' %}" class="text-white text-decoration-none small">查看详情 <i class="fas fa-arrow-right ms-1"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0"><i class="fas fa-clock me-2 text-muted"></i>最近提交</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>学生</th>
+                                    <th>题目</th>
+                                    <th>提交时间</th>
+                                    <th>状态</th>
+                                    <th>分数</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sub in recent_submissions %}
+                                <tr>
+                                    <td>{{ sub.id }}</td>
+                                    <td>{{ sub.student.wx_nickName|default:sub.student.username }}</td>
+                                    <td>{{ sub.problem.title|truncatechars:30 }}</td>
+                                    <td>{{ sub.submitted_time|date:"Y-m-d H:i" }}</td>
+                                    <td>
+                                        <span class="badge rounded-pill 
+                                            {% if sub.status == 'ACCEPTED' %}bg-success
+                                            {% elif sub.status == 'PENDING' %}bg-warning text-dark
+                                            {% elif sub.status == 'WRONG_ANSWER' %}bg-danger
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ sub.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if sub.score is not None %}
+                                            <span class="fw-bold">{{ sub.score }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">暂无提交记录</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-0 text-center py-3">
+                    <a href="{% url 'submission_list' %}" class="btn btn-outline-primary btn-sm">查看所有记录</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

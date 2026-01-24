@@ -1,0 +1,147 @@
+{% extends 'page_base.html' %}
+{% load static %}
+
+{% block title %}班级管理{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>班级管理</h2>
+        <div>
+            <a href="{% url 'class_create_web' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>创建新班级
+            </a>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <form method="GET" action="{% url 'class_list_web' %}" class="d-flex">
+            <input class="form-control me-2" type="search" placeholder="搜索班级名称、编号或年级..." name="q" value="{{ query|default_if_none:'' }}">
+            <button class="btn btn-outline-secondary" type="submit">
+                <i class="fas fa-search"></i> 搜索
+            </button>
+        </form>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-chalkboard me-2"></i>班级列表
+            </h5>
+            <span class="badge bg-primary rounded-pill">总计: {{ page_obj.paginator.count }} 个班级</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0 align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>班级名称</th>
+                            <th>编号 (Code)</th>
+                            <th>年级</th>
+                            <th>班主任</th>
+                            <th>学生人数</th>
+                            <th class="text-center">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for cls in page_obj %}
+                        <tr>
+                            <td>{{ cls.id }}</td>
+                            <td>
+                                <a href="{% url 'class_detail_web' cls.id %}" class="fw-bold text-decoration-none">
+                                    {{ cls.name }}
+                                </a>
+                            </td>
+                            <td><span class="badge bg-secondary">{{ cls.code }}</span></td>
+                            <td>{{ cls.grade|default:"-" }}</td>
+                            <td>
+                                {% if cls.homeroom_teacher %}
+                                    <span class="badge bg-info text-dark">
+                                        <i class="fas fa-user-tie me-1"></i>{{ cls.homeroom_teacher.wx_nickName|default:cls.homeroom_teacher.username }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">未设置</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border">
+                                    <i class="fas fa-user-graduate me-1"></i>{{ cls.members.count }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'class_detail_web' cls.id %}" class="btn btn-info" title="查看详情">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'class_edit_web' cls.id %}" class="btn btn-primary" title="编辑">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'class_delete_web' cls.id %}" class="btn btn-danger" title="删除">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="fas fa-chalkboard fa-3x mb-3"></i>
+                                <p>暂无班级数据</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        {% if page_obj.paginator.num_pages > 1 %}
+        <div class="card-footer bg-white border-0 py-3">
+            <div class="pagination-container">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination mb-0">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1&q={{ query }}" aria-label="First">&laquo;</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ query }}" aria-label="Previous">&lsaquo;</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                            <li class="page-item disabled"><span class="page-link">&lsaquo;</span></li>
+                        {% endif %}
+
+                        <li class="page-item disabled">
+                            <span class="page-link" style="border:none; background:transparent; font-weight:normal; color:#6c757d;">
+                                {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ query }}" aria-label="Next">&rsaquo;</a>
+                            </li>
+                             <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&q={{ query }}" aria-label="Last">&raquo;</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">&rsaquo;</span></li>
+                            <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+
+                <!-- 跳转页码 -->
+                <form class="jump-page-form" method="GET" action="">
+                    <input type="hidden" name="q" value="{{ query }}">
+                    <input type="number" name="page" class="jump-page-input" min="1" max="{{ page_obj.paginator.num_pages }}" placeholder="页码" required>
+                    <button class="btn-go-simple" type="submit">跳转</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

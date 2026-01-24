@@ -10,7 +10,7 @@ app.autodiscover_tasks()
 redis-server --port 6380
 celery -A IntelligentHomeworkGradingSystem worker -l info --pool=solo
 python manage.py runserver
-    
+
 cd Intelligent_Homework_Grading_System/
 source venv/bin/activate
 

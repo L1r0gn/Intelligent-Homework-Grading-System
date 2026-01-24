@@ -20,6 +20,8 @@ from django.urls import path,include
 
 from IntelligentHomeworkGradingSystem import settings
 from userManageModule import views as user_views
+from IntelligentHomeworkGradingSystem import views as core_views
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('class_name/add/',user_views.class_add,name = 'class_add'),
@@ -27,9 +29,11 @@ urlpatterns = [
     path('user/',include('userManageModule.urls')),
     path('grading/', include('gradingModule.urls')),
     path('assignment/', include('assignmentAndClassModule.urls')),
-    path('',user_views.user_register,name='user_register'),
+    path('', core_views.dashboard, name='dashboard'), # Modified to point to dashboard
+    path('register/',user_views.user_register,name='user_register'), # Moved register to /register/
     path('class/create/', user_views.create_class, name='create_class'),
     path('class/<int:class_id>/',user_views.class_detail,name='class_detail'),
+    path('class/<int:class_id>/members/', user_views.get_class_members, name='get_class_members'),
 
 
 ]

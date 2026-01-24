@@ -91,40 +91,49 @@
         
         <!-- 分页 -->
         {% if page_obj.paginator.num_pages > 1 %}
-        <div class="card-footer bg-light">
-            <nav aria-label="Page navigation">
-                <ul class="pagination justify-content-center mb-0">
-                    {% if page_obj.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page=1&q={{ search_query|default_if_none:'' }}" aria-label="First">&laquo;&laquo;</a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ search_query|default_if_none:'' }}" aria-label="Previous">&laquo;</a>
-                        </li>
-                    {% else %}
-                        <li class="page-item disabled"><a class="page-link" href="#">&laquo;&laquo;</a></li>
-                        <li class="page-item disabled"><a class="page-link" href="#">&laquo;</a></li>
-                    {% endif %}
+        <div class="card-footer bg-white border-0 py-3">
+            <div class="pagination-container">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination mb-0">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1&q={{ search_query|default_if_none:'' }}" aria-label="First">&laquo;</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ search_query|default_if_none:'' }}" aria-label="Previous">&lsaquo;</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                            <li class="page-item disabled"><span class="page-link">&lsaquo;</span></li>
+                        {% endif %}
 
-                    <li class="page-item disabled">
-                        <span class="page-link">
-                            第 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 页
-                        </span>
-                    </li>
+                        <li class="page-item disabled">
+                            <span class="page-link" style="border:none; background:transparent; font-weight:normal; color:#6c757d;">
+                                {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
 
-                    {% if page_obj.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ search_query|default_if_none:'' }}" aria-label="Next">&raquo;</a>
-                        </li>
-                         <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&q={{ search_query|default_if_none:'' }}" aria-label="Last">&raquo;&raquo;</a>
-                        </li>
-                    {% else %}
-                        <li class="page-item disabled"><a class="page-link" href="#">&raquo;</a></li>
-                        <li class="page-item disabled"><a class="page-link" href="#">&raquo;&raquo;</a></li>
-                    {% endif %}
-                </ul>
-            </nav>
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ search_query|default_if_none:'' }}" aria-label="Next">&rsaquo;</a>
+                            </li>
+                             <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&q={{ search_query|default_if_none:'' }}" aria-label="Last">&raquo;</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">&rsaquo;</span></li>
+                            <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+
+                <!-- 跳转页码 -->
+                <form class="jump-page-form" method="GET" action="">
+                    <input type="hidden" name="q" value="{{ search_query|default_if_none:'' }}">
+                    <input type="number" name="page" class="jump-page-input" min="1" max="{{ page_obj.paginator.num_pages }}" placeholder="页码" required>
+                    <button class="btn-go-simple" type="submit">跳转</button>
+                </form>
+            </div>
         </div>
         {% endif %}
     </div>

@@ -49,9 +49,24 @@ class className(models.Model):
     )
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_classes')
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    # 新增字段
+    grade = models.CharField(max_length=20, null=True, blank=True, verbose_name="年级")
+    description = models.TextField(null=True, blank=True, verbose_name="班级描述")
+    homeroom_teacher = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='homeroom_classes', 
+        limit_choices_to={'user_attribute': 2}, 
+        verbose_name="班主任"
+    )
 
     class Meta:
         db_table = 'userManageModule_classname'
+        verbose_name = '班级'
+        verbose_name_plural = verbose_name
 
     def __str__(self):
         return self.name
@@ -79,3 +94,17 @@ class className(models.Model):
             # 检查唯一性
             if not className.objects.filter(code=code).exists():
                 return code
+
+class ClassTeacher(models.Model):
+    """
+    班级任课教师关联表
+    """
+    class_obj = models.ForeignKey(className, on_delete=models.CASCADE, related_name='teachers', verbose_name="班级")
+    teacher = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'user_attribute': 2}, verbose_name="教师")
+    subject = models.CharField(max_length=50, verbose_name="教授科目")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('class_obj', 'teacher', 'subject')
+        verbose_name = '任课教师'
+        verbose_name_plural = verbose_name

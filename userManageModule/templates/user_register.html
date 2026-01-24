@@ -24,7 +24,7 @@
                         {% endif %}
 
                         <div class="mb-3">
-                            <label for="{{ form.username.id_for_label }}" class="form-label">用户名</label>
+                            <label for="{{ form.username.id_for_label }}" class="form-label">用户名 (登录账号)</label>
                             {{ form.username }}
                             {% for error in form.username.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
                         </div>
@@ -45,7 +45,7 @@
                         <hr class="my-4">
 
                         <div class="mb-3">
-                            <label for="{{ form.wx_nickName.id_for_label }}" class="form-label">微信昵称</label>
+                            <label for="{{ form.wx_nickName.id_for_label }}" class="form-label">姓名 / 昵称 (显示名称)</label>
                             {{ form.wx_nickName }}
                             {% for error in form.wx_nickName.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
                         </div>

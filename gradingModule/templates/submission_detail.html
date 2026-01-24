@@ -17,7 +17,11 @@
                     </li>
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <div><i class="fas fa-book-open text-muted me-2"></i><strong>作业</strong></div>
-                        <span>{{ submission.problem.title }}</span>
+                        <span>
+                            <a href="{% url 'question_detail' submission.problem.id %}" class="text-decoration-none" title="查看题目详情">
+                                {{ submission.problem.title }} <i class="fas fa-external-link-alt small ms-1"></i>
+                            </a>
+                        </span>
                     </li>
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <div><i class="fas fa-clock text-muted me-2"></i><strong>提交时间</strong></div>

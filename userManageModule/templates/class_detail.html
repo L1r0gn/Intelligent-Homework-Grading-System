@@ -1,0 +1,283 @@
+{% extends 'page_base.html' %}
+{% load static %}
+
+{% block title %}{{ class_obj.name }} - 班级详情{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">{{ class_obj.name }}</h2>
+            <span class="badge bg-secondary me-2">编号: {{ class_obj.code }}</span>
+            <span class="badge bg-info text-dark">年级: {{ class_obj.grade|default:"未设置" }}</span>
+        </div>
+        <div>
+            <a href="{% url 'class_edit_web' class_obj.id %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-edit me-1"></i>编辑
+            </a>
+            <a href="{% url 'class_list_web' %}" class="btn btn-outline-secondary btn-sm ms-2">
+                <i class="fas fa-arrow-left me-1"></i>返回列表
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Class Info -->
+        <div class="col-md-12 mb-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted text-uppercase small fw-bold">班主任</h6>
+                            <p class="fs-5 mb-0">
+                                {% if class_obj.homeroom_teacher %}
+                                    <i class="fas fa-user-tie text-primary me-2"></i>{{ class_obj.homeroom_teacher.wx_nickName|default:class_obj.homeroom_teacher.username }}
+                                {% else %}
+                                    <span class="text-muted">未分配</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted text-uppercase small fw-bold">描述</h6>
+                            <p class="mb-0 text-secondary">{{ class_obj.description|default:"暂无描述" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Student List -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h5 class="mb-0"><i class="fas fa-user-graduate me-2 text-success"></i>学生列表 ({{ students.count }})</h5>
+                    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addStudentModal">
+                        <i class="fas fa-plus me-1"></i>添加学生
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th>姓名/昵称</th>
+                                    <th>用户名</th>
+                                    <th class="text-end">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in students %}
+                                <tr>
+                                    <td>{{ student.wx_nickName|default:"-" }}</td>
+                                    <td>{{ student.username }}</td>
+                                    <td class="text-end">
+                                        <form method="POST" action="{% url 'class_remove_student_web' class_obj.id student.id %}" onsubmit="return confirm('确定要将学生 {{ student.username }} 从班级移除吗？');" style="display:inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-outline-danger btn-sm border-0" title="移除">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center py-4 text-muted">暂无学生</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Teacher List -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h5 class="mb-0"><i class="fas fa-chalkboard-teacher me-2 text-warning"></i>任课教师 ({{ teachers.count }})</h5>
+                    <button class="btn btn-warning btn-sm text-dark" data-bs-toggle="modal" data-bs-target="#addTeacherModal">
+                        <i class="fas fa-plus me-1"></i>添加教师
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th>教师姓名</th>
+                                    <th>教授科目</th>
+                                    <th class="text-end">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in teachers %}
+                                <tr>
+                                    <td>{{ item.teacher.wx_nickName|default:item.teacher.username }}</td>
+                                    <td><span class="badge bg-light text-dark border">{{ item.subject }}</span></td>
+                                    <td class="text-end">
+                                        <form method="POST" action="{% url 'class_remove_teacher_web' class_obj.id item.id %}" onsubmit="return confirm('确定要移除该任课教师吗？');" style="display:inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-outline-danger btn-sm border-0" title="移除">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center py-4 text-muted">暂无任课教师</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Student Modal -->
+<div class="modal fade" id="addStudentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加学生到班级</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'class_add_student_web' class_obj.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3 position-relative">
+                        <label class="form-label">搜索学生</label>
+                        <input type="text" class="form-control" id="studentSearchInput" placeholder="输入姓名、用户名或手机号搜索..." autocomplete="off">
+                        <!-- 隐藏的真实字段，用于提交表单 -->
+                        <input type="hidden" name="student" id="selectedStudentId" required>
+                        
+                        <!-- 搜索结果下拉列表 -->
+                        <div id="studentSearchResults" class="list-group position-absolute w-100 shadow" style="z-index: 1000; display: none; max-height: 200px; overflow-y: auto;"></div>
+                        
+                        <!-- 显示当前选中的学生 -->
+                        <div id="selectedStudentDisplay" class="mt-2" style="display: none;">
+                            已选择: <span class="fw-bold text-primary" id="selectedStudentName"></span>
+                            <button type="button" class="btn btn-sm btn-link text-danger" id="clearSelectionBtn">清除</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-success" id="addStudentSubmitBtn" disabled>添加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Teacher Modal -->
+<div class="modal fade" id="addTeacherModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">添加任课教师</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'class_add_teacher_web' class_obj.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">选择教师</label>
+                        {{ add_teacher_form.teacher }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">教授科目</label>
+                        {{ add_teacher_form.subject }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-warning">添加</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('studentSearchInput');
+        const resultsContainer = document.getElementById('studentSearchResults');
+        const selectedIdInput = document.getElementById('selectedStudentId');
+        const displayContainer = document.getElementById('selectedStudentDisplay');
+        const displayNameSpan = document.getElementById('selectedStudentName');
+        const clearBtn = document.getElementById('clearSelectionBtn');
+        const submitBtn = document.getElementById('addStudentSubmitBtn');
+        
+        let debounceTimer;
+
+        searchInput.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            const query = this.value.trim();
+            
+            if (query.length < 1) {
+                resultsContainer.style.display = 'none';
+                return;
+            }
+
+            debounceTimer = setTimeout(() => {
+                fetch(`{% url 'search_students_api' %}?q=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        resultsContainer.innerHTML = '';
+                        if (data.results.length > 0) {
+                            data.results.forEach(student => {
+                                const item = document.createElement('a');
+                                item.href = '#';
+                                item.className = 'list-group-item list-group-item-action';
+                                item.textContent = student.text;
+                                item.onclick = function(e) {
+                                    e.preventDefault();
+                                    selectStudent(student.id, student.text);
+                                };
+                                resultsContainer.appendChild(item);
+                            });
+                            resultsContainer.style.display = 'block';
+                        } else {
+                            const item = document.createElement('div');
+                            item.className = 'list-group-item text-muted';
+                            item.textContent = '未找到匹配的学生';
+                            resultsContainer.appendChild(item);
+                            resultsContainer.style.display = 'block';
+                        }
+                    });
+            }, 300);
+        });
+
+        function selectStudent(id, name) {
+            selectedIdInput.value = id;
+            displayNameSpan.textContent = name;
+            
+            searchInput.value = '';
+            resultsContainer.style.display = 'none';
+            displayContainer.style.display = 'block';
+            submitBtn.disabled = false;
+        }
+
+        clearBtn.addEventListener('click', function() {
+            selectedIdInput.value = '';
+            displayContainer.style.display = 'none';
+            submitBtn.disabled = true;
+        });
+
+        // 点击外部关闭搜索结果
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !resultsContainer.contains(e.target)) {
+                resultsContainer.style.display = 'none';
+            }
+        });
+    });
+</script>
+{% endblock %}

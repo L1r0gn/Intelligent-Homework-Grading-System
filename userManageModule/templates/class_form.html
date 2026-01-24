@@ -1,0 +1,119 @@
+{% extends 'page_base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - 班级管理{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-chalkboard-teacher me-2"></i>{{ title }}</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {% for error in form.non_field_errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <label for="{{ form.name.id_for_label }}" class="form-label fw-bold">班级名称 <span class="text-danger">*</span></label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="text-danger small mt-1">{{ form.name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.code.id_for_label }}" class="form-label fw-bold">班级编号 (Code)</label>
+                                <div class="input-group">
+                                    {{ form.code }}
+                                    <span class="input-group-text" title="班级码修改需谨慎"><i class="fas fa-exclamation-triangle text-warning"></i></span>
+                                </div>
+                                {% if form.code.help_text %}
+                                    <div class="form-text">{{ form.code.help_text }}</div>
+                                {% endif %}
+                                {% if form.code.errors %}
+                                    <div class="text-danger small mt-1">{{ form.code.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ form.grade.id_for_label }}" class="form-label fw-bold">所属年级</label>
+                                {{ form.grade }}
+                                {% if form.grade.errors %}
+                                    <div class="text-danger small mt-1">{{ form.grade.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.homeroom_teacher.id_for_label }}" class="form-label fw-bold">班主任</label>
+                            {{ form.homeroom_teacher }}
+                            {% if form.homeroom_teacher.errors %}
+                                <div class="text-danger small mt-1">{{ form.homeroom_teacher.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label fw-bold">班级描述</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{% url 'class_list_web' %}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-times me-1"></i>取消
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>保存
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 获取表单和 Code 输入框
+        const form = document.querySelector('form');
+        // 注意：这里需要根据 Django 渲染的 ID 来获取，通常是 id_code
+        // 我们可以通过 form.code.id_for_label 渲染出来的 ID 属性来定位，但这里直接用 querySelector 更方便
+        const codeInput = document.getElementById('{{ form.code.id_for_label }}');
+        
+        if (codeInput) {
+            // 存储初始值
+            const originalCode = codeInput.value;
+            
+            form.addEventListener('submit', function(event) {
+                const currentCode = codeInput.value;
+                
+                // 检查是否修改了 Code
+                if (currentCode !== originalCode) {
+                    const message = "⚠️ 重要警告：\n\n您正在修改【班级编号】！\n\n" +
+                                    "1. 修改班级编号将导致原编号失效。\n" +
+                                    "2. 学生可能无法通过旧编号找到班级。\n\n" +
+                                    "请再次确认：您确定要修改吗？";
+                    
+                    if (!confirm(message)) {
+                        // 如果用户取消，阻止表单提交
+                        event.preventDefault();
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

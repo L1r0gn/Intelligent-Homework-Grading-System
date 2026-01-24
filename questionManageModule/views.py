@@ -114,15 +114,34 @@ def question_list(request):
         'subject', 'problem_type'
     ).prefetch_related('tags', 'knowledge_points').order_by('-create_time')
 
+    # 获取所有可用的筛选选项
+    all_subjects = Subject.objects.all()
+    all_types = ProblemType.objects.all()
+    # 难度选项直接使用模型中的 choices
+    difficulty_choices = Problem.DIF_CHOICES
+
+    # --- 筛选逻辑 ---
     search_query = request.GET.get('q', '').strip()
+    subject_id = request.GET.get('subject')
+    type_id = request.GET.get('type')
+    difficulty_val = request.GET.get('difficulty')
+
     if search_query:
         question_queryset = question_queryset.filter(
             Q(title__icontains=search_query) |
-            Q(subject__name__icontains=search_query) |
-            Q(problem_type__name__icontains=search_query) |
+            Q(content__content__icontains=search_query) | # 同时也搜内容
             Q(tags__name__icontains=search_query) |
-            Q(knowledge_points__name__icontains=search_query)  # 增加知识点搜索
+            Q(knowledge_points__name__icontains=search_query)
         ).distinct()
+
+    if subject_id:
+        question_queryset = question_queryset.filter(subject_id=subject_id)
+    
+    if type_id:
+        question_queryset = question_queryset.filter(problem_type_id=type_id)
+        
+    if difficulty_val:
+        question_queryset = question_queryset.filter(difficulty=difficulty_val)
 
     paginator = Paginator(question_queryset, 10)
     page_number = request.GET.get('page')
@@ -131,6 +150,13 @@ def question_list(request):
     context = {
         'page_obj': page_obj,
         'search_query': search_query,
+        'all_subjects': all_subjects,
+        'all_types': all_types,
+        'difficulty_choices': difficulty_choices,
+        # 回显当前选中的值
+        'current_subject': int(subject_id) if subject_id else None,
+        'current_type': int(type_id) if type_id else None,
+        'current_difficulty': int(difficulty_val) if difficulty_val else None,
     }
     return render(request, 'question_list.html', context)
 
