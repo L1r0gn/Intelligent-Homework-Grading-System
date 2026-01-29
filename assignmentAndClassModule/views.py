@@ -190,6 +190,7 @@ def student_assignments(request):
     student = request.user
     student_classes = student.class_in.all()
 
+    # 1. 检查学生是否加入班级
     if not student_classes.exists():
         return JsonResponse({
             'success': True,
@@ -197,17 +198,21 @@ def student_assignments(request):
             'message': '您还没有加入任何班级'
         })
 
+    # 2. 查询所有班级的作业
     assignments = Assignment.objects.filter(
         target_class__in=student_classes
     ).select_related('teacher', 'target_class', 'problem').order_by('-created_at')
 
+    # 3. 筛选班级
     class_id = request.headers.get('ClassId')
     if class_id:
         assignments = assignments.filter(target_class__id=class_id)
 
+    # 4. 格式化作业数据，对应关系为
     assignments_data = []
     for assignment in assignments:
         assignmentStatusOfThisAssignment = assignment.assignmentstatus_set.filter(assignment=assignment).first()
+        # 5. 处理作业状态
         if assignmentStatusOfThisAssignment and assignmentStatusOfThisAssignment.submission:
             assignment_status = assignmentStatusOfThisAssignment.submission.status
             submitted_at = assignmentStatusOfThisAssignment.submitted_at.strftime(
@@ -227,6 +232,7 @@ def student_assignments(request):
             'problem_id': assignment.problem.id if assignment.problem else None,
             'problem_title': assignment.problem.title if assignment.problem else '传统作业',
             'status': assignment_status,
+            'score': assignmentStatusOfThisAssignment.submission.score if assignmentStatusOfThisAssignment.submission else None,
             'status_text': {
                 'PENDING': '待完成',
                 'SUBMITTED': '已提交',

@@ -701,12 +701,13 @@ def wx_get_student_stats(request):
 
     # 2. 获取知识点掌握度列表
     stats_list = []
-    radar_data = []  # 用于雷达图的数据 (如果有)
+
     if StudentMastery:
         # 查询该学生的所有掌握度记录，按分数降序排列
         mastery_records = StudentMastery.objects.filter(
             student=student
         ).select_related('knowledge_point').order_by('-mastery_level')
+
         logger.info(f"发送的所有知识点掌握记录为{mastery_records}")
 
         for record in mastery_records:
