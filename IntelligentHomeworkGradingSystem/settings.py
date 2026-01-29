@@ -149,6 +149,7 @@ LOGGING = {
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+# 数据库配置
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',  # 切换到mysql

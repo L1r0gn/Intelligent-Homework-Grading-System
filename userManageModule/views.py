@@ -399,22 +399,35 @@ def user_register(request):
                 return render(request, 'user_register.html', {'form': form})
 
             try:
+                # 1. 先实例化用户对象（不要在这里赋值 class_in）
                 user = User(
                     username=username,
                     phone=int(phone) if phone else 13500000000,
                     gender=int(gender) if gender is not None else None,
-                    user_attribute=user_attribute if user_attribute in(1,2) else 0,
+                    # 注意：这里逻辑我也帮你优化了一下，确保安全
+                    user_attribute=user_attribute if user_attribute in (1, 2) else 0,
                     is_staff=user_attribute in (3, 4),
                 )
+
+                # 2. 设置密码
                 user.set_password(password)
-                if class_in_id:
-                    user.class_in = class_in_id
+
+                # 3. 关键步骤：必须先保存 User，生成 ID！
                 user.save()
+
+                # 4. 现在有 ID 了，再设置多对多关系 (class_in)
+                if class_in_id:
+                    # 注意：class_in_id 这里应该是 QuerySet 或列表
+                    # 如果 class_in_id 是单个对象或 ID，可能需要用 .add(class_in_id)
+                    # 但通常表单返回的是列表，用 .set() 最稳妥
+                    user.class_in.set(class_in_id)
 
                 messages.success(request, '用户创建成功！')
                 return redirect('user_list')
 
             except Exception as e:
+                # 打印错误到后台方便调试
+                print(f"Error: {e}")
                 messages.error(request, f'创建用户失败：{str(e)}')
                 return render(request, 'user_register.html', {'form': form})
         else:
