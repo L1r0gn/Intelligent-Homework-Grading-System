@@ -9,8 +9,10 @@ class Submission(models.Model):
         ('PENDING', '待批改'),
         ('GRADING', '批改中'),
         ('SUBMITTED','已提交'),
+        #提交正确
         ('GRADED', '已批改'),
         ('ACCEPTED', '答案正确'),
+        #提交错误
         ('WRONG_ANSWER', '答案错误'),
         ('COMPILE_ERROR', '编译错误'),
         ('RUNTIME_ERROR', '运行错误'),

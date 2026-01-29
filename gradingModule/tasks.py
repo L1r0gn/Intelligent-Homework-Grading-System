@@ -161,25 +161,36 @@ def process_and_grade_submission(assignment_status_id=None, submission_id=None):
     # A. 选择题 (文本匹配)
     if problem.problem_type.name == "选择":
         logger.info('正在判选择题...')
+
+        # 检查是否有选择答案
+        if not submission.choose_answer:
+            submission.status = 'WRONG_ANSWER'
+            submission.score = 0
+            submission.justification = f'错误：未选择答案'
+            logger.info("❌ 选择题未选择答案")
+            submission.save()
+            return
+
         student_choose = submission.choose_answer
 
+        # 检查是否有标准答案
         if not problem.answer or not problem.answer.content:
             submission.status = 'RUNTIME_ERROR'
             submission.justification = '错误：该题未设置标准答案'
+            logger.error("❌ 选择题未设置标准答案")
             submission.save()
             return
 
         logger.info(f'标准答案: {problem.answer.content} | 学生答案: {student_choose}')
-
         if student_choose.upper() == problem.answer.content.upper():
             submission.status = 'ACCEPTED'
             submission.score = problem.points
-            logger.info("✅ 选择题 - 正确")
+            logger.info("✅ 选择题 - 答案正确")
         else:
             submission.status = 'WRONG_ANSWER'
             submission.score = 0
             submission.justification = f'正确答案是 {problem.answer.content}'
-            logger.info("❌ 选择题 - 错误")
+            logger.info("❌ 选择题 - 答案错误")
 
         submission.save()
         if assignment_status: assignment_status.save()

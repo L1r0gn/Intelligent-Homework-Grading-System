@@ -323,3 +323,49 @@ def getASubmission(request, submission_id):
     except Submission.DoesNotExist:
         # 如果提交记录不存在，返回错误信息
         return JsonResponse({"error": "Submission not found"}, status=404)
+
+@admin_required
+def submission_batch_action(request):
+    """处理提交记录的批量操作"""
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        selected_ids = request.POST.getlist('selected_ids')
+        
+        if not action or not selected_ids:
+            messages.error(request, "请选择要操作的记录和操作类型")
+            return redirect('submission_list')
+
+        try:
+            # 获取选中的提交记录
+            queryset = Submission.objects.filter(pk__in=selected_ids)
+            selected_count = queryset.count()
+            
+            if action == 'regrade':
+                # 批量重新批改
+                for submission in queryset:
+                    # 重置状态为待处理
+                    submission.status = 'PENDING'
+                    submission.score = None
+                    submission.grading_result = "正在重新加入批改队列..."
+                    submission.save()
+                    # 调用异步任务重新批改
+                    process_and_grade_submission.delay(submission_id=submission.id)
+                
+                messages.success(request, f'已成功将 {selected_count} 个提交记录加入重新批改队列')
+                logger.info(f"批量重新批改 {selected_count} 个提交记录: {selected_ids}")
+                
+            elif action == 'delete':
+                # 批量删除
+                deleted_count = queryset.count()
+                queryset.delete()
+                messages.success(request, f'已成功删除 {deleted_count} 个提交记录')
+                logger.info(f"批量删除 {deleted_count} 个提交记录: {selected_ids}")
+                
+            else:
+                messages.error(request, "不支持的操作类型")
+                
+        except Exception as e:
+            logger.error(f"批量操作失败: {str(e)}")
+            messages.error(request, f"批量操作失败: {str(e)}")
+    
+    return redirect('submission_list')

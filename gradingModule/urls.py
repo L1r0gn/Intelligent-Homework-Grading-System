@@ -9,6 +9,5 @@ urlpatterns = [
     path('submission-image/<int:submission_id>/', views.serve_submission_image, name='serve_submission_image'),
     path('wx/submissions/',views.showMySubmissions,name='showMySubmissions'),
     path('wx/submissions/<int:submission_id>/', views.getASubmission, name='get_a_submission'),
+    path('submissions/batch-action/', views.submission_batch_action, name='submission_batch_action'),
 ]
-
-

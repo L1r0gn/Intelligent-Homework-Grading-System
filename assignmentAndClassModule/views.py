@@ -4,8 +4,6 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
 from django.db import transaction
 from django.utils import timezone
-from django.db.models import Count
-
 from gradingModule.models import Submission
 from gradingModule.tasks import process_and_grade_submission
 from gradingModule.views import logger
@@ -582,3 +580,67 @@ def teacher_get_students_assignments_list(request, class_id, assignment_id):
             student_list.append(student_data)
 
         return JsonResponse({'data': student_list})
+    
+@api_view(['POST'])
+@jwt_login_required
+@csrf_exempt
+@transaction.atomic
+def update_assignment(request, assignment_id):
+    """
+    编辑/更新作业信息
+    """
+    try:
+        teacher = request.user
+        data = request.data
+        
+        # 1. 获取作业对象，并检查权限
+        # 使用 select_related 预加载 problem 和 problem_content，减少数据库查询
+        assignment = Assignment.objects.select_related('problem', 'problem__content').get(id=assignment_id)
+        
+        if assignment.teacher != teacher:
+            return Response({'success': False, 'message': '无权修改此作业'}, status=status.HTTP_403_FORBIDDEN)
+
+        # 2. 获取前端提交的数据
+        title = data.get('title')
+        description = data.get('description')
+        deadline = data.get('deadline') # 格式: "2023-11-30 23:59"
+
+        # 3. 更新 Assignment 表
+        if title:
+            assignment.title = title
+        if description:
+            assignment.description = description
+        if deadline:
+            assignment.deadline = deadline
+        assignment.save()
+
+        # 4. 同步更新关联的 Problem 表 (如果存在)
+        # 因为在 push_assignment 中，我们是用作业的 title 和 description 来填充 Problem 的
+        if assignment.problem:
+            problem = assignment.problem
+            
+            # 更新题目标题
+            if title:
+                problem.title = title
+            
+            # 更新题目内容 (ProblemContent)
+            if description and problem.content:
+                problem.content.content = description
+                problem.content.save()
+            
+            problem.save()
+
+        return Response({
+            'success': True, 
+            'message': '作业修改成功',
+            'data': {
+                'id': assignment.id,
+                'title': assignment.title
+            }
+        })
+
+    except Assignment.DoesNotExist:
+        return Response({'success': False, 'message': '作业不存在'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"更新作业失败: {str(e)}")
+        return Response({'success': False, 'message': f'更新失败: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

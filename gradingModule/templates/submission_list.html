@@ -2,6 +2,66 @@
 
 {% block title %}提交记录 - 智能作业批改系统{% endblock %}
 
+{% block custom_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const selectAllCheckbox = document.getElementById('select-all-checkbox');
+        const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+        const batchForm = document.getElementById('batch-action-form');
+
+        if (selectAllCheckbox) {
+            // “全选”复选框的逻辑
+            selectAllCheckbox.addEventListener('change', function () {
+                rowCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+            });
+        }
+
+        // 如果取消选中任何一个行复选框，则取消“全选”复选框
+        rowCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function () {
+                if (!this.checked) {
+                    if (selectAllCheckbox) {
+                        selectAllCheckbox.checked = false;
+                    }
+                } else if (document.querySelectorAll('.row-checkbox:checked').length === rowCheckboxes.length) {
+                    if (selectAllCheckbox) {
+                        selectAllCheckbox.checked = true;
+                    }
+                }
+            });
+        });
+
+        // 表单提交前的确认
+        if (batchForm) {
+            batchForm.addEventListener('submit', function (event) {
+                const selectedCount = document.querySelectorAll('.row-checkbox:checked').length;
+                const action = document.querySelector('select[name="action"]').value;
+
+                if (selectedCount === 0) {
+                    alert('请至少选择一个提交记录！');
+                    event.preventDefault(); // 阻止表单提交
+                    return;
+                }
+
+                if (action === 'delete') {
+                    const confirmation = confirm(`您确定要删除选中的 ${selectedCount} 个提交记录吗？此操作不可恢复！`);
+                    if (!confirmation) {
+                        event.preventDefault(); // 如果用户取消，则阻止表单提交
+                    }
+                } else if (action === 'regrade') {
+                    const confirmation = confirm(`您确定要重新批改选中的 ${selectedCount} 个提交记录吗？`);
+                    if (!confirmation) {
+                        event.preventDefault(); // 如果用户取消，则阻止表单提交
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
+
 {% block content %}
 <div class="card">
     <div class="card-header bg-light d-flex justify-content-between align-items-center">
@@ -32,101 +92,178 @@
             </form>
         </div>
 
-        <div class="table-responsive">
-            <table class="table table-hover table-striped">
-                <thead class="table-dark">
-                    <tr>
-                        <th>ID</th>
-                        <th>学生</th>
-                        <th>作业</th>
-                        <th>提交时间</th>
-                        <th>状态</th>
-                        <th>分数</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for submission in page_obj %}
-                    <tr class="align-middle">
-                        <td>{{ submission.id }}</td>
-                        <td>{{ submission.student.wx_nickName }}</td>
-                        <td>{{ submission.problem.title }}</td>
-                        <td>{{ submission.submitted_time|date:"Y-m-d H:i" }}</td>
-                        <td>
-                            <span class="badge rounded-pill
-                                {% if submission.status == 'graded' %}bg-success
-                                {% elif submission.status == 'processing' %}bg-warning text-dark
-                                {% elif submission.status == 'error' %}bg-danger
-                                {% else %}bg-secondary{% endif %}">
-                                {{ submission.get_status_display }}
-                            </span>
-                        </td>
-                        <td>
-                            {% if submission.score is not None %}
-                                <span class="fw-bold text-primary">{{ submission.score }}</span>
-                            {% else %}
-                                <span class="text-muted">-</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <a href="{% url 'submission_detail' submission.id %}" class="btn btn-sm btn-info">
-                                <i class="fas fa-search me-1"></i> 查看详情
-                            </a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="7" class="text-center text-muted py-5">
-                            <i class="fas fa-folder-open fa-3x mb-3"></i>
-                            <p>暂无提交记录</p>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+        <form method="POST" action="{% url 'submission_batch_action' %}" id="batch-action-form">
+            {% csrf_token %}
+            <div class="card shadow-sm">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">提交记录列表</h5>
+                    <div class="d-flex align-items-center">
+                        <select name="action" class="form-select form-select-sm me-2" style="width: auto;" required>
+                            <option value="" selected disabled>批量操作...</option>
+                            <option value="regrade">重新批改选中</option>
+                            <option value="delete">删除选中</option>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-secondary">应用</button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th style="width: 1%;" class="text-center"><input class="form-check-input" type="checkbox" id="select-all-checkbox"></th>
+                                    <th>ID</th>
+                                    <th>学生</th>
+                                    <th>作业</th>
+                                    <th>提交时间</th>
+                                    <th>状态</th>
+                                    <th>分数</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for submission in page_obj %}
+                                <tr class="align-middle">
+                                    <td class="text-center"><input class="form-check-input row-checkbox" type="checkbox" name="selected_ids" value="{{ submission.id }}"></td>
+                                    <td>{{ submission.id }}</td>
+                                    <td>{{ submission.student.wx_nickName }}</td>
+                                    <td>{{ submission.problem.title }}</td>
+                                    <td>{{ submission.submitted_time|date:"Y-m-d H:i" }}</td>
+                                    <td>
+                                        <span class="badge rounded-pill
+                                            {% if submission.status == 'graded' %}bg-success
+                                            {% elif submission.status == 'processing' %}bg-warning text-dark
+                                            {% elif submission.status == 'error' %}bg-danger
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ submission.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if submission.score is not None %}
+                                            <span class="fw-bold text-primary">{{ submission.score }}</span>
+                                        {% else %}
+                                            {% if submission.status == 'RUNTIME_ERROR' %}
+                                            <span class="text-muted">批改过程出错</span>
+                                            {% else %}
+                                            <span class="text-muted">-</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'submission_detail' submission.id %}" class="btn btn-sm btn-info">
+                                            <i class="fas fa-search me-1"></i> 查看详情
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-5">
+                                        <i class="fas fa-folder-open fa-3x mb-3"></i>
+                                        <p>暂无提交记录</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </form>
 
         {% if page_obj.has_other_pages %}
         <div class="card-footer bg-white border-0 py-3">
-            <div class="pagination-container">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <!-- 分页信息 -->
+                <div class="mb-2 mb-md-0">
+                    <small class="text-muted">
+                        显示第 {{ page_obj.start_index }} - {{ page_obj.end_index }} 条，共 {{ page_obj.paginator.count }} 条记录
+                    </small>
+                </div>
+                
+                <!-- 分页导航 -->
                 <nav aria-label="Page navigation">
                     <ul class="pagination mb-0">
+                        <!-- 首页 -->
                         {% if page_obj.has_previous %}
-                            <li class="page-item"><a class="page-link" href="?page=1&{{ request.GET.urlencode }}">&laquo;</a></li>
-                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">&lsaquo;</a></li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="首页">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
                         {% else %}
-                            <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
-                            <li class="page-item disabled"><span class="page-link">&lsaquo;</span></li>
+                            <li class="page-item disabled">
+                                <span class="page-link" aria-hidden="true">&laquo;</span>
+                            </li>
                         {% endif %}
 
+                        <!-- 上一页 -->
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="上一页">
+                                    <span aria-hidden="true">&lsaquo;</span>
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link" aria-hidden="true">&lsaquo;</span>
+                            </li>
+                        {% endif %}
+
+                        <!-- 页码 -->
                         {% for num in page_obj.paginator.page_range %}
-                            {% if page_obj.number == num %}
-                                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% if num == page_obj.number %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
                             {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                                <li class="page-item"><a class="page-link" href="?page={{ num }}&{{ request.GET.urlencode }}">{{ num }}</a></li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                                </li>
                             {% endif %}
                         {% endfor %}
 
+                        <!-- 下一页 -->
                         {% if page_obj.has_next %}
-                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">&rsaquo;</a></li>
-                            <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&{{ request.GET.urlencode }}">&raquo;</a></li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="下一页">
+                                    <span aria-hidden="true">&rsaquo;</span>
+                                </a>
+                            </li>
                         {% else %}
-                            <li class="page-item disabled"><span class="page-link">&rsaquo;</span></li>
-                            <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                            <li class="page-item disabled">
+                                <span class="page-link" aria-hidden="true">&rsaquo;</span>
+                            </li>
+                        {% endif %}
+
+                        <!-- 末页 -->
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="末页">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link" aria-hidden="true">&raquo;</span>
+                            </li>
                         {% endif %}
                     </ul>
                 </nav>
 
-                <!-- 跳转页码 -->
-                <form class="jump-page-form" method="GET" action="" style="width: auto;">
-                    {% for key, value in request.GET.items %}
-                        {% if key != 'page' %}
-                        <input type="hidden" name="{{ key }}" value="{{ value }}">
-                        {% endif %}
-                    {% endfor %}
-                    <input type="number" name="page" class="jump-page-input" min="1" max="{{ page_obj.paginator.num_pages }}" placeholder="页码" required>
-                    <button class="btn-go-simple" type="submit">跳转</button>
-                </form>
+                <!-- 页码跳转 -->
+                <div class="d-flex align-items-center mt-2 mt-md-0">
+                    <form method="GET" class="d-flex align-items-center">
+                        {% for key, value in request.GET.items %}
+                            {% if key != 'page' %}
+                                <input type="hidden" name="{{ key }}" value="{{ value }}">
+                            {% endif %}
+                        {% endfor %}
+                        <input type="number" name="page" class="form-control form-control-sm me-2" 
+                               style="width: 80px;" min="1" max="{{ page_obj.paginator.num_pages }}" 
+                               placeholder="页码" value="{{ page_obj.number }}" required>
+                        <button type="submit" class="btn btn-sm btn-outline-primary">跳转</button>
+                    </form>
+                </div>
             </div>
         </div>
         {% endif %}

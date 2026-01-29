@@ -8,6 +8,7 @@ from gradingModule.models import Submission
 logger = logging.getLogger(__name__)
 
 class MasteryService:
+    #根据学生提交记录计算并更新特定知识点的掌握度评分（1-5分制）
     @staticmethod
     def calculate_mastery(student_id, knowledge_point_id):
         """
@@ -67,6 +68,7 @@ class MasteryService:
         logger.info(f"📊 更新能力值: 学生{student_id} - 知识点{knowledge_point_id} - 新分数:{score}")
         return score
 
+    #AI批改完作业后自动更新学生对相关知识点掌握度的评分
     @staticmethod
     def update_mastery_after_grading(submission_instance):
         """
@@ -77,7 +79,6 @@ class MasteryService:
                 return
 
             # 获取该题目关联的所有知识点
-            # 注意：你需要先在 Problem 模型中添加 knowledge_points 字段
             related_kps = submission_instance.problem.knowledge_points.all()
             logger.info(f"获取到该submission的知识点：{related_kps}")
 
@@ -86,7 +87,10 @@ class MasteryService:
                 return
 
             for kp in related_kps:
-                MasteryService.calculate_mastery(submission_instance.student.id, kp.id)
+                MasteryService.calculate_mastery(
+                    submission_instance.student.id,
+                    kp.id
+                )
 
         except Exception as e:
             logger.error(f"❌ 更新能力值失败: {str(e)}")
