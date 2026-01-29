@@ -3,18 +3,45 @@
 
 {% block title %}编辑问题 - {{ question.title }}{% endblock %}
 
+{% block custom_js %}
+<!-- MathJax 配置与加载 -->
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      processEscapes: true
+    },
+    options: {
+      skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+    },
+    startup: {
+        ready: () => {
+            MathJax.startup.defaultReady();
+        }
+    }
+  };
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
     <div class="row justify-content-center">
-        <div class="col-lg-9">
+        <div class="col-lg-10">
             <div class="card shadow-sm">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h4 class="mb-0">
-                        <i class="fas fa-edit me-2"></i>编辑问题 #{{ question.id }}
+                        <i class="fas fa-edit me-2"></i>编辑问题 #{{ question.id }}: {{ question.title }}
                     </h4>
-                    <a href="{% url 'knowledge_point_list' %}" class="btn btn-sm btn-outline-info" target="_blank">
-                        <i class="fas fa-cog"></i> 管理知识点
-                    </a>
+                    <div class="btn-group">
+                        <a href="{% url 'knowledge_point_list' %}" class="btn btn-sm btn-outline-info" target="_blank">
+                            <i class="fas fa-cog"></i> 管理知识点
+                        </a>
+                        <a href="{% url 'question_detail' question.id %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-eye"></i> 查看详情
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
                     {% if messages %}
@@ -25,18 +52,26 @@
                         {% endfor %}
                     {% endif %}
 
+                    <!-- 状态提示 -->
+                    {% if not question.is_active %}
+                    <div class="alert alert-warning mb-4">
+                        <i class="fas fa-exclamation-triangle me-2"></i>此题目当前处于非激活状态，学生不可见。
+                    </div>
+                    {% endif %}
+
                     <form method="post">
                         {% csrf_token %}
 
                         <!-- 基础信息区 -->
+                        <h5 class="mb-3 border-bottom pb-2">基础信息</h5>
                         <div class="row">
                             <div class="col-md-8 mb-3">
                                 <label for="title" class="form-label">题目标题</label>
                                 <input type="text" class="form-control" id="title" name="title" value="{{ question.title }}" required>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label for="points" class="form-label">分值</label>
-                                <input type="number" class="form-control" id="points" name="points" value="{{ question.points }}" required>
+                                <label for="points" class="form-label">总分值</label>
+                                <input type="number" class="form-control" id="points" name="points" value="{{ question.points|default:0 }}" min="0" required>
                             </div>
                         </div>
 
@@ -59,7 +94,7 @@
                                 </select>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label for="difficulty" class="form-label">难度</label>
+                                <label for="difficulty" class="form-label">难度等级</label>
                                 <select class="form-select" id="difficulty" name="difficulty">
                                     <option value="1" {% if question.difficulty == 1 %}selected{% endif %}>简单</option>
                                     <option value="2" {% if question.difficulty == 2 %}selected{% endif %}>中等</option>
@@ -68,7 +103,22 @@
                             </div>
                         </div>
 
-                        <!-- 知识点选择区 (新增功能) -->
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="estimated_time" class="form-label">预估耗时(分钟)</label>
+                                <input type="number" class="form-control" id="estimated_time" name="estimated_time" value="{{ question.estimated_time|default:5 }}" min="1" max="300">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="is_active" class="form-label">题目状态</label>
+                                <select class="form-select" id="is_active" name="is_active">
+                                    <option value="true" {% if question.is_active %}selected{% endif %}>激活</option>
+                                    <option value="false" {% if not question.is_active %}selected{% endif %}>非激活</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 知识点选择区 -->
+                        <h5 class="mb-3 border-bottom pb-2">关联知识点</h5>
                         <div class="mb-4">
                             <label class="form-label fw-bold">
                                 <i class="fas fa-brain text-success me-1"></i>关联知识点 (用于能力分析)
@@ -96,43 +146,80 @@
                                             {% endfor %}
                                         </div>
                                     {% else %}
-                                        <p class="text-muted small mb-0">暂无知识点，请先<a href="{% url 'knowledge_point_create' %}">创建知识点</a>。</p>
+                                        <p class="text-muted small mb-0">暂无知识点，请先<a href="{% url 'knowledge_point_create' %}" target="_blank">创建知识点</a>。</p>
                                     {% endif %}
                                 </div>
                             </div>
                             <small class="text-muted">提示：根据选定的科目，系统会自动高亮相关知识点。</small>
                         </div>
 
-                        <!-- 题目内容 -->
+                        <!-- 题目内容区 -->
+                        <h5 class="mb-3 border-bottom pb-2">题目内容</h5>
                         <div class="mb-3">
                             <label for="content" class="form-label">题目内容</label>
-                            <textarea class="form-control" id="content" name="content" rows="6" required>{{ question.content.content }}</textarea>
+                            <textarea class="form-control" id="content" name="content" rows="8" placeholder="请输入题目内容..." required>{{ question.content.content }}</textarea>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>支持 LaTeX 数学公式，使用 \$公式\$ 或 \$\$公式\$\$ 格式
+                            </div>
                         </div>
 
-                        <hr class="my-4">
-                        <h5 class="mb-3">答案与解析</h5>
-
+                        <!-- 答案与解析区 -->
+                        <h5 class="mb-3 border-bottom pb-2">答案与解析</h5>
                         <div class="mb-3">
                             <label for="answer_content" class="form-label">简洁答案</label>
                             <input type="text" class="form-control" id="answer_content" name="answer_content"
-                                   value="{{ question.answer.content }}" placeholder="例如：A / 42 / 巴黎">
+                                   value="{{ question.answer.content|default:'' }}" placeholder="例如：A / 42 / 巴黎">
                         </div>
 
                         <div class="mb-3">
                             <label for="answer_explanation" class="form-label">详细解析</label>
-                            <textarea class="form-control" id="answer_explanation" name="answer_explanation" rows="4">{{ question.answer.explanation }}</textarea>
+                            <textarea class="form-control" id="answer_explanation" name="answer_explanation" rows="6" placeholder="请输入详细的答案解析...">{{ question.answer.explanation|default:'' }}</textarea>
                         </div>
 
                         <div class="mb-3">
-                            <label for="answer_content_data" class="form-label">答案数据 (JSON)</label>
-                            <textarea class="form-control font-monospace small" id="answer_content_data" name="answer_content_data" rows="3">{{ question.answer.content_data|safe }}</textarea>
+                            <label for="answer_content_data" class="form-label">答案数据 (JSON格式)</label>
+                            <textarea class="form-control font-monospace small" id="answer_content_data" name="answer_content_data" rows="4" placeholder="请输入结构化答案数据...">{{ question.answer.content_data|default:'{}'|safe }}</textarea>
+                            <div class="form-text">
+                                <i class="fas fa-code me-1"></i>用于存储选择题选项、填空题答案位置等结构化数据
+                            </div>
                         </div>
 
-                        <div class="d-flex justify-content-end mt-4">
-                            <a href="{% url 'question_list' %}" class="btn btn-secondary me-2">取消</a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save me-2"></i>更新题目
-                            </button>
+                        <!-- 高级设置区 -->
+                        <h5 class="mb-3 border-bottom pb-2">高级设置</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">创建信息</label>
+                                <div class="form-control-plaintext">
+                                    <small class="text-muted">
+                                        <i class="fas fa-user me-1"></i>{{ question.creator.username|default:"N/A" }} 
+                                        <i class="fas fa-clock ms-3 me-1"></i>{{ question.create_time|date:"Y-m-d H:i:s" }}
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="content_data" class="form-label">题目数据 (JSON)</label>
+                                <textarea class="form-control font-monospace small" id="content_data" name="content_data" rows="3" placeholder="请输入题目结构化数据...">{{ question.content.content_data|default:'{}'|safe }}</textarea>
+                                <div class="form-text">
+                                    <i class="fas fa-code me-1"></i>用于存储题目特定的结构化数据
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                            <div>
+                                <a href="{% url 'question_detail' question.id %}" class="btn btn-outline-secondary me-2">
+                                    <i class="fas fa-eye me-2"></i>查看详情
+                                </a>
+                                <a href="{% url 'question_list' %}" class="btn btn-secondary">取消</a>
+                            </div>
+                            <div class="btn-group">
+                                <button type="submit" name="action" value="save" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>保存更改
+                                </button>
+                                <button type="submit" name="action" value="save_and_continue" class="btn btn-outline-primary">
+                                    <i class="fas fa-redo me-2"></i>保存并继续编辑
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -142,7 +229,7 @@
 </div>
 
 <script>
-// 简单的前端脚本：当选择科目时，高亮显示该科目下的知识点，方便查找
+// 知识点筛选功能
 document.getElementById('subject').addEventListener('change', function() {
     const selectedSubjectId = this.value;
     const checkboxes = document.querySelectorAll('.kp-checkbox');
@@ -153,12 +240,29 @@ document.getElementById('subject').addEventListener('change', function() {
 
         if (subjectId === selectedSubjectId) {
             label.classList.add('fw-bold', 'text-primary');
-            cb.parentElement.parentElement.style.display = 'block'; // 或者只显示相关的
+            cb.parentElement.parentElement.style.display = 'block';
         } else {
             label.classList.remove('fw-bold', 'text-primary');
-            // cb.parentElement.parentElement.style.display = 'none'; // 如果你想隐藏非本科目的
+            cb.parentElement.parentElement.style.display = 'block'; // 保持显示，只高亮相关
         }
     });
+});
+
+// 实时预览功能
+document.getElementById('content').addEventListener('input', function() {
+    // 可以添加实时预览功能
+});
+
+// 表单验证
+document.querySelector('form').addEventListener('submit', function(e) {
+    const title = document.getElementById('title').value.trim();
+    const content = document.getElementById('content').value.trim();
+    
+    if (!title || !content) {
+        e.preventDefault();
+        alert('请填写题目标题和内容');
+        return false;
+    }
 });
 </script>
 {% endblock %}

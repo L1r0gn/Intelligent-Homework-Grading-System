@@ -4,6 +4,7 @@
 {% block title %}问题详情 - {{ question.title }}{% endblock %}
 
 {% block custom_js %}
+
 <!-- MathJax 配置与加载 -->
 <script>
   window.MathJax = {
@@ -28,6 +29,46 @@
   };
 </script>
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<!-- 答案显示控制脚本 -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 答案显示控制
+    const showAnswerBtn = document.getElementById('showAnswerBtn');
+    const answerContent = document.getElementById('answerContent');
+    const answerExplanation = document.getElementById('answerExplanation');
+    
+    if (showAnswerBtn && answerContent) {
+        showAnswerBtn.addEventListener('click', function() {
+            // 移除模糊效果
+            answerContent.classList.remove('answer-blur');
+            if (answerExplanation) {
+                answerExplanation.classList.remove('answer-blur');
+            }
+            
+            // 隐藏按钮
+            showAnswerBtn.style.display = 'none';
+            
+            // 显示提示信息
+            const answerHint = document.getElementById('answerHint');
+            if (answerHint) {
+                answerHint.style.display = 'block';
+                
+                // 3秒后自动隐藏提示信息
+                setTimeout(function() {
+                    answerHint.style.opacity = '0';
+                    answerHint.style.transition = 'opacity 0.5s ease';
+                    
+                    // 完全隐藏后移除元素
+                    setTimeout(function() {
+                        answerHint.style.display = 'none';
+                    }, 500);
+                }, 500);
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
 
 {% block content %}
@@ -52,6 +93,13 @@
         </div>
 
         <div class="card-body">
+            <!-- 状态提示 -->
+            {% if not question.is_active %}
+            <div class="alert alert-warning mb-4">
+                <i class="fas fa-exclamation-triangle me-2"></i>此题目当前处于非激活状态，学生不可见。
+            </div>
+            {% endif %}
+
             <div class="mb-4">
                 <h5>题目内容</h5>
                 <div class="p-3 bg-light rounded border">
@@ -61,7 +109,7 @@
 
             <hr>
 
-            <h5>详细信息</h5>
+            <h5>基本信息</h5>
             <div class="row">
                 <div class="col-md-6">
                     <dl class="row">
@@ -72,7 +120,7 @@
                         <dd class="col-sm-8">{{ question.problem_type.name }}</dd>
 
                         <dt class="col-sm-4">题目总分:</dt>
-                        <dd class="col-sm-8">{{ question.points }}</dd>
+                        <dd class="col-sm-8">{{ question.points|default:"--" }}</dd>
 
                         <dt class="col-sm-4">创建人:</dt>
                         <dd class="col-sm-8">{{ question.creator.username|default:"N/A" }}</dd>
@@ -96,9 +144,97 @@
 
                         <dt class="col-sm-4">创建时间:</dt>
                         <dd class="col-sm-8">{{ question.create_time|date:"Y-m-d H:i:s" }}</dd>
+
+                        <dt class="col-sm-4">状态:</dt>
+                        <dd class="col-sm-8">
+                            {% if question.is_active %}
+                                <span class="badge bg-success">激活</span>
+                            {% else %}
+                                <span class="badge bg-secondary">非激活</span>
+                            {% endif %}
+                        </dd>
                     </dl>
                 </div>
             </div>
+
+            <!-- 题目标签 -->
+            {% if question.tags.all %}
+            <hr>
+            <h5>题目标签</h5>
+            <div class="mb-3">
+                {% for tag in question.tags.all %}
+                <span class="badge bg-primary me-2">{{ tag.name }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- 涉及知识点 -->
+            {% if question.knowledge_points.all %}
+            <hr>
+            <h5>涉及知识点</h5>
+            <div class="mb-3">
+                {% for knowledge_point in question.knowledge_points.all %}
+                <span class="badge bg-info text-dark me-2 mb-2">
+                    <i class="fas fa-book me-1"></i>{{ knowledge_point.name }}
+                </span>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- 答案信息 -->
+            {% if question.answer %}
+            <hr>
+            <h5>参考答案</h5>
+            <div class="mb-4">
+                <!-- 查看答案按钮 -->
+                <div class="text-center mb-3">
+                    <button id="showAnswerBtn" class="btn btn-primary">
+                        <i class="fas fa-eye me-2"></i>查看答案
+                    </button>
+                    <div id="answerHint" class="alert alert-info mt-2" style="display: none;">
+                        <i class="fas fa-info-circle me-2"></i>答案已显示，请仔细查看
+                    </div>
+                </div>
+                
+                <!-- 参考答案内容（初始模糊） -->
+                <div id="answerContent" class="p-3 bg-light rounded border answer-blur">
+                    <p style="white-space: pre-wrap; margin-bottom: 0;">{{ question.answer.content }}</p>
+                </div>
+                
+                <!-- 答案解析（如果有） -->
+                {% if question.answer.explanation %}
+                <div class="mt-3">
+                    <h5>答案解析:</h5>
+                    <div id="answerExplanation" class="p-3 bg-light rounded border answer-blur">
+                        <p style="white-space: pre-wrap; margin-bottom: 0;">{{ question.answer.explanation }}</p>
+                    </div>
+                </div>
+                {% endif %}
+                <small class="text-muted">最后更新: {{ question.answer.updated_at|date:"Y-m-d H:i:s" }}</small>
+            </div>
+            {% endif %}
+
+            <!-- 附件信息 -->
+            {% if question.attachment %}
+            <hr>
+            <h5>附件信息</h5>
+            <div class="mb-3">
+                <div class="alert alert-info">
+                    <i class="fas fa-paperclip me-2"></i>此题目包含附件信息
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 评分要则 -->
+            {% if question.scoringPoint %}
+            <hr>
+            <h5>评分要则</h5>
+            <div class="mb-3">
+                <div class="alert alert-warning">
+                    <i class="fas fa-clipboard-check me-2"></i>此题目配置了评分要则
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -125,4 +261,44 @@
     </div>
   </div>
 </div>
+
+<style>
+/* 答案模糊效果样式 */
+.answer-blur {
+    filter: blur(8px);
+    user-select: none;
+    pointer-events: none;
+    transition: filter 0.3s ease;
+    position: relative;
+}
+
+.answer-blur::before {
+    content: "答案内容已隐藏，请点击上方按钮查看";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.9);
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+    color: #666;
+    z-index: 10;
+    text-align: center;
+    width: 80%;
+}
+
+/* 移除模糊效果后的样式 */
+#answerContent:not(.answer-blur),
+#answerExplanation:not(.answer-blur) {
+    filter: none;
+    user-select: auto;
+    pointer-events: auto;
+}
+
+/* 提示信息过渡效果 */
+#answerHint {
+    transition: opacity 0.5s ease;
+}
+</style>
 {% endblock %}

@@ -98,47 +98,98 @@
         
         {% if page_obj.paginator.num_pages > 1 %}
         <div class="card-footer bg-white border-0 py-3">
-            <div class="pagination-container">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <!-- 分页信息 -->
+                <div class="mb-2 mb-md-0">
+                    <small class="text-muted">
+                        显示第 {{ page_obj.start_index }} - {{ page_obj.end_index }} 条，共 {{ page_obj.paginator.count }} 条记录
+                    </small>
+                </div>
+                
+                <!-- 分页导航 -->
                 <nav aria-label="Page navigation">
                     <ul class="pagination mb-0">
+                        <!-- 首页 -->
                         {% if page_obj.has_previous %}
                             <li class="page-item">
-                                <a class="page-link" href="?page=1&q={{ query }}" aria-label="First">&laquo;</a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ query }}" aria-label="Previous">&lsaquo;</a>
+                                <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="首页">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
                             </li>
                         {% else %}
-                            <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
-                            <li class="page-item disabled"><span class="page-link">&lsaquo;</span></li>
+                            <li class="page-item disabled">
+                                <span class="page-link" aria-hidden="true">&laquo;</span>
+                            </li>
                         {% endif %}
 
-                        <li class="page-item disabled">
-                            <span class="page-link" style="border:none; background:transparent; font-weight:normal; color:#6c757d;">
-                                {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
-                            </span>
-                        </li>
-
-                        {% if page_obj.has_next %}
+                        <!-- 上一页 -->
+                        {% if page_obj.has_previous %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ query }}" aria-label="Next">&rsaquo;</a>
-                            </li>
-                             <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&q={{ query }}" aria-label="Last">&raquo;</a>
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="上一页">
+                                    <span aria-hidden="true">&lsaquo;</span>
+                                </a>
                             </li>
                         {% else %}
-                            <li class="page-item disabled"><span class="page-link">&rsaquo;</span></li>
-                            <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                            <li class="page-item disabled">
+                                <span class="page-link" aria-hidden="true">&lsaquo;</span>
+                            </li>
+                        {% endif %}
+
+                        <!-- 页码 -->
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if num == page_obj.number %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        <!-- 下一页 -->
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="下一页">
+                                    <span aria-hidden="true">&rsaquo;</span>
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link" aria-hidden="true">&rsaquo;</span>
+                            </li>
+                        {% endif %}
+
+                        <!-- 末页 -->
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="末页">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link" aria-hidden="true">&raquo;</span>
+                            </li>
                         {% endif %}
                     </ul>
                 </nav>
 
-                <!-- 跳转页码 -->
-                <form class="jump-page-form" method="GET" action="">
-                    <input type="hidden" name="q" value="{{ query }}">
-                    <input type="number" name="page" class="jump-page-input" min="1" max="{{ page_obj.paginator.num_pages }}" placeholder="页码" required>
-                    <button class="btn-go-simple" type="submit">跳转</button>
-                </form>
+                <!-- 页码跳转 -->
+                <div class="d-flex align-items-center mt-2 mt-md-0">
+                    <form method="GET" class="d-flex align-items-center">
+                        {% for key, value in request.GET.items %}
+                            {% if key != 'page' %}
+                                <input type="hidden" name="{{ key }}" value="{{ value }}">
+                            {% endif %}
+                        {% endfor %}
+                        <input type="number" name="page" class="form-control form-control-sm me-2" 
+                               style="width: 80px;" min="1" max="{{ page_obj.paginator.num_pages }}" 
+                               placeholder="页码" value="{{ page_obj.number }}" required>
+                        <button type="submit" class="btn btn-sm btn-outline-primary">跳转</button>
+                    </form>
+                </div>
             </div>
         </div>
         {% endif %}
