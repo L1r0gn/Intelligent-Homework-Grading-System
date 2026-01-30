@@ -70,7 +70,8 @@
                             </div>
                         </div>
 
-                        <div class="mb-3">
+                        <!-- 删除班级信息部分 -->
+                        <!-- <div class="mb-3">
                             <label for="{{ form.class_in.id_for_label }}" class="form-label">班级信息</label>
                             {{ form.class_in }}
                              {% if not form.fields.class_in.queryset.exists %}
@@ -79,7 +80,7 @@
                                 </div>
                             {% endif %}
                             {% for error in form.class_in.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
-                        </div>
+                        </div> -->
 
                         <div class="d-flex justify-content-end mt-4">
                             <a href="{% url 'user_list' %}" class="btn btn-secondary me-2">取消</a>

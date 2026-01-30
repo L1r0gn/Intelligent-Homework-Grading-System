@@ -193,11 +193,42 @@
                     </li>
                     <!-- === 修改结束 === -->
 
-                    <li class="nav-item">
-                        <a class="nav-link {% if 'class' in request.resolver_match.url_name and 'list' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'class_list_web' %}">
+                    <!-- === 修改开始：将班级管理改为下拉菜单 === -->
+                    <li class="nav-item dropdown">
+                        <!-- 判断当前 URL 是否包含 class，以此来高亮父级菜单 -->
+                        <a class="nav-link dropdown-toggle {% if 'class' in request.resolver_match.url_name %}active{% endif %}"
+                           href="#"
+                           id="classDropdown"
+                           role="button"
+                           data-bs-toggle="dropdown"
+                           aria-expanded="false">
                            <i class="fas fa-chalkboard me-1"></i>班级管理
                         </a>
+                        <ul class="dropdown-menu" aria-labelledby="classDropdown">
+                            <!-- 我的班级 - 所有登录用户可见 -->
+                            <li>
+                                <a class="dropdown-item" href="{% url 'my_class_list_web' %}">
+                                    <i class="fas fa-user-graduate me-2"></i>我的班级
+                                </a>
+                            </li>
+                            
+                            <!-- 管理员功能 - 仅管理员和超级管理员可见 -->
+                            {% if request.user.is_authenticated and request.user.user_attribute >= 3 %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'class_list_web' %}">
+                                        <i class="fas fa-list-ul me-2"></i>班级列表管理
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'class_create_web' %}">
+                                        <i class="fas fa-plus me-2"></i>创建新班级
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
                     </li>
+                    <!-- === 修改结束 === -->
 
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'user_list' %}active{% endif %}" href="{% url 'user_list' %}">

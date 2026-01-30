@@ -25,6 +25,7 @@ urlpatterns = [
 
     # 网页端 - 班级管理
     path('class/list/', class_views.class_list_view, name='class_list_web'),
+    path('class/my/', class_views.my_class_list_view, name='my_class_list_web'),  # 新增：我的班级管理
     path('class/create/', class_views.class_create_view, name='class_create_web'),
     path('class/edit/<int:class_id>/', class_views.class_edit_view, name='class_edit_web'),
     path('class/delete/<int:class_id>/', class_views.class_delete_view, name='class_delete_web'),

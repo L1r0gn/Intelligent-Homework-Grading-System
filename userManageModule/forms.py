@@ -18,18 +18,18 @@ class UserAddForm(forms.ModelForm):
         required=True
     )
 
-    # 我们需要动态地从数据库获取班级列表
-    class_in = forms.ModelChoiceField(
-        queryset=className.objects.all(),
-        label='所属班级',
-        required=False,  # 允许不选择班级
-        empty_label="-- 请选择班级 --"
-    )
+    # 删除班级选择字段
+    # class_in = forms.ModelChoiceField(
+    #     queryset=className.objects.all(),
+    #     label='所属班级',
+    #     required=False,  # 允许不选择班级
+    #     empty_label="-- 请选择班级 --"
+    # )
 
     class Meta:
         model = User
-        # 定义表单包含模型的哪些字段
-        fields = ['username', 'wx_nickName', 'phone', 'gender', 'user_attribute', 'class_in']
+        # 定义表单包含模型的哪些字段，移除class_in
+        fields = ['username', 'wx_nickName', 'phone', 'gender', 'user_attribute']
         labels = {
             'username': '用户名',
             'wx_nickName': '微信昵称',
@@ -62,9 +62,9 @@ class UserAddForm(forms.ModelForm):
             gender=self.cleaned_data['gender'],
             user_attribute=self.cleaned_data['user_attribute'],
         )
-        # 处理 M2M 字段
-        if self.cleaned_data.get('class_in'):
-             user.class_in.add(self.cleaned_data.get('class_in'))
+        # 删除班级处理逻辑
+        # if self.cleaned_data.get('class_in'):
+        #      user.class_in.add(self.cleaned_data.get('class_in'))
         
         return user
 

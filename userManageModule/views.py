@@ -392,6 +392,7 @@ def user_register(request):
             gender = form.cleaned_data.get('gender')
             user_attribute = form.cleaned_data.get('user_attribute')
             class_in_id = form.cleaned_data.get('class_in')
+
             logger.info(username, password, phone, gender, user_attribute, class_in_id)
 
             if user_attribute >= 3:

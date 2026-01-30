@@ -41,6 +41,20 @@ def search_students_api(request):
         
     return JsonResponse({'results': results})
 
+def teacher_required(view_func):
+    """
+    Ensure user is authenticated and is an teacher (user_attribute >= 2)
+    """
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('login')
+        if request.user.user_attribute < 2:
+            messages.error(request, "您没有权限访问该页面。")
+            return redirect('dashboard')  # Redirect to dashboard or appropriate page
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
+
 def admin_required(view_func):
     """
     Ensure user is authenticated and is an admin (user_attribute >= 3)
@@ -55,10 +69,35 @@ def admin_required(view_func):
         return view_func(request, *args, **kwargs)
     return _wrapped_view
 
+@login_required
+def my_class_list_view(request):
+    """
+    显示当前用户所在的班级列表
+    """
+    query = request.GET.get('q', '')
+    # 获取当前用户所在的班级
+    my_classes = request.user.class_in.all().order_by('-created_at')
+
+    if query:
+        my_classes = my_classes.filter(
+            Q(name__icontains=query) | 
+            Q(code__icontains=query) |
+            Q(grade__icontains=query)
+        )
+
+    paginator = Paginator(my_classes, 10) # 10 classes per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'my_class_list.html', {
+        'page_obj': page_obj,
+        'query': query
+    })
+
 @admin_required
 def class_list_view(request):
     """
-    Display list of classes with pagination and search.
+    Display list of all classes with pagination and search.
     """
     query = request.GET.get('q', '')
     classes = className.objects.all().order_by('-created_at')
@@ -79,7 +118,7 @@ def class_list_view(request):
         'query': query
     })
 
-@admin_required
+@teacher_required
 def class_create_view(request):
     """
     Create a new class.
