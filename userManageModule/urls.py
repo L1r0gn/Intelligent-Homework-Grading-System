@@ -34,6 +34,7 @@ urlpatterns = [
     path('class/student/remove/<int:class_id>/<int:student_id>/', class_views.class_remove_student_view, name='class_remove_student_web'),
     path('class/teacher/add/<int:class_id>/', class_views.class_add_teacher_view, name='class_add_teacher_web'),
     path('class/teacher/remove/<int:class_id>/<int:teacher_id>/', class_views.class_remove_teacher_view, name='class_remove_teacher_web'),
+    path('class/join/', class_views.class_join_by_code_view, name='class_join_web'),
     path('api/student/search/', class_views.search_students_api, name='search_students_api'),
 
     # 微信小程序端 - 添加用户 (复用了网页端视图)

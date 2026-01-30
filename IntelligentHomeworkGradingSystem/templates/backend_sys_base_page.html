@@ -212,6 +212,13 @@
                                 </a>
                             </li>
                             
+                            <!-- 班级码加入班级 - 所有登录用户可见 -->
+                            <li>
+                                <a class="dropdown-item" href="{% url 'class_join_web' %}">
+                                    <i class="fas fa-sign-in-alt me-2"></i>班级码加入班级
+                                </a>
+                            </li>
+                            
                             <!-- 管理员功能 - 仅管理员和超级管理员可见 -->
                             {% if request.user.is_authenticated and request.user.user_attribute >= 3 %}
                                 <li><hr class="dropdown-divider"></li>

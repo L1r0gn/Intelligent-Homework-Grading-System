@@ -271,3 +271,41 @@ def class_remove_teacher_view(request, class_id, teacher_id):
         relation.delete()
         messages.success(request, f'已移除任课教师。')
     return redirect('class_detail_web', class_id=class_id)
+
+
+@login_required
+def class_join_by_code_view(request):
+    """
+    通过班级码加入班级（网页端）
+    """
+    if request.method == 'POST':
+        class_code = request.POST.get('class_code', '').strip().upper()
+        
+        # 验证用户权限（只有学生可以加入班级）
+        if request.user.user_attribute != 1:
+            messages.error(request, '只有学生可以加入班级。')
+            return render(request, 'class_join_by_code.html')
+        
+        if not class_code:
+            messages.error(request, '请输入班级码。')
+            return render(request, 'class_join_by_code.html')
+        
+        try:
+            target_class = className.objects.get(code=class_code)
+        except className.DoesNotExist:
+            messages.error(request, '班级码无效，未找到对应的班级。')
+            return render(request, 'class_join_by_code.html')
+        
+        # 检查是否已经加入该班级
+        if target_class in request.user.class_in.all():
+            messages.warning(request, f'您已经加入了班级 "{target_class.name}"。')
+            return redirect('my_class_list_web')
+        
+        # 加入班级
+        request.user.class_in.add(target_class)
+        request.user.save()
+        
+        messages.success(request, f'成功加入班级 "{target_class.name}"！')
+        return redirect('my_class_list_web')
+    
+    return render(request, 'class_join_by_code.html')

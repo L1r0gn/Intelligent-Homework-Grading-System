@@ -1,0 +1,60 @@
+{% extends 'page_base.html' %}
+{% load static %}
+
+{% block title %}通过班级码加入班级 - 班级管理{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow border-0">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-user-plus me-2"></i>通过班级码加入班级</h5>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            <label for="class_code" class="form-label fw-bold">班级邀请码</label>
+                            <input type="text" 
+                                   class="form-control form-control-lg" 
+                                   id="class_code" 
+                                   name="class_code" 
+                                   placeholder="请输入6位班级邀请码" 
+                                   maxlength="6"
+                                   required
+                                   style="text-transform: uppercase;">
+                            <div class="form-text">请输入老师提供的6位班级邀请码（不区分大小写）</div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-sign-in-alt me-2"></i>加入班级
+                            </button>
+                            <a href="{% url 'my_class_list_web' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>返回我的班级
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 自动将输入转换为大写
+    document.getElementById('class_code').addEventListener('input', function(e) {
+        this.value = this.value.toUpperCase();
+    });
+</script>
+{% endblock %}

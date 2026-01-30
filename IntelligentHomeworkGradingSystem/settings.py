@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 import os
 import pymysql
-
+import config
 
 pymysql.install_as_MySQLdb()
 
@@ -155,7 +155,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',  # 切换到mysql
         'NAME': 'ihgs',
         'USER': 'root',
-        'PASSWORD': '!!!L1r0gn',
+        'PASSWORD': config.DATABASES_PASSWORD,
         'HOST': 'localhost',
         'PORT': '3306',
     }
@@ -209,7 +209,7 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'  # 生产环境收集静态文件的目�
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-OPENROUTER_API_KEY ='sk-a57f72efbd53491f87d3c46eb911ca10'
+OPENROUTER_API_KEY = config.OPENROUTER_API_KEY
 
 # 图片服务器基础地址
 SERVER_BASE_URL = 'http://119.29.152.140:8000'
