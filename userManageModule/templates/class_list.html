@@ -20,11 +20,37 @@
     </div>
 
     <div class="mb-4">
-        <form method="GET" action="{% url 'class_list_web' %}" class="d-flex">
-            <input class="form-control me-2" type="search" placeholder="搜索班级名称、编号或年级..." name="q" value="{{ query|default_if_none:'' }}">
-            <button class="btn btn-outline-secondary" type="submit">
-                <i class="fas fa-search"></i> 搜索
-            </button>
+        <form method="GET" action="{% url 'class_list_web' %}" class="row g-2 align-items-center">
+            <!-- 搜索框 -->
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                    <input class="form-control border-start-0 ps-0" type="search" placeholder="搜索班级名称、编号或年级..." name="q"
+                        value="{{ search_query|default_if_none:'' }}">
+                </div>
+            </div>
+
+            <!-- 年级筛选 -->
+            <div class="col-md-2">
+                <select name="grade" class="form-select">
+                    <option value="">-- 所有年级 --</option>
+                    {% for grade in all_grades %}
+                        {% if grade %}
+                        <option value="{{ grade }}" {% if current_grade == grade %}selected{% endif %}>{{ grade }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- 占位以保持布局平衡 -->
+            <div class="col-md-4">
+                <!-- 空白占位符 -->
+            </div>
+
+            <!-- 按钮 -->
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100" type="submit">筛选</button>
+            </div>
         </form>
     </div>
 
@@ -91,7 +117,14 @@
                         {% empty %}
                         <tr>
                             <td colspan="6" class="text-center py-5 text-muted">
-                                <p>暂无班级数据</p>
+                                <p>
+                                    {% if search_query or current_grade %}
+                                    没有找到与当前搜索条件相关的班级。
+                                    <a href="{% url 'class_list_web' %}" class="btn btn-sm btn-outline-secondary">清除筛选条件</a>
+                                    {% else %}
+                                    暂无班级数据
+                                    {% endif %}
+                                </p>
                             </td>
                         </tr>
                         {% endfor %}

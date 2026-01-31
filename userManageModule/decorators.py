@@ -1,6 +1,8 @@
 from functools import wraps
 from django.http import JsonResponse
 from django.contrib.auth import get_user_model
+from django.contrib import messages
+from django.shortcuts import redirect
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework_simplejwt.exceptions import TokenError
 
@@ -77,4 +79,19 @@ def jwt_login_required(view_func):
 
         return view_func(request, *args, **kwargs)
 
+    return _wrapped_view
+
+
+def student_required(view_func):
+    """
+    Ensure user is authenticated and is a student (user_attribute == 1)
+    """
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('login')
+        if request.user.user_attribute != 1:
+            messages.error(request, "只有学生可以执行此操作。")
+            return redirect('dashboard')  # Redirect to dashboard or appropriate page
+        return view_func(request, *args, **kwargs)
     return _wrapped_view

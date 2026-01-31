@@ -6,11 +6,12 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework_simplejwt.tokens import RefreshToken
 from IntelligentHomeworkGradingSystem import settings
-from .decorators import jwt_login_required
+from .decorators import jwt_login_required, student_required
 from .forms import UserAddForm
 from .models import User, className
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
+from django.db.models import Q
 import logging
 import string
 import random
@@ -171,10 +172,63 @@ def logout_view(request):
 @admin_required
 def user_list(request):
     """
-    显示所有用户的列表页面。
+    显示所有用户的列表页面，带搜索和筛选功能。
     """
+    # 获取所有用户
     queryset = User.objects.all()
-    return render(request, "user_list.html", {'queryset': queryset})
+    
+    # 获取搜索参数
+    search_query = request.GET.get('q', '')
+    user_attribute = request.GET.get('attribute', '')
+    gender = request.GET.get('gender', '')
+    
+    # 应用搜索
+    if search_query:
+        queryset = queryset.filter(
+            Q(username__icontains=search_query) |
+            Q(wx_nickName__icontains=search_query) |
+            Q(phone__icontains=search_query)
+        )
+    
+    # 应用用户属性筛选
+    if user_attribute:
+        try:
+            queryset = queryset.filter(user_attribute=int(user_attribute))
+        except ValueError:
+            pass
+    
+    # 应用性别筛选
+    if gender:
+        try:
+            queryset = queryset.filter(gender=int(gender))
+        except ValueError:
+            pass
+    
+    # 准备筛选选项数据
+    attributes = [
+        {'id': 0, 'name': '访客'},
+        {'id': 1, 'name': '学生'},
+        {'id': 2, 'name': '教师'},
+        {'id': 3, 'name': '管理员'},
+        {'id': 4, 'name': '超级管理员'}
+    ]
+    
+    genders = [
+        {'id': 0, 'name': '未知'},
+        {'id': 1, 'name': '男'},
+        {'id': 2, 'name': '女'}
+    ]
+    
+    context = {
+        'queryset': queryset,
+        'search_query': search_query,
+        'current_attribute': int(user_attribute) if user_attribute else None,
+        'current_gender': int(gender) if gender else None,
+        'attributes': attributes,
+        'genders': genders,
+    }
+    
+    return render(request, "user_list.html", context)
 
 @jwt_login_required
 def wx_user_list(request, user_id):
@@ -540,6 +594,7 @@ def class_detail(request, class_id):
 
 @csrf_exempt
 @jwt_login_required
+@student_required
 def userAddClass(request):
     """
     处理学生通过班级码加入班级的 API 请求。
@@ -556,9 +611,6 @@ def userAddClass(request):
     
     student = request.user
     
-    if student.user_attribute != 1:
-        return JsonResponse({'error': '只有学生可加入班级'}, status=403)
-        
     try:
         target_class = className.objects.get(code=class_code)
     except className.DoesNotExist:

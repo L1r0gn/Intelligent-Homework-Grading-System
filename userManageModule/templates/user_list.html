@@ -14,6 +14,44 @@
         </div>
     </div>
 
+    <div class="mb-4">
+        <form method="GET" action="{% url 'user_list' %}" class="row g-2 align-items-center">
+            <!-- 搜索框 -->
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                    <input class="form-control border-start-0 ps-0" type="search" placeholder="搜索用户名、微信昵称、电话..." name="q"
+                        value="{{ search_query|default_if_none:'' }}">
+                </div>
+            </div>
+
+            <!-- 用户属性筛选 -->
+            <div class="col-md-2">
+                <select name="attribute" class="form-select">
+                    <option value="">-- 所有属性 --</option>
+                    {% for attr in attributes %}
+                    <option value="{{ attr.id }}" {% if current_attribute == attr.id %}selected{% endif %}>{{ attr.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- 性别筛选 -->
+            <div class="col-md-2">
+                <select name="gender" class="form-select">
+                    <option value="">-- 所有性别 --</option>
+                    {% for gen in genders %}
+                    <option value="{{ gen.id }}" {% if current_gender == gen.id %}selected{% endif %}>{{ gen.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- 按钮 -->
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100" type="submit">筛选</button>
+            </div>
+        </form>
+    </div>
+
     <div class="card shadow-sm border-0">
         <div class="card-header bg-light d-flex justify-content-between align-items-center">
             <h5 class="mb-0">
@@ -31,6 +69,7 @@
                             <th>用户名(账号)</th>
                             <th>电话</th>
                             <th>性别</th>
+                            <th>用户属性</th>
                             <th class="text-center">操作</th>
                         </tr>
                     </thead>
@@ -46,6 +85,21 @@
                                 <span class="badge bg-info text-dark">男</span>
                                 {% elif obj.gender == 2 %}
                                 <span class="badge bg-danger">女</span>
+                                {% else %}
+                                <span class="badge bg-secondary">未知</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if obj.user_attribute == 0 %}
+                                <span class="badge bg-secondary">访客</span>
+                                {% elif obj.user_attribute == 1 %}
+                                <span class="badge bg-success">学生</span>
+                                {% elif obj.user_attribute == 2 %}
+                                <span class="badge bg-warning text-dark">教师</span>
+                                {% elif obj.user_attribute == 3 %}
+                                <span class="badge bg-info">管理员</span>
+                                {% elif obj.user_attribute == 4 %}
+                                <span class="badge bg-danger">超级管理员</span>
                                 {% else %}
                                 <span class="badge bg-secondary">未知</span>
                                 {% endif %}
@@ -66,9 +120,16 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="6" class="text-center py-5 text-muted">
+                            <td colspan="7" class="text-center py-5 text-muted">
                                 <i class="fas fa-users-slash fa-3x mb-3"></i>
-                                <p>暂无用户数据</p>
+                                <p>
+                                    {% if search_query or current_attribute or current_gender %}
+                                    没有找到与当前搜索条件相关的用户。
+                                    <a href="{% url 'user_list' %}" class="btn btn-sm btn-outline-secondary">清除筛选条件</a>
+                                    {% else %}
+                                    暂无用户数据
+                                    {% endif %}
+                                </p>
                             </td>
                         </tr>
                         {% endfor %}

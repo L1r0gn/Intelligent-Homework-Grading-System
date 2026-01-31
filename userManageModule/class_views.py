@@ -7,6 +7,7 @@ from django.http import JsonResponse
 from functools import wraps
 from .models import className, User, ClassTeacher
 from .forms import ClassForm, ClassTeacherForm, AddStudentToClassForm
+from .decorators import student_required  # 导入学生权限装饰器
 import logging
 
 logger = logging.getLogger(__name__)
@@ -69,6 +70,21 @@ def admin_required(view_func):
         return view_func(request, *args, **kwargs)
     return _wrapped_view
 
+
+def student_required(view_func):
+    """
+    Ensure user is authenticated and is a student (user_attribute == 1)
+    """
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return redirect('login')
+        if request.user.user_attribute != 1:
+            messages.error(request, "只有学生可以执行此操作。")
+            return redirect('dashboard')  # Redirect to dashboard or appropriate page
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
+
 @login_required
 def my_class_list_view(request):
     """
@@ -99,23 +115,37 @@ def class_list_view(request):
     """
     Display list of all classes with pagination and search.
     """
-    query = request.GET.get('q', '')
+    # 获取所有班级
     classes = className.objects.all().order_by('-created_at')
-
-    if query:
+    
+    # 获取搜索参数
+    search_query = request.GET.get('q', '')
+    grade_filter = request.GET.get('grade', '')
+    
+    # 应用搜索
+    if search_query:
         classes = classes.filter(
-            Q(name__icontains=query) | 
-            Q(code__icontains=query) |
-            Q(grade__icontains=query)
+            Q(name__icontains=search_query) | 
+            Q(code__icontains=search_query) |
+            Q(grade__icontains=search_query)
         )
-
+    
+    # 应用年级筛选
+    if grade_filter:
+        classes = classes.filter(grade=grade_filter)
+    
+    # 获取所有可能的年级用于筛选选项
+    all_grades = className.objects.values_list('grade', flat=True).distinct().order_by('grade')
+    
     paginator = Paginator(classes, 10) # 10 classes per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
     return render(request, 'class_list.html', {
         'page_obj': page_obj,
-        'query': query
+        'search_query': search_query,
+        'current_grade': grade_filter,
+        'all_grades': all_grades,
     })
 
 @teacher_required
@@ -273,7 +303,7 @@ def class_remove_teacher_view(request, class_id, teacher_id):
     return redirect('class_detail_web', class_id=class_id)
 
 
-@login_required
+@student_required
 def class_join_by_code_view(request):
     """
     通过班级码加入班级（网页端）
@@ -281,11 +311,7 @@ def class_join_by_code_view(request):
     if request.method == 'POST':
         class_code = request.POST.get('class_code', '').strip().upper()
         
-        # 验证用户权限（只有学生可以加入班级）
-        if request.user.user_attribute != 1:
-            messages.error(request, '只有学生可以加入班级。')
-            return render(request, 'class_join_by_code.html')
-        
+        # 由于装饰器已经验证了权限，这里可以省略重复检查
         if not class_code:
             messages.error(request, '请输入班级码。')
             return render(request, 'class_join_by_code.html')
