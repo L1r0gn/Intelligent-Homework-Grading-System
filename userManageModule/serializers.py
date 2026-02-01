@@ -41,6 +41,11 @@ def serializeClassInfo(user_id):
             'created_by_name':c.created_by.wx_nickName,
             'created_at':c.created_at,
             'studentCount':c.members.count(),
+            'grade':c.grade,
+            'description':c.description,
+            'homeroom_teacher_name':c.homeroom_teacher.wx_nickName if c.homeroom_teacher else None,
+
+
         }
         for c in user.class_in.all()
     ]

@@ -679,6 +679,9 @@ def wx_get_question_by_id(request, question_id):
             'content': question.content.content,
             'problem_type': question.problem_type.name,
             'points': question.points,
+            'difficulty': question.get_difficulty_display(),
+            'answer': question.answer.content,
+            'analysis': question.answer.explanation,
             # 你可以根据需要添加更多字段
         }
         return JsonResponse({'success': True, 'question': data})

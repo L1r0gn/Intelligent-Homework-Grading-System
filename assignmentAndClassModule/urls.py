@@ -12,4 +12,5 @@ urlpatterns = [
     path('wx/teacher_get_assignments_detail/<int:class_id>/<int:assignment_id>/',assignmentAndClassModule.views.teacher_get_assignments_detail,name='teacher_get_assignments_detail'),
     path('wx/teacher_get_students_assignments_list/<int:class_id>/<int:assignment_id>/',assignmentAndClassModule.views.teacher_get_students_assignments_list,name='teacher_get_students_assignments_list'),
     path('wx/update_assignment/<int:assignment_id>/', assignmentAndClassModule.views.update_assignment, name='update_assignment'),
+    path('wx/batch_push_assignments/', assignmentAndClassModule.views.batch_push_assignments, name='batch_push_assignments'),
 ]

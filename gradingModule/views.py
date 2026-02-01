@@ -316,7 +316,10 @@ def getASubmission(request, submission_id):
             "status": submission.status,
             "score": submission.score,
             "feedback": submission.feedback,
-            "justification": submission.justification
+            "justification": submission.justification,
+            "choose_answer": submission.choose_answer,
+            "submitted_text": submission.submitted_text,
+            "problem_type": submission.problem.problem_type.name,
         }
         # 返回JSON格式的数据
         return JsonResponse(data)

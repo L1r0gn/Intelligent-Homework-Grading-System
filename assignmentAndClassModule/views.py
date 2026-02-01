@@ -231,14 +231,19 @@ def student_assignments(request):
             'deadline': assignment.deadline.strftime('%Y-%m-%d %H:%M') if assignment.deadline else None,
             'problem_id': assignment.problem.id if assignment.problem else None,
             'problem_title': assignment.problem.title if assignment.problem else '传统作业',
-            'status': assignment_status,
             'score': assignmentStatusOfThisAssignment.submission.score if assignmentStatusOfThisAssignment.submission else None,
+            'student_count': assignment.assignmentstatus_set.count(),
+            'submit_count': assignment.assignmentstatus_set.filter(submission__isnull=False).count(),
+            'status': assignment_status,
             'status_text': {
                 'PENDING': '待完成',
+                'GRADING': '批改中',
                 'SUBMITTED': '已提交',
                 'GRADED': '已批改',
+                'ACCEPTED': '答案正确',
                 'WRONG_ANSWER': '答案错误',
-                'ACCEPTED': '答案正确',  # 修正拼写 ACCEPT -> ACCEPTED
+                'COMPILE_ERROR': '编译错误',
+                'RUNTIME_ERROR': '运行错误'
             }.get(assignment_status, '未知'),
             'submitted_at': submitted_at,
         })
@@ -346,29 +351,33 @@ def get_student_homework_detail(request, assignment_id):
             - 失败 (HTTP 404 NOT FOUND): 如果作业不存在。
             - 失败 (HTTP 403 FORBIDDEN): 如果学生不属于该作业对应的班级。
     """
+    # 获取学生
     student = request.user
+    # 获取作业
     try:
         assignment = Assignment.objects.select_related(
             'teacher', 'target_class', 'problem', 'problem__problem_type'
         ).get(id=assignment_id)
     except Assignment.DoesNotExist:
         return JsonResponse({'success': False, 'error': '作业不存在'}, status=404)
-
+    # 判断学生是否属于该作业对应的班级
     if not student.class_in.filter(id=assignment.target_class.id).exists():
         return JsonResponse({'success': False, 'error': '您不是该班级成员，无法查看此作业'}, status=403)
-
+    # 获取作业状态
     status_obj, created = AssignmentStatus.objects.get_or_create(
         assignment=assignment,
         student=student,
-        defaults={'status': 'pending'}
+        defaults={'status': 'PENDING'}
     )
 
+    # 获取题目状态
     problem = assignment.problem
+
     if status_obj.submission:
         status = status_obj.submission.status
         score = status_obj.submission.score
     else:
-        status = 'pending'
+        status = 'PENDING'
         score = 0
 
     data = {
@@ -650,3 +659,75 @@ def update_assignment(request, assignment_id):
     except Exception as e:
         logger.error(f"更新作业失败: {str(e)}")
         return Response({'success': False, 'message': f'更新失败: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@jwt_login_required
+@csrf_exempt
+@transaction.atomic
+def batch_push_assignments(request):
+    """
+    批量发布作业（从题库选题逻辑）。
+    """
+    teacher = request.user
+    data = request.data
+
+    class_id = data.get('class_id')
+    deadline = data.get('deadline')
+    problems = data.get('problems')
+    title_prefix = data.get('title_prefix')
+
+    if not problems:
+        return Response({'success': False, 'error': '未选择任何题目'}, status=400)
+
+    try:
+        # 验证班级
+        target_class = className.objects.get(id=class_id)
+        students = target_class.members.all()
+        created_count = 0
+
+        for p_item in problems:
+            problem_id = p_item.get('id')
+            if not problem_id:
+                continue
+
+            # 获取题库中已有的题目
+            try:
+                problem_obj = Problem.objects.get(id=problem_id)
+            except Problem.DoesNotExist:
+                logger.error(f"题目不存在: {problem_id}")
+                return Response({'success': False, 'error': f'题目不存在: {problem_id}'}, status=400)
+
+            # 创建作业
+            assignment = Assignment.objects.create(
+                teacher=teacher,
+                target_class=target_class,
+                title=f"{title_prefix} - {problem_obj.title or '题目'}",
+                description=p_item.get('description') or problem_obj.title,
+                deadline=deadline,
+                problem=problem_obj  # 核心：关联已有题目
+            )
+
+            # --- 为该班级所有学生创建 AssignmentStatus ---
+            status_list = []
+            for student in students:
+                status_list.append(
+                    AssignmentStatus(
+                        assignment=assignment,
+                        student=student
+                    )
+                )
+            AssignmentStatus.objects.bulk_create(status_list)  # 批量创建，效率更高
+            created_count += 1
+
+        return Response({
+            'success': True,
+            'message': f'成功发布 {created_count} 个作业',
+            'count': created_count
+        })
+
+    except className.DoesNotExist:
+        return Response({'success': False, 'error': '目标班级不存在'}, status=400)
+    except Exception as e:
+        logger.error(f"批量发布失败: {str(e)}")
+        return Response({'success': False, 'error': f'发布失败: {str(e)}'}, status=500)
