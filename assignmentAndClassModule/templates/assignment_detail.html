@@ -1,0 +1,199 @@
+{% extends 'backend_sys_base_page.html' %}
+{% load static %}
+
+{% block title %}作业详情 - {{ assignment.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- 顶部导航与操作 -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'assignment_list' %}">作业管理</a></li>
+                <li class="breadcrumb-item active" aria-current="page">作业详情</li>
+            </ol>
+        </nav>
+        <div>
+            <a href="{% url 'assignment_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i>返回列表
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- 左侧：作业基本信息 -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>基本信息</h5>
+                </div>
+                <div class="card-body">
+                    <h4 class="card-title">{{ assignment.title }}</h4>
+                    <p class="text-muted mb-3">ID: {{ assignment.id }}</p>
+
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-chalkboard me-2 text-primary"></i>目标班级</span>
+                            <span class="fw-bold">{{ assignment.target_class.name }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-user-tie me-2 text-success"></i>发布教师</span>
+                            <span>{{ assignment.teacher.wx_nickName|default:assignment.teacher.username }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-clock me-2 text-warning"></i>截止时间</span>
+                            <span>{{ assignment.deadline|default:"无" }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-calendar-alt me-2 text-info"></i>创建时间</span>
+                            <span>{{ assignment.created_at|date:"Y-m-d H:i" }}</span>
+                        </li>
+{#                        <li class="list-group-item d-flex justify-content-between align-items-center">#}
+{#                            <span><i class="fas fa-flag me-2 text-danger"></i>状态</span>#}
+{#                            {% if assignment.status == 'PUBLISHED' %}#}
+{#                            <span class="badge bg-success">已发布</span>#}
+{#                            {% elif assignment.status == 'DRAFT' %}#}
+{#                            <span class="badge bg-secondary">草稿</span>#}
+{#                            {% else %}#}
+{#                            <span class="badge bg-warning text-dark">{{ assignment.status }}</span>#}
+{#                            {% endif %}#}
+{#                        </li>#}
+                    </ul>
+
+                    <hr>
+                    <h6>作业描述：</h6>
+                    <div class="p-3 bg-light rounded">
+                        {{ assignment.description|default:"暂无描述"|linebreaks }}
+                    </div>
+
+                    {% if assignment.problem %}
+                    <hr>
+                    <h6>关联题目：</h6>
+                    <div class="card">
+                        <div class="card-body py-2">
+                            <p class="mb-1"><strong>题目ID:</strong> {{ assignment.problem.id }}</p>
+                            <p class="mb-1"><strong>标题:</strong> {{ assignment.problem.title }}</p>
+                            <p class="mb-0"><strong>类型:</strong> {{ assignment.problem.problem_type.name }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：提交统计与列表 -->
+        <div class="col-md-8 mb-4">
+            <!-- 统计卡片 -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card bg-light border-0 shadow-sm text-center py-3">
+                        <h3 class="text-primary">{{ total_students }}</h3>
+                        <span class="text-muted">总人数</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-light border-0 shadow-sm text-center py-3">
+                        <h3 class="text-success">{{ submitted_count }}</h3>
+                        <span class="text-muted">已提交</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-light border-0 shadow-sm text-center py-3">
+                        <h3 class="text-warning">{{ pending_count }}</h3>
+                        <span class="text-muted">未提交</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 学生状态列表 -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h5 class="mb-0"><i class="fas fa-users me-2"></i>学生提交情况</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>学生姓名</th>
+                                    <th>提交状态</th>
+                                    <th>提交时间</th>
+                                    <th>得分</th>
+                                    <th class="text-center">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for status in student_statuses %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-circle bg-primary text-white me-2"
+                                                style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px;">
+                                                {{ status.student.username|make_list|first|upper }}
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">{{status.student.wx_nickName|default:status.student.username }}</div>
+                                                <small class="text-muted">{{ status.student.username }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if status.submission %}
+                                        {% if status.submission.status == 'PENDING' %}
+                                        <span class="badge bg-secondary">待批改</span>
+                                        {% elif status.submission.status == 'GRADING' %}
+                                        <span class="badge bg-info">批改中</span>
+                                        {% elif status.submission.status == 'SUBMITTED' %}
+                                        <span class="badge bg-primary">已提交</span>
+                                        {% elif status.submission.status == 'GRADED' %}
+                                        <span class="badge bg-success">已批改</span>
+                                        {% elif status.submission.status == 'ACCEPTED' %}
+                                        <span class="badge bg-success">答案正确</span>
+                                        {% elif status.submission.status == 'WRONG_ANSWER' %}
+                                        <span class="badge bg-danger">答案错误</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ status.submission.status }}</span>
+                                        {% endif %}
+                                        {% else %}
+                                        <span class="badge bg-light text-dark border">未提交</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if status.submission %}
+                                        {{ status.submission.submitted_time|date:"Y-m-d H:i" }}
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if status.submission and status.submission.score is not None %}
+                                        <span class="fw-bold text-dark">{{ status.submission.score }}</span>
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if status.submission %}
+                                        <a href="{% url 'submission_detail' status.submission.id %}"
+                                            class="btn btn-sm btn-outline-primary">
+                                            查看提交
+                                        </a>
+                                        {% else %}
+                                        <span class="text-muted small">暂无操作</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">该班级暂无学生或未生成状态记录</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

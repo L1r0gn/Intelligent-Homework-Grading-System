@@ -1,0 +1,154 @@
+{% extends 'backend_sys_base_page.html' %}
+{% load static %}
+
+{% block title %}作业列表 - 智能作业批改系统{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fas fa-book me-2"></i>作业管理
+        </h5>
+        <span class="badge bg-primary rounded-pill">总计: {{ total_count|default:0 }} 个作业</span>
+    </div>
+    <div class="card-body">
+        <!-- 搜索筛选区 -->
+        <div class="p-3 mb-4 bg-light rounded border">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label for="search-input" class="form-label">搜索</label>
+                    <input type="text" class="form-control" id="search-input" name="q" value="{{ query }}"
+                        placeholder="搜索标题、班级或教师...">
+                </div>
+                <div class="col-md-2">
+                    <label for="status-select" class="form-label">状态</label>
+                    <select class="form-select" id="status-select" name="status">
+                        <option value="">全部</option>
+                        {% for s_val, s_label in status_choices %}
+                        <option value="{{ s_val }}" {% if status_filter == s_val %}selected{% endif %}>{{ s_label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-1"></i> 搜索</button>
+                </div>
+                <div class="col-md-2">
+                    <a href="{% url 'assignment_list' %}" class="btn btn-secondary w-100"><i
+                            class="fas fa-undo me-1"></i> 重置</a>
+                </div>
+            </form>
+        </div>
+
+        <!-- 列表区 -->
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0 align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>作业标题</th>
+                        <th>目标班级</th>
+                        <th>发布教师</th>
+                        <th>截止时间</th>
+                        <th>状态</th>
+                        <th>创建时间</th>
+                        <th class="text-center">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for assignment in page_obj %}
+                    <tr>
+                        <td>{{ assignment.id }}</td>
+                        <td>
+                            <a href="{% url 'assignment_detail' assignment.id %}" class="fw-bold text-decoration-none">
+                                {{ assignment.title }}
+                            </a>
+                        </td>
+                        <td><span class="badge bg-info text-dark">{{ assignment.target_class.name }}</span></td>
+                        <td>{{ assignment.teacher.wx_nickName|default:assignment.teacher.username }}</td>
+                        <td>
+                            {% if assignment.deadline %}
+                            {{ assignment.deadline|date:"Y-m-d H:i" }}
+                            {% else %}
+                            <span class="text-muted">无截止时间</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if assignment.status == 'PUBLISHED' %}
+                            <span class="badge bg-success">已发布</span>
+                            {% elif assignment.status == 'DRAFT' %}
+                            <span class="badge bg-secondary">草稿</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">{{ assignment.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ assignment.created_at|date:"Y-m-d H:i" }}</td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'assignment_detail' assignment.id %}" class="btn btn-info" title="查看详情">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <!-- 预留编辑和删除按钮位置 -->
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="fas fa-book-open fa-3x mb-3"></i>
+                            <p>暂无作业记录</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 分页区 -->
+        {% if page_obj.paginator.num_pages > 1 %}
+        <div class="card-footer bg-white border-0 py-3">
+            <div class="pagination-container">
+                <nav aria-label="Page navigation">
+                    <ul class="pagination mb-0">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item"><a class="page-link"
+                                href="?page=1&q={{ query }}&status={{ status_filter }}">&laquo; 首页</a></li>
+                        <li class="page-item"><a class="page-link"
+                                href="?page={{ page_obj.previous_page_number }}&q={{ query }}&status={{ status_filter }}">上一页</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled"><a class="page-link" href="#">&laquo; 首页</a></li>
+                        <li class="page-item disabled"><a class="page-link" href="#">上一页</a></li>
+                        {% endif %}
+
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#">第 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+                                页</a>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                        <li class="page-item"><a class="page-link"
+                                href="?page={{ page_obj.next_page_number }}&q={{ query }}&status={{ status_filter }}">下一页</a>
+                        </li>
+                        <li class="page-item"><a class="page-link"
+                                href="?page={{ page_obj.paginator.num_pages }}&q={{ query }}&status={{ status_filter }}">末页
+                                &raquo;</a></li>
+                        {% else %}
+                        <li class="page-item disabled"><a class="page-link" href="#">下一页</a></li>
+                        <li class="page-item disabled"><a class="page-link" href="#">末页 &raquo;</a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                <form class="jump-page-form" method="GET" action="">
+                    <input type="hidden" name="q" value="{{ query }}">
+                    <input type="hidden" name="status" value="{{ status_filter }}">
+                    <input type="number" name="page" class="jump-page-input" min="1"
+                        max="{{ page_obj.paginator.num_pages }}" placeholder="页码" required>
+                    <button class="btn-go-simple" type="submit">跳转</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
