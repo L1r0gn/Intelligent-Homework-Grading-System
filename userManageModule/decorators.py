@@ -5,6 +5,9 @@ from django.contrib import messages
 from django.shortcuts import redirect
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework_simplejwt.exceptions import TokenError
+import logging
+
+logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
@@ -93,5 +96,32 @@ def student_required(view_func):
         if request.user.user_attribute != 1:
             messages.error(request, "只有学生可以执行此操作。")
             return redirect('dashboard')  # Redirect to dashboard or appropriate page
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
+
+def admin_required(view_func):
+    """
+    一个装饰器，用于限制只有管理员才能访问特定的视图。
+
+    该装饰器检查当前登录的用户是否经过身份验证，以及其 `user_attribute` 是否
+    大于等于3。如果用户未登录，将被重定向到登录页面。如果用户权限不足，
+    将显示一条错误消息并重定向到问题列表页面。
+    """
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        # 逻辑1: 检查用户是否已登录
+        if not request.user.is_authenticated:
+            # 如果未登录，重定向到登录页面
+            return redirect('login')
+        
+        # 逻辑2: 检查用户权限级别
+        # 规定 user_attribute >= 3 的用户为管理员
+        if request.user.user_attribute < 3:
+            logger.info(f'{request.user.username} 没有权限访问该页面')
+            messages.error(request, "您没有权限访问该页面。")
+            # 权限不足，重定向到非管理员区域，例如问题列表
+            return redirect('question_list')
+            
+        # 逻辑3: 如果权限验证通过，则执行原始视图函数
         return view_func(request, *args, **kwargs)
     return _wrapped_view

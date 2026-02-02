@@ -160,12 +160,6 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNavDropdown">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'submission_list' %}active{% endif %}" href="{% url 'submission_list' %}">
-                            <i class="fas fa-file-alt me-1"></i>提交记录
-                        </a>
-                    </li>
-
                     <!-- === 修改开始：将原来的题目管理改为下拉菜单 === -->
                     <li class="nav-item dropdown">
                         <!-- 判断当前 URL 是否包含 question 或 knowledge，以此来高亮父级菜单 -->
@@ -233,6 +227,33 @@
                                     </a>
                                 </li>
                             {% endif %}
+                        </ul>
+                    </li>
+                    <!-- === 修改结束 === -->
+
+                    <!-- === 修改开始：将提交管理改为下拉菜单，包含提交记录和作业管理 === -->
+                    <li class="nav-item dropdown">
+                        <!-- 判断当前 URL 是否包含 submission 或 assignment，以此来高亮父级菜单 -->
+                        <a class="nav-link dropdown-toggle {% if 'submission' in request.resolver_match.url_name or 'assignment' in request.resolver_match.url_name %}active{% endif %}"
+                           href="#"
+                           id="gradingDropdown"
+                           role="button"
+                           data-bs-toggle="dropdown"
+                           aria-expanded="false">
+                           <i class="fas fa-tasks me-1"></i>提交管理
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="gradingDropdown">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'submission_list' %}">
+                                    <i class="fas fa-list-ul me-2"></i>提交记录管理
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'assignment_list' %}">
+                                    <i class="fas fa-book me-2"></i>作业列表管理
+                                </a>
+                            </li>
                         </ul>
                     </li>
                     <!-- === 修改结束 === -->

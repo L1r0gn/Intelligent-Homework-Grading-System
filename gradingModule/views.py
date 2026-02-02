@@ -372,3 +372,48 @@ def submission_batch_action(request):
             messages.error(request, f"批量操作失败: {str(e)}")
     
     return redirect('submission_list')
+
+def getSubmissionsByAssignmentId(request, assignment_id):
+    try:
+        # 根据assignment_id获取相关的提交记录
+        # 正确的方法是通过AssignmentStatus表连接Assignment和Submission
+        from assignmentAndClassModule.models import AssignmentStatus, Assignment
+        
+        # 获取所有与该作业相关的AssignmentStatus记录
+        assignment_statuses = AssignmentStatus.objects.filter(assignment_id=assignment_id).select_related('submission')
+        
+        # 提取相关的提交记录
+        data = []
+        for assignment_status in assignment_statuses:
+            submission = assignment_status.submission
+            if submission:  # 确保submission存在
+                if submission.submitted_image:
+                    image_url = request.build_absolute_uri(submission.submitted_image.url)
+                else:
+                    image_url = None
+                data.append({
+                    "record_id": submission.id,
+                    "problem_title": submission.problem.title,
+                    "submitted_time": submission.submitted_time.strftime("%Y-%m-%d %H:%M:%S"),
+                    "submitted_image": image_url,
+                    "status": submission.status,
+                    "score": submission.score,
+                    "feedback": submission.feedback,
+                    "justification": submission.justification,
+                    "choose_answer": submission.choose_answer,
+                    "submitted_text": submission.submitted_text,
+                    "problem_type": submission.problem.problem_type.name,
+                    "student_name": submission.student.wx_nickName or submission.student.username,  # 添加学生姓名
+                })
+        
+        # 返回JSON格式的数据
+        return JsonResponse(data, safe=False)
+    # 如果提交记录不存在，返回错误信息
+    except Assignment.DoesNotExist:
+        return JsonResponse({"error": "Assignment not found"}, status=404)
+    except AssignmentStatus.DoesNotExist:
+        return JsonResponse({"error": "No submissions found for this assignment"}, status=404)
+    # 处理异常
+    except Exception as e:
+        logger.error(f"Error in getSubmissionsByAssignmentId: {str(e)}")
+        return JsonResponse({"error": "Internal Server Error"}, status=500)

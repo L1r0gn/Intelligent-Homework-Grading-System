@@ -10,4 +10,5 @@ urlpatterns = [
     path('wx/submissions/',views.showMySubmissions,name='showMySubmissions'),
     path('wx/submissions/<int:submission_id>/', views.getASubmission, name='get_a_submission'),
     path('submissions/batch-action/', views.submission_batch_action, name='submission_batch_action'),
+    path('wx/submissions/assignment_id=<int:assignment_id>/', views.getSubmissionsByAssignmentId, name='get_submissions_by_assignment_id'),
 ]

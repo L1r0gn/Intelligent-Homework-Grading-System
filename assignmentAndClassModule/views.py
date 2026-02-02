@@ -7,17 +7,102 @@ from django.utils import timezone
 from gradingModule.models import Submission
 from gradingModule.tasks import process_and_grade_submission
 from gradingModule.views import logger
-# === 修改点 1：确保导入 KnowledgePoint ===
+from rest_framework.response import Response
+from rest_framework import status
 from questionManageModule.models import (
     ProblemType, Subject, ProblemTag,
     Problem, ProblemContent, Answer, KnowledgePoint
 )
 from rest_framework import status
-from rest_framework.response import Response
+from django.shortcuts import render, get_object_or_404, redirect
+from django.core.paginator import Paginator
+from django.contrib import messages
+from django.db.models import Avg, Count, Q
+from userManageModule.decorators import jwt_login_required, admin_required
 
-from userManageModule.decorators import jwt_login_required
 from .models import Assignment, className, AssignmentStatus
 
+@admin_required
+def assignment_list_web(request):
+    """
+    后台管理：作业列表视图
+    """
+    assignments = Assignment.objects.all().select_related('teacher', 'target_class', 'problem').order_by('-created_at')
+
+    # 筛选逻辑
+    search_query = request.GET.get('search_query', '').strip()
+    class_filter = request.GET.get('class_filter', '').strip()
+    teacher_filter = request.GET.get('teacher_filter', '').strip()
+    status_filter = request.GET.get('status_filter', '').strip()
+
+    if search_query:
+        assignments = assignments.filter(title__icontains=search_query)
+    
+    if class_filter:
+        assignments = assignments.filter(target_class__name__icontains=class_filter)
+        
+    if teacher_filter:
+        assignments = assignments.filter(
+            Q(teacher__username__icontains=teacher_filter) | 
+            Q(teacher__wx_nickName__icontains=teacher_filter)
+        )
+        
+    if status_filter:
+        assignments = assignments.filter(status=status_filter)
+
+    # 分页
+    paginator = Paginator(assignments, 20)  # 每页20条
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'search_query': search_query,
+        'class_filter': class_filter,
+        'teacher_filter': teacher_filter,
+        'status_filter': status_filter,
+    }
+    return render(request, 'assignment_list.html', context)
+
+@admin_required
+def assignment_detail_web(request, assignment_id):
+    """
+    后台管理：作业详情视图
+    """
+    assignment = get_object_or_404(Assignment, id=assignment_id)
+    
+    # 获取该作业的所有学生状态
+    student_statuses = AssignmentStatus.objects.filter(assignment=assignment).select_related('student', 'submission')
+    
+    # 统计数据
+    total_students = student_statuses.count()
+    submitted_count = student_statuses.filter(submission__isnull=False).count()
+    graded_count = student_statuses.filter(submission__status='GRADED').count() # 假设 'GRADED' 是已批改状态
+    
+    # 计算平均分（仅计算已提交且有分数的）
+    average_score_data = student_statuses.filter(submission__score__isnull=False).aggregate(Avg('submission__score'))
+    average_score = average_score_data['submission__score__avg']
+    if average_score is not None:
+        average_score = round(average_score, 1)
+    else:
+        average_score = 0
+
+    # 提交率
+    submission_rate = 0
+    if total_students > 0:
+        submission_rate = round((submitted_count / total_students) * 100, 1)
+
+    context = {
+        'assignment': assignment,
+        'student_statuses': student_statuses,
+        'total_students': total_students,
+        'submitted_count': submitted_count,
+        'pending_count': total_students - submitted_count,
+        'graded_count': graded_count,
+        'average_score': average_score,
+        'submission_rate': submission_rate,
+    }
+    return render(request, 'assignment_detail.html', context)
 
 @api_view(['POST'])
 @jwt_login_required
