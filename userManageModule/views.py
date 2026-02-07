@@ -236,7 +236,7 @@ def wx_user_list(request, user_id):
     为微信小程序端提供指定用户的详细信息。
     """
     data = serializeUserInfo(user_id)
-    logger.info('发送用户数据：%s',data)
+    logger.info('发送%s(%s)用户数据到微信小程序端', data.get('username'), data.get('wx_nickName'))
     return JsonResponse({'data': data}, status=200)
 
 @admin_required

@@ -29,6 +29,7 @@ urlpatterns = [
     path('user/',include('userManageModule.urls')),
     path('grading/', include('gradingModule.urls')),
     path('assignment/', include('assignmentAndClassModule.urls')),
+    path('bkt/', include('BKTModule.urls')),  # BKT模块路由
     path('', core_views.dashboard, name='dashboard'), # Modified to point to dashboard
     path('register/',user_views.user_register,name='user_register'), # Moved register to /register/
     path('class/create/', user_views.create_class, name='create_class'),

@@ -32,6 +32,13 @@ def admin_required(view_func):
 @csrf_exempt
 @jwt_login_required
 def submissionprocess(request):
+    """
+    处理提交请求，包括异步处理和返回结果
+    Args:
+        request (HttpRequest): Django HTTP 请求对象
+    Returns:
+        JsonResponse: 包含提交信息的 JSON 响应
+    """
     if request.method == 'GET':
         # GET 请求逻辑保持不变
         user = request.user
@@ -56,6 +63,7 @@ def submissionprocess(request):
                 request.POST = json.loads(request.body)
             except json.JSONDecodeError:
                 return HttpResponseBadRequest("JSON 解析错误")
+
         # 2. 从解析后的 data 字典中获取数据
         submitted_text = request.POST.get('submitted_text')
         problem_id = request.POST.get('questionId')
@@ -69,10 +77,12 @@ def submissionprocess(request):
         except Problem.DoesNotExist:
             return JsonResponse({'error': '指定的题目不存在'}, status=404)
 
-        user = User.objects.get(id=userId)
-        logger.info(f"用户 {user.wx_nickName}创建了新提交")
-        if not user:
+        try:
+            user = User.objects.get(id=userId)
+        except User.DoesNotExist:
             return HttpResponseBadRequest({'error':'用户不存在'},status=405)
+        logger.info(f"用户 {user.wx_nickName}创建了新提交")
+
         # 创建新的 submission 实例，保存图片
         submission = Submission.objects.create(
             student=user,
@@ -82,11 +92,15 @@ def submissionprocess(request):
             submitted_image=submitted_image,
             status='PENDING', # 初始状态为判题中
         )
+
+        ### test
         submissions = Submission.objects.filter(student=user).order_by('-submitted_time')
         logger.info("用户 %s 当前共有 %d 条提交记录", user.wx_nickName, submissions.count())
-        # 触发异步任务！使用 .delay() 方法，任务会被发送到 Celery 队列中等待执行
+        ### end test
 
+        # 触发异步任务！使用 .delay() 方法，任务会被发送到 Celery 队列中等待执行
         process_and_grade_submission.delay(submission_id=submission.id)
+
         # 立即返回响应给用户
         response_data = {
             'id': submission.id,

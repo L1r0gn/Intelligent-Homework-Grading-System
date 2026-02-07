@@ -19,10 +19,30 @@ def search_students_api(request):
     GET 参数: q (关键词)
     返回: {results: [{id: 1, text: "Name (username)"}, ...]}
     """
+
+    # 学生查询情况
+    if request.user.user_attribute == 1:
+        student = request.user
+        display_name = student.wx_nickName if student.wx_nickName else student.username
+        text = f"{display_name} ({student.username})"
+        if student.phone:
+            text += f" - {student.phone}"
+        return JsonResponse({'results': [{'id': student.id, 'text': text}]})
+
+    # 管理员查询情况
     query = request.GET.get('q', '').strip()
     if not query:
-        return JsonResponse({'results': []})
-    
+        students = User.objects.filter(user_attribute=1)
+        results = []
+        for s in students:
+            display_name = s.wx_nickName if s.wx_nickName else s.username
+            text = f"{display_name} ({s.username})"
+            if s.phone:
+                text += f" - {s.phone}"
+
+            results.append({'id': s.id, 'text': text})
+        return JsonResponse({'results': results})
+
     # 仅搜索学生 (user_attribute=1)
     students = User.objects.filter(user_attribute=1).filter(
         Q(username__icontains=query) | 
@@ -90,6 +110,20 @@ def my_class_list_view(request):
     """
     显示当前用户所在的班级列表
     """
+
+    # 需要json数据时
+    # headers: {'Accept': 'application/json'}
+    if request.headers.get('Accept') == 'application/json':
+        # 仅返回班级id和名称
+        my_classes = className.objects.none()
+        if request.user.user_attribute == 2:
+            my_classes = request.user.class_in.all().order_by('-created_at')
+        elif request.user.user_attribute == 3 or request.user.user_attribute == 4:
+            my_classes = className.objects.all().order_by('-created_at')
+        class_list = [{'id': c.id, 'name': c.name} for c in my_classes]
+        return JsonResponse({'results': class_list})
+
+    # 其他情况返回HTML页面
     query = request.GET.get('q', '')
     # 获取当前用户所在的班级
     my_classes = request.user.class_in.all().order_by('-created_at')

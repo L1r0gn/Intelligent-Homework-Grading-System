@@ -15,6 +15,14 @@ except ImportError:
     logging.getLogger(__name__).warning(
         "Warning: MasteryService not found. Knowledge mastery features will be disabled.")
 
+# === 导入BKT服务 ===
+try:
+    from BKTModule.services import BKTService
+except ImportError:
+    BKTService = None
+    logging.getLogger(__name__).warning(
+        "Warning: BKTService not found. BKT knowledge tracking features will be disabled.")
+
 logger = logging.getLogger(__name__)
 
 
@@ -198,6 +206,21 @@ def process_and_grade_submission(assignment_status_id=None, submission_id=None):
         # === 核心：更新知识点掌握度 ===
         if MasteryService:
             MasteryService.update_mastery_after_grading(submission)
+        
+        # === BKT：更新贝叶斯知识追踪 ===
+        if BKTService and problem.knowledge_points.exists():
+            is_correct = (submission.status == 'ACCEPTED')
+            for kp in problem.knowledge_points.all():
+                try:
+                    BKTService.process_learning_event(
+                        student_id=submission.student.id,
+                        knowledge_point_id=kp.id,
+                        is_correct=is_correct,
+                        submission_id=submission.id
+                    )
+                    logger.info(f"✅ BKT更新成功: 学生{submission.student.id}, 知识点{kp.id}")
+                except Exception as e:
+                    logger.error(f"❌ BKT处理失败: {e}")
         return
 
     # B. 主观题 (AI 图片分析)
@@ -235,6 +258,22 @@ def process_and_grade_submission(assignment_status_id=None, submission_id=None):
         # === 核心：更新知识点掌握度 ===
         if MasteryService:
             MasteryService.update_mastery_after_grading(submission)
+        
+        # === BKT：更新贝叶斯知识追踪 ===
+        if BKTService and problem.knowledge_points.exists():
+            # AI评分的题目，根据得分率判断是否正确（得分率60%以上视为正确）
+            is_correct = (submission.score / problem.points) >= 0.6 if problem.points > 0 else False
+            for kp in problem.knowledge_points.all():
+                try:
+                    BKTService.process_learning_event(
+                        student_id=submission.student.id,
+                        knowledge_point_id=kp.id,
+                        is_correct=is_correct,
+                        submission_id=submission.id
+                    )
+                    logger.info(f"✅ BKT更新成功: 学生{submission.student.id}, 知识点{kp.id}")
+                except Exception as e:
+                    logger.error(f"❌ BKT处理失败: {e}")
 
     except (json.JSONDecodeError, KeyError) as e:
         submission.status = 'RUNTIME_ERROR'

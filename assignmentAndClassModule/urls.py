@@ -8,7 +8,6 @@ urlpatterns = [
     path('wx/show_assignment/', assignmentAndClassModule.views.student_assignments, name='student_assignments'),
     path('wx/get_student_homework_detail/<int:assignment_id>/',assignmentAndClassModule.views.get_student_homework_detail,name='get_student_homework_detail'),
     path('wx/teacher_get_assignments/<int:class_id>',assignmentAndClassModule.views.teacher_get_assignments,name='teacher_get_assignments'),
-    path('wx/homeworkGradingProcess/<int:assignment_id>/',assignmentAndClassModule.views.homeworkGradingProcess,name='homeworkGradingProcess'),
     path('wx/teacher_get_assignments_detail/<int:class_id>/<int:assignment_id>/',assignmentAndClassModule.views.teacher_get_assignments_detail,name='teacher_get_assignments_detail'),
     path('wx/teacher_get_students_assignments_list/<int:class_id>/<int:assignment_id>/',assignmentAndClassModule.views.teacher_get_students_assignments_list,name='teacher_get_students_assignments_list'),
     path('wx/update_assignment/<int:assignment_id>/', assignmentAndClassModule.views.update_assignment, name='update_assignment'),

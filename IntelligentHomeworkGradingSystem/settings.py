@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'questionManageModule.apps.QuestionmanagemoduleConfig',
     'gradingModule.apps.GradingmoduleConfig',
     'assignmentAndClassModule.apps.AssignmentandclassmoduleConfig',
+    'BKTModule.apps.BktmoduleConfig',
     'rest_framework',
     'rest_framework_simplejwt',
 ]

@@ -1,0 +1,1170 @@
+{% extends 'backend_sys_base_page.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- 页面标题 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-0">
+                <i class="fas fa-users-class text-primary me-2"></i>班级BKT分析
+            </h2>
+            <p class="text-muted">基于贝叶斯知识追踪的班级整体学习情况分析</p>
+        </div>
+    </div>
+
+    <!-- 班级选择和控制面板 -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-chalkboard me-2"></i>班级选择</h5>
+                    <button class="btn btn-light btn-sm" id="refreshAnalyticsBtn">
+                        <i class="fas fa-sync-alt me-1"></i>刷新分析
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="classSelect" class="form-label">选择班级</label>
+                            <select class="form-select" id="classSelect">
+                                <option value="">请选择班级...</option>
+                                <!-- 动态填充班级列表 -->
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="subjectSelect" class="form-label">科目筛选</label>
+                            <select class="form-select" id="subjectSelect">
+                                <option value="">所有科目</option>
+                                <!-- 动态填充科目列表 -->
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>教学建议</h5>
+                </div>
+                <div class="card-body">
+                    <div id="teachingSuggestions">
+                        <p class="text-muted">请选择班级查看教学建议</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主要分析区域 -->
+    <div class="row">
+        <!-- 左侧：班级整体分析 -->
+        <div class="col-lg-8">
+            <!-- 知识点掌握度热力图 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-fire me-2"></i>知识点掌握热度图</h5>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-light active" data-view="heatmap">热力图</button>
+                        <button class="btn btn-light" data-view="barchart">柱状图</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="knowledgeHeatmap" style="height: 400px;"></div>
+                </div>
+            </div>
+
+            <!-- 学生个体分析 -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-user-friends me-2"></i>学生个体分析</h5>
+                    <div>
+                        <button class="btn btn-outline-dark btn-sm me-2" id="sortByMastery">
+                            <i class="fas fa-sort-amount-down me-1"></i>按掌握度排序
+                        </button>
+                        <button class="btn btn-outline-dark btn-sm" id="exportClassReport">
+                            <i class="fas fa-download me-1"></i>导出报告
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="studentAnalysisTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>学生</th>
+                                    <th>平均掌握度</th>
+                                    <th>熟练知识点</th>
+                                    <th>薄弱知识点</th>
+                                    <th>学习活跃度</th>
+                                    <th>风险等级</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 动态填充数据 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：详细统计和监控 -->
+        <div class="col-lg-4">
+            <!-- 班级整体统计 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>班级统计</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center mb-3">
+                        <div class="col-6">
+                            <div class="bg-light p-2 rounded">
+                                <h4 class="text-primary mb-0" id="studentCount">0</h4>
+                                <small class="text-muted">学生总数</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="bg-light p-2 rounded">
+                                <h4 class="text-success mb-0" id="knowledgePointCount">0</h4>
+                                <small class="text-muted">知识点数</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">整体掌握度</label>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar bg-info" id="overallMasteryBar" style="width: 0%;">
+                                <span id="overallMasteryText">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">熟练率 (<i class="fas fa-check-circle text-success"></i>)</label>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar bg-success" id="proficiencyRateBar" style="width: 0%;">
+                                <span id="proficiencyRateText">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">风险学生比例 (<i class="fas fa-exclamation-triangle text-danger"></i>)</label>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar bg-danger" id="riskRateBar" style="width: 0%;">
+                                <span id="riskRateText">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 知识点详细分析 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-brain me-2"></i>知识点分析</h5>
+                </div>
+                <div class="card-body">
+                    <div id="knowledgePointDetails">
+                        <p class="text-muted">请选择班级查看知识点分析</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 学习趋势监控 -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>学习趋势</h5>
+                </div>
+                <div class="card-body">
+                    <div id="classLearningTrend" style="height: 200px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 学生详情模态框 -->
+    <div class="modal fade" id="studentDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">学生详细分析</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="studentDetailContent">
+                        <!-- 动态加载学生详情 -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ECharts JS库 -->
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+
+<!-- 自定义样式 -->
+<style>
+/* 自定义消息提示样式 */
+.custom-alert {
+    position: fixed;
+    right: 24px;
+    min-width: 320px;
+    max-width: 480px;
+    padding: 16px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    z-index: 9999;
+    opacity: 0;
+    transform: translateX(400px);
+    transition: all 0.3s ease-out;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.custom-alert.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.custom-alert-icon {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.custom-alert-message {
+    flex: 1;
+    word-break: break-word;
+}
+
+.custom-alert-success {
+    background-color: #d4edda;
+    border-left: 4px solid #28a745;
+    color: #155724;
+}
+
+.custom-alert-success .custom-alert-icon {
+    background-color: #28a745;
+    color: white;
+}
+
+.custom-alert-error {
+    background-color: #f8d7da;
+    border-left: 4px solid #dc3545;
+    color: #721c24;
+}
+
+.custom-alert-error .custom-alert-icon {
+    background-color: #dc3545;
+    color: white;
+}
+
+.custom-alert-warning {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+    color: #856404;
+}
+
+.custom-alert-warning .custom-alert-icon {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.custom-alert-info {
+    background-color: #d1ecf1;
+    border-left: 4px solid #17a2b8;
+    color: #0c5460;
+}
+
+.custom-alert-info .custom-alert-icon {
+    background-color: #17a2b8;
+    color: white;
+}
+
+@keyframes fadeOutUp {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(400px);
+    }
+}
+
+/* 优化表格样式 */
+#studentAnalysisTable tbody tr:hover {
+    background-color: #f8f9fa;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+/* 优化按钮组样式 */
+.btn-group-sm .btn {
+    transition: all 0.2s;
+}
+
+.btn-group-sm .btn.active {
+    transform: scale(1.05);
+}
+
+/* 加载动画 */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.fa-sync-alt.spinning {
+    animation: spin 1s linear infinite;
+}
+</style>
+
+<script>
+// 全局变量
+let currentClassId = null;
+let heatmapChart = null;
+let trendChart = null;
+let classAnalytics = null;
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+    loadClassList();
+    bindEvents();
+});
+
+// 初始化图表
+function initializeCharts() {
+    // 知识点热力图
+    const heatmapDom = document.getElementById('knowledgeHeatmap');
+    if (heatmapChart) {
+        heatmapChart.dispose();
+    }
+    heatmapChart = echarts.init(heatmapDom);
+    
+    // 学习趋势图
+    const trendDom = document.getElementById('classLearningTrend');
+    if (trendChart) {
+        trendChart.dispose();
+    }
+    trendChart = echarts.init(trendDom);
+    
+    // 设置初始空状态
+    heatmapChart.clear();
+    trendChart.clear();
+    heatmapChart.setOption(getEmptyHeatmapOption());
+    trendChart.setOption(getEmptyTrendOption());
+}
+
+// 获取空热力图配置
+function getEmptyHeatmapOption() {
+    return {
+        title: {
+            text: '请选择班级查看知识点掌握情况',
+            left: 'center',
+            top: 'center',
+            textStyle: {
+                color: '#666',
+                fontSize: 16
+            }
+        }
+    };
+}
+
+// 获取空趋势图配置
+function getEmptyTrendOption() {
+    return {
+        title: {
+            text: '暂无数据',
+            left: 'center',
+            top: 'center',
+            textStyle: {
+                color: '#666',
+                fontSize: 14
+            }
+        }
+    };
+}
+
+// 加载班级列表
+async function loadClassList() {
+    try {
+        // 访问我的班级列表-返回json
+        // headers带有json 头信息
+        console.log('访问我的班级列表中...');
+        const response = await fetch('/user/class/my/', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+            }
+        });
+        const data = await response.json();
+        console.log('班级列表获取成功:', data);
+        // 解析JSON获取班级信息
+        const select = document.getElementById('classSelect');
+        select.innerHTML = '<option value="">请选择班级...</option>';
+        data.results.forEach(classInfo => {
+            const option = document.createElement('option');
+            option.value = classInfo.id;
+            option.textContent = classInfo.name;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('加载班级列表失败:', error);
+        showMessage('加载班级列表失败', 'error');
+    }
+}
+
+// 获取CSRF Token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// 带CSRF Token的fetch请求
+async function fetchWithCSRF(url, options = {}) {
+    const csrftoken = getCookie('csrftoken');
+    const defaultOptions = {
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'Content-Type': 'application/json',
+        },
+        credentials: 'same-origin'
+    };
+    
+    const mergedOptions = {
+        ...defaultOptions,
+        ...options,
+        headers: {
+            ...defaultOptions.headers,
+            ...options.headers
+        }
+    };
+    
+    return fetch(url, mergedOptions);
+}
+
+// 绑定事件监听器
+function bindEvents() {
+    // 班级选择变化
+    document.getElementById('classSelect').addEventListener('change', function() {
+        const classId = this.value;
+        if (classId) {
+            currentClassId = classId;
+            initializeCharts();
+            loadClassAnalytics(classId);
+        } else {
+            resetCharts();
+        }
+    });
+    
+    // 科目筛选
+    document.getElementById('subjectSelect').addEventListener('click', function() {
+        if (classAnalytics) {
+            showMessage('科目筛选功能正在开发中...暂不可用', 'info');
+            // updateFilteredDisplay(this.value);
+        }
+    });
+    
+    // 刷新分析
+    document.getElementById('refreshAnalyticsBtn').addEventListener('click', function() {
+        if (currentClassId) {
+            const icon = this.querySelector('.fa-sync-alt');
+            icon.classList.add('spinning');
+            loadClassAnalytics(currentClassId).finally(() => {
+                icon.classList.remove('spinning');
+            });
+        } else {
+            showMessage('请先选择班级', 'warning');
+        }
+    });
+    
+    // 视图切换
+    document.querySelectorAll('[data-view]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            switchView(this.dataset.view);
+            // 更新按钮状态
+            document.querySelectorAll('[data-view]').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+    
+    // 排序按钮
+    document.getElementById('sortByMastery').addEventListener('click', function() {
+        sortStudentTable('mastery');
+    });
+    
+    // 导出报告
+    document.getElementById('exportClassReport').addEventListener('click', function() {
+        exportClassReport();
+    });
+}
+
+// 加载班级分析数据
+async function loadClassAnalytics(classId) {
+    try {
+        console.log('开始加载班级分析数据:', classId);
+        showMessage('正在加载班级分析数据...', 'info');
+        
+        const response = await fetchWithCSRF(`/bkt/class/${classId}/analytics/`, {
+            method: 'GET'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP错误! 状态: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('班级分析数据获取成功:', data);
+        
+        if (data.success) {
+            classAnalytics = data.data;
+            initializeCharts();
+            updateClassDisplay(data.data);
+            updateCharts(data.data);
+            updateTeachingSuggestions(data.data);
+            showMessage('班级分析数据加载成功', 'success');
+        } else {
+            showMessage('加载班级分析数据失败: ' + (data.error || '未知错误'), 'error');
+            resetDisplay();
+        }
+    } catch (error) {
+        console.error('加载班级分析失败:', error);
+        showMessage('加载班级分析失败: ' + error.message, 'error');
+        resetDisplay();
+    }
+}
+
+// 更新班级显示
+function updateClassDisplay(analytics) {
+    if (!analytics || analytics.length === 0) {
+        resetDisplay();
+        return;
+    }
+    
+    // 更新统计信息
+    const studentCount = [...new Set(analytics.map(item => item.student_id || 0))].length;
+    const knowledgePointCount = [...new Set(analytics.map(item => item.knowledge_point_id))].length;
+    
+    document.getElementById('studentCount').textContent = studentCount || 0;
+    document.getElementById('knowledgePointCount').textContent = knowledgePointCount;
+    
+    // 计算整体统计数据
+    const avgMastery = analytics.reduce((sum, item) => sum + item.average_mastery, 0) / analytics.length;
+    const proficiencyRate = analytics.reduce((sum, item) => sum + item.proficiency_rate, 0) / analytics.length;
+    
+    // 更新进度条
+    updateProgressBar('overallMasteryBar', 'overallMasteryText', avgMastery * 100, getProgressColor(avgMastery));
+    updateProgressBar('proficiencyRateBar', 'proficiencyRateText', proficiencyRate * 100, 'bg-success');
+    
+    // 计算风险学生比例（掌握度<0.5的学生比例）
+    const riskRate = calculateRiskRate(analytics);
+    updateProgressBar('riskRateBar', 'riskRateText', riskRate * 100, 'bg-danger');
+    
+    // 更新学生表格
+    updateStudentTable(analytics);
+    
+    // 更新知识点详情
+    updateKnowledgePointDetails(analytics);
+}
+
+// 更新进度条
+function updateProgressBar(barId, textId, percentage, bgColorClass) {
+    const bar = document.getElementById(barId);
+    const text = document.getElementById(textId);
+    
+    bar.style.width = percentage + '%';
+    bar.className = `progress-bar ${bgColorClass}`;
+    text.textContent = Math.round(percentage) + '%';
+}
+
+// 获取进度条颜色
+function getProgressColor(value) {
+    if (value >= 0.8) return 'bg-success';
+    if (value >= 0.6) return 'bg-warning';
+    return 'bg-danger';
+}
+
+// 计算风险率
+function calculateRiskRate(analytics) {
+    // 这里需要更复杂的逻辑来计算真正的风险学生比例
+    // 简化版本：掌握度低于0.5的知识点比例
+    const lowMasteryItems = analytics.filter(item => item.average_mastery < 0.5);
+    return lowMasteryItems.length / analytics.length;
+}
+
+// 更新学生表格
+function updateStudentTable(analytics) {
+    const tbody = document.querySelector('#studentAnalysisTable tbody');
+    
+    if (!analytics || analytics.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">暂无学生数据</td></tr>';
+        return;
+    }
+    
+    // 按学生分组统计
+    const studentStats = {};
+    
+    analytics.forEach(item => {
+        const studentId = item.student_id || 0;
+        if (!studentStats[studentId]) {
+            studentStats[studentId] = {
+                id: studentId,
+                name: item.student_name || `学生${studentId}`,
+                mastery_values: [],
+                knowledge_points: []
+            };
+        }
+        
+        studentStats[studentId].mastery_values.push(item.average_mastery || 0);
+        studentStats[studentId].knowledge_points.push({
+            name: item.knowledge_point_name || '未知知识点',
+            mastery: item.average_mastery || 0,
+            proficiency: item.proficiency_rate || 0
+        });
+    });
+    
+    // 计算每个学生的统计数据
+    Object.values(studentStats).forEach(student => {
+        student.avg_mastery = student.mastery_values.length > 0 
+            ? student.mastery_values.reduce((a, b) => a + b, 0) / student.mastery_values.length 
+            : 0;
+        student.mastered_count = student.knowledge_points.filter(kp => kp.mastery >= 0.8).length;
+        student.weak_count = student.knowledge_points.filter(kp => kp.mastery < 0.5).length;
+        student.activity_level = student.knowledge_points.length; // 简化表示
+        student.risk_level = getRiskLevel(student.avg_mastery);
+    });
+    
+    console.log('学生统计数据:', studentStats);
+    
+    // 更新表格
+    const studentList = Object.values(studentStats);
+    
+    if (studentList.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">暂无学生数据</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = '';
+    
+    studentList.forEach(student => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${student.name}</td>
+            <td>
+                <div class="progress" style="height: 20px;">
+                    <div class="progress-bar ${getMasteryBarClass(student.avg_mastery)}" 
+                         style="width: ${student.avg_mastery * 100}%;">
+                        ${(student.avg_mastery * 100).toFixed(1)}%
+                    </div>
+                </div>
+            </td>
+            <td><span class="badge bg-success">${student.mastered_count}</span></td>
+            <td><span class="badge bg-danger">${student.weak_count}</span></td>
+            <td><span class="badge bg-info">${student.activity_level}</span></td>
+            <td><span class="badge ${getRiskBadgeClass(student.risk_level)}">${student.risk_level}</span></td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="showStudentDetail(${student.id})">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// 获取掌握度进度条样式
+function getMasteryBarClass(avgMastery) {
+    if (avgMastery >= 0.8) return 'bg-success';
+    if (avgMastery >= 0.6) return 'bg-warning';
+    return 'bg-danger';
+}
+
+// 获取风险等级
+function getRiskLevel(avgMastery) {
+    if (avgMastery >= 0.8) return '低风险';
+    if (avgMastery >= 0.6) return '中等风险';
+    return '高风险';
+}
+
+// 获取风险徽章样式
+function getRiskBadgeClass(riskLevel) {
+    switch(riskLevel) {
+        case '低风险': return 'bg-success';
+        case '中等风险': return 'bg-warning';
+        case '高风险': return 'bg-danger';
+        default: return 'bg-secondary';
+    }
+}
+
+// 更新知识点详情
+function updateKnowledgePointDetails(analytics) {
+    const container = document.getElementById('knowledgePointDetails');
+    
+    if (!analytics || analytics.length === 0) {
+        container.innerHTML = '<p class="text-muted">请选择班级查看知识点分析</p>';
+        return;
+    }
+    
+    // 按知识点分组
+    const kpStats = {};
+    analytics.forEach(item => {
+        const kpId = item.knowledge_point_id;
+        if (!kpId) return;
+        
+        if (!kpStats[kpId]) {
+            kpStats[kpId] = {
+                name: item.knowledge_point_name || `知识点${kpId}`,
+                average_mastery: 0,
+                proficiency_rate: 0,
+                count: 0
+            };
+        }
+        kpStats[kpId].average_mastery += item.average_mastery || 0;
+        kpStats[kpId].proficiency_rate += item.proficiency_rate || 0;
+        kpStats[kpId].count++;
+    });
+    
+    const kpList = Object.values(kpStats);
+    if (kpList.length === 0) {
+        container.innerHTML = '<p class="text-muted">暂无知识点数据</p>';
+        return;
+    }
+    
+    // 计算平均值
+    kpList.forEach(kp => {
+        kp.average_mastery = kp.count > 0 ? kp.average_mastery / kp.count : 0;
+        kp.proficiency_rate = kp.count > 0 ? kp.proficiency_rate / kp.count : 0;
+    });
+    
+    // 按掌握度排序
+    const sortedKPs = kpList.sort((a, b) => b.average_mastery - a.average_mastery);
+    
+    // 显示前5个知识点
+    const topKPs = sortedKPs.slice(0, 5);
+    
+    container.innerHTML = topKPs.map(kp => `
+        <div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <strong>${kp.name}</strong>
+                <span class="badge ${kp.average_mastery >= 0.8 ? 'bg-success' : kp.average_mastery >= 0.6 ? 'bg-warning' : 'bg-danger'}">
+                    ${(kp.average_mastery * 100).toFixed(1)}%
+                </span>
+            </div>
+            <div class="progress" style="height: 10px;">
+                <div class="progress-bar bg-info" style="width: ${(kp.proficiency_rate * 100)}%"></div>
+            </div>
+            <small class="text-muted">熟练率: ${(kp.proficiency_rate * 100).toFixed(1)}%</small>
+        </div>
+    `).join('');
+}
+
+// 更新图表
+function updateCharts(analytics) {
+    updateHeatmapChart(analytics);
+    updateTrendChart(analytics);
+}
+
+// 更新热力图
+function updateHeatmapChart(analytics) {
+    if (!analytics || analytics.length === 0) {
+        console.warn('没有分析数据，显示空热力图');
+        heatmapChart.clear();
+        heatmapChart.setOption(getEmptyHeatmapOption());
+        return;
+    }
+    
+    // 准备热力图数据
+    const xAxisData = [...new Set(analytics.map(item => item.knowledge_point_name))].filter(Boolean);
+    const yAxisData = [...new Set(analytics.map(item => item.student_name || `学生${item.student_id || 0}`))].filter(Boolean);
+    
+    // 检查数据有效性
+    if (xAxisData.length === 0 || yAxisData.length === 0) {
+        console.warn('知识点或学生数据为空');
+        heatmapChart.clear();
+        heatmapChart.setOption(getEmptyHeatmapOption());
+        return;
+    }
+    
+    const data = analytics.map(item => [
+        xAxisData.indexOf(item.knowledge_point_name),
+        yAxisData.indexOf(item.student_name || `学生${item.student_id || 0}`),
+        item.average_mastery
+    ]);
+    
+    console.log('热力图数据准备完成:', { xAxisData: xAxisData.length, yAxisData: yAxisData.length, dataPoints: data.length });
+    
+    const option = {
+        tooltip: {
+            position: 'top',
+            formatter: function(params) {
+                return `${yAxisData[params.value[1]]}<br/>${xAxisData[params.value[0]]}<br/>掌握度: ${(params.value[2] * 100).toFixed(1)}%`;
+            }
+        },
+        xAxis: {
+            type: 'category',
+            data: xAxisData,
+            splitArea: {
+                show: true
+            }
+        },
+        yAxis: {
+            type: 'category',
+            data: yAxisData,
+            splitArea: {
+                show: true
+            }
+        },
+        visualMap: {
+            min: 0,
+            max: 1,
+            calculable: true,
+            orient: 'horizontal',
+            left: 'center',
+            bottom: '5%'
+        },
+        series: [{
+            name: '掌握度',
+            type: 'heatmap',
+            data: data,
+            label: {
+                show: true,
+                formatter: function(params) {
+                    return (params.value[2] * 100).toFixed(0) + '%';
+                }
+            },
+            emphasis: {
+                itemStyle: {
+                    shadowBlur: 10,
+                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+                }
+            }
+        }]
+    };
+    
+    heatmapChart.clear();
+    heatmapChart.setOption(option);
+}
+
+// 更新趋势图
+function updateTrendChart(analytics) {
+    if (!analytics || analytics.length === 0) {
+        console.warn('没有分析数据，显示空趋势图');
+        trendChart.clear();
+        trendChart.setOption(getEmptyTrendOption());
+        return;
+    }
+    
+    // 简化的趋势图显示整体掌握度分布
+    const masteryLevels = {
+        '高掌握(80%+)': analytics.filter(item => item.average_mastery >= 0.8).length,
+        '中等掌握(60-80%)': analytics.filter(item => item.average_mastery >= 0.6 && item.average_mastery < 0.8).length,
+        '低掌握(<60%)': analytics.filter(item => item.average_mastery < 0.6).length
+    };
+    
+    console.log('趋势图数据准备完成:', masteryLevels);
+    
+    const option = {
+        tooltip: {
+            trigger: 'item'
+        },
+        series: [{
+            type: 'pie',
+            radius: ['40%', '70%'],
+            data: Object.entries(masteryLevels).map(([name, value]) => ({
+                name: name,
+                value: value
+            })),
+            itemStyle: {
+                borderRadius: 10,
+                borderColor: '#fff',
+                borderWidth: 2
+            }
+        }]
+    };
+    
+    trendChart.clear();
+    trendChart.setOption(option);
+}
+
+// 更新教学建议
+function updateTeachingSuggestions(analytics) {
+    const container = document.getElementById('teachingSuggestions');
+    
+    if (!analytics || analytics.length === 0) {
+        container.innerHTML = '<p class="text-muted">暂无教学建议</p>';
+        return;
+    }
+    
+    console.log('生成教学建议，数据量:', analytics.length);
+    const suggestions = [];
+    
+    // 识别整体薄弱知识点
+    const weakKPs = analytics
+        .filter(item => item.average_mastery < 0.6 && item.knowledge_point_name)
+        .map(item => item.knowledge_point_name)
+        .filter((value, index, self) => self.indexOf(value) === index) // 去重
+        .slice(0, 3);
+    
+    if (weakKPs.length > 0) {
+        suggestions.push({
+            type: 'warning',
+            title: '重点关注',
+            message: `班级在以下知识点掌握较弱：${weakKPs.join('、')}，建议加强教学和练习`
+        });
+    }
+    
+    // 识别高风险学生
+    const riskStudents = [];
+    const studentMastery = {};
+    
+    analytics.forEach(item => {
+        const studentKey = item.student_name || `学生${item.student_id || 0}`;
+        if (!studentMastery[studentKey]) {
+            studentMastery[studentKey] = [];
+        }
+        studentMastery[studentKey].push(item.average_mastery || 0);
+    });
+    
+    Object.entries(studentMastery).forEach(([name, masteries]) => {
+        const avgMastery = masteries.reduce((a, b) => a + b, 0) / masteries.length;
+        if (avgMastery < 0.5) {
+            riskStudents.push(name);
+        }
+    });
+    
+    if (riskStudents.length > 0) {
+        suggestions.push({
+            type: 'danger',
+            title: '个别辅导',
+            message: `以下${riskStudents.slice(0, 5).length}名学生需要重点关注：${riskStudents.slice(0, 5).join('、')}${riskStudents.length > 5 ? '等' : ''}`
+        });
+    }
+    
+    // 整体表现评价
+    const avgMastery = analytics.reduce((sum, item) => sum + item.average_mastery, 0) / analytics.length;
+    if (avgMastery >= 0.8) {
+        suggestions.push({
+            type: 'success',
+            title: '教学成果',
+            message: '班级整体掌握情况良好，可以适当提高教学难度'
+        });
+    } else if (avgMastery < 0.6) {
+        suggestions.push({
+            type: 'info',
+            title: '教学调整',
+            message: '建议放慢教学进度，加强基础知识巩固'
+        });
+    }
+    
+    // 渲染建议
+    if (suggestions.length === 0) {
+        container.innerHTML = '<p class="text-muted">暂无针对性教学建议</p>';
+    } else {
+        container.innerHTML = suggestions.map(sug => `
+            <div class="alert alert-${sug.type} mb-2">
+                <h6 class="alert-heading"><i class="fas fa-${getAlertIcon(sug.type)} me-1"></i>${sug.title}</h6>
+                <p class="mb-0">${sug.message}</p>
+            </div>
+        `).join('');
+    }
+}
+
+// 获取提醒图标
+function getAlertIcon(type) {
+    switch(type) {
+        case 'success': return 'check-circle';
+        case 'warning': return 'exclamation-triangle';
+        case 'info': return 'info-circle';
+        case 'danger': return 'times-circle';
+        default: return 'info-circle';
+    }
+}
+
+// 视图切换
+function switchView(viewType) {
+    if (viewType === 'heatmap') {
+        heatmapChart.setOption(getHeatmapOption(classAnalytics));
+    } else {
+        heatmapChart.setOption(getBarChartOption(classAnalytics));
+    }
+}
+
+// 获取柱状图选项
+function getBarChartOption(analytics) {
+    // 实现柱状图显示逻辑
+    return {
+        title: {
+            text: '知识点掌握柱状图'
+        },
+        // ... 柱状图配置
+    };
+}
+
+// 排序学生表格
+function sortStudentTable(sortBy) {
+    const tbody = document.querySelector('#studentAnalysisTable tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    
+    rows.sort((a, b) => {
+        const aValue = parseFloat(a.cells[1].textContent);
+        const bValue = parseFloat(b.cells[1].textContent);
+        return bValue - aValue; // 降序排列
+    });
+    
+    // 重新插入排序后的行
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+// 显示学生详情
+function showStudentDetail(studentId) {
+    console.log('查看学生详情:', studentId);
+    // 这里应该跳转到学生个人BKT分析页面
+    const studentDashboardUrl = `/bkt/student/?student_id=${studentId}`;
+    window.open(studentDashboardUrl, '_blank');
+}
+
+// 导出班级报告
+function exportClassReport() {
+    if (!currentClassId) {
+        showMessage('请先选择班级', 'warning');
+        return;
+    }
+    
+    showMessage('班级报告导出功能正在开发中...暂不可用', 'info');
+}
+
+// 重置显示
+function resetDisplay() {
+    // 重置统计数据
+    document.getElementById('studentCount').textContent = '0';
+    document.getElementById('knowledgePointCount').textContent = '0';
+    
+    // 重置进度条
+    updateProgressBar('overallMasteryBar', 'overallMasteryText', 0, 'bg-info');
+    updateProgressBar('proficiencyRateBar', 'proficiencyRateText', 0, 'bg-success');
+    updateProgressBar('riskRateBar', 'riskRateText', 0, 'bg-danger');
+    
+    // 清空表格和详情
+    document.querySelector('#studentAnalysisTable tbody').innerHTML = '';
+    document.getElementById('knowledgePointDetails').innerHTML = '<p class="text-muted">请选择班级查看知识点分析</p>';
+    
+    // 重置建议
+    document.getElementById('teachingSuggestions').innerHTML = '<p class="text-muted">请选择班级查看教学建议</p>';
+}
+
+// 重置图表
+function resetCharts() {
+    heatmapChart.setOption(getEmptyHeatmapOption());
+    trendChart.setOption(getEmptyTrendOption());
+    resetDisplay();
+}
+
+// 显示消息提示（支持多条同时显示）
+function showMessage(message, type = 'info') {
+    // 创建消息容器
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `custom-alert custom-alert-${type}`;
+
+    // 根据类型选择图标
+    const icons = {
+        'success': '✓',
+        'error': '✕',
+        'warning': '⚠',
+        'info': 'ℹ'
+    };
+
+    alertDiv.innerHTML = `
+        <span class="custom-alert-icon">${icons[type] || icons.info}</span>
+        <span class="custom-alert-message">${message}</span>
+    `;
+
+    // 计算新消息的垂直位置
+    const existingAlerts = document.querySelectorAll('.custom-alert');
+    const baseTop = 24;
+    const alertSpacing = 100;
+
+    if (existingAlerts.length > 0) {
+        const lastAlert = existingAlerts[existingAlerts.length - 1];
+        const lastAlertBottom = lastAlert.offsetTop + lastAlert.offsetHeight;
+        alertDiv.style.top = (lastAlertBottom + 12) + 'px';
+    } else {
+        alertDiv.style.top = baseTop + 'px';
+    }
+
+    alertDiv.style.right = '24px';
+
+    document.body.appendChild(alertDiv);
+
+    // 淡入动画
+    setTimeout(() => alertDiv.classList.add('show'), 10);
+
+    // 3秒后自动移除
+    setTimeout(() => {
+        removeAlert(alertDiv);
+    }, 3000);
+}
+
+// 移除消息并重新排列剩余消息的函数
+function removeAlert(alertToRemove) {
+    // 添加移除动画
+    alertToRemove.style.animation = 'fadeOutUp 0.3s ease-out';
+
+    setTimeout(() => {
+        if (alertToRemove.parentNode) {
+            alertToRemove.parentNode.removeChild(alertToRemove);
+        }
+
+        // 重新排列剩余的消息
+        rearrangeAlerts();
+    }, 300);
+}
+
+// 重新排列所有消息的位置
+function rearrangeAlerts() {
+    const alerts = document.querySelectorAll('.custom-alert');
+    const baseTop = 24;
+    let currentTop = baseTop;
+
+    alerts.forEach((alert, index) => {
+        alert.style.top = currentTop + 'px';
+        currentTop += alert.offsetHeight + 12;
+    });
+}
+
+// 窗口大小改变时重绘图表
+window.addEventListener('resize', function() {
+    if (heatmapChart) heatmapChart.resize();
+    if (trendChart) trendChart.resize();
+});
+</script>
+{% endblock %}
