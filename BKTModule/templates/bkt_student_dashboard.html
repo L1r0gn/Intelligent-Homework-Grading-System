@@ -66,6 +66,10 @@
                         <button class="btn btn-light btn-sm me-2" id="refreshBtn">
                             <i class="fas fa-sync-alt me-1"></i>刷新
                         </button>
+                        <span id="refreshCooldown" class="badge bg-warning text-dark d-none">
+                            <i class="fas fa-clock me-1"></i>
+                            <span id="cooldownTime">30:00</span>
+                        </span>
                         <button class="btn btn-light btn-sm" id="exportBtn">
                             <i class="fas fa-download me-1"></i>导出
                         </button>
@@ -170,6 +174,18 @@
 <!-- ECharts JS库 -->
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
 
+<style>
+/* 刷新按钮旋转动画 */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.fa-sync-alt.spinning {
+    animation: spin 1s linear infinite;
+}
+</style>
+
 <!-- CSRF Token 获取 -->
 <script>
 // 获取CSRF token
@@ -206,13 +222,35 @@ async function fetchWithCSRF(url, options = {}) {
 let currentStudentId = null;
 let masteryChart = null;
 let trendChart = null;
+let currentUserRole = null;  // 用户角色：1=学生, 2=教师, 3=管理员
+let cooldownInterval = null;  // 倒计时定时器
+let timeLeftSeconds = 0;      // 剩余冷却时间（秒）
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
     initializeCharts();
     loadStudentList();
+    loadCurrentUser();  // 加载当前用户信息
     bindEvents();
 });
+
+// 加载当前用户信息
+async function loadCurrentUser() {
+    try {
+        const response = await fetchWithCSRF('/user/current/');
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                currentUserRole = data.data.user_attribute;
+                console.log('当前用户角色:', currentUserRole);
+            }
+        }
+    } catch (error) {
+        console.warn('获取用户信息失败:', error);
+        // 默认设为学生角色
+        currentUserRole = 1;
+    }
+}
 
 // 初始化图表
 function initializeCharts() {
@@ -302,9 +340,21 @@ function bindEvents() {
     });
     
     // 刷新按钮
-    document.getElementById('refreshBtn').addEventListener('click', function() {
-        if (currentStudentId) {
-            loadStudentProfile(currentStudentId);
+    document.getElementById('refreshBtn').addEventListener('click', async function() {
+        if (!currentStudentId) {
+            showMessage('请先选择学生', 'warning');
+            return;
+        }
+        
+        const icon = this.querySelector('.fa-sync-alt');
+        icon.classList.add('spinning');
+        this.disabled = true;
+        
+        try {
+            await loadStudentProfile(currentStudentId, true);  // 强制刷新
+        } finally {
+            icon.classList.remove('spinning');
+            this.disabled = false;
         }
     });
     
@@ -315,32 +365,62 @@ function bindEvents() {
 }
 
 // 加载学生档案
-async function loadStudentProfile(studentId) {
+async function loadStudentProfile(studentId, forceRefresh = false) {
     initializeCharts();
     try {
-        console.log('开始加载学生档案:', studentId);
+        console.log('开始加载学生档案:', studentId, '强制刷新:', forceRefresh);
+        
+        // 构造请求URL
+        let url = `/bkt/student/${studentId}/profile/`;
+        if (forceRefresh) {
+            url += '?refresh=true';
+        }
+        
         // 使用BKT模块的API端点，这个端点需要认证
-        const response = await fetchWithCSRF(`/bkt/student/${studentId}/profile/`);
+        const response = await fetchWithCSRF(url);
         const data = await response.json();
         console.log('收到学生数据:', data);
         
         if (response.ok && data.success) {
-            showMessage('加载学生档案成功');
+            // 显示刷新状态消息
+            if (data.refreshed) {
+                showMessage('✅ 学生数据已重新计算并更新', 'success');
+            } else if (forceRefresh) {
+                showMessage('🔄 正在获取最新数据...', 'info');
+            } else {
+                showMessage('📊 学生档案加载成功');
+            }
+            
             console.log('准备更新显示，数据:', data.data);
             initializeCharts();
             updateProfileDisplay(data.data);
             updateCharts(data.data);
             updateSuggestions(data.data);
             updateRecentActivities(studentId);
+            
+            // 如果是学生用户且有限制，启动倒计时
+            if (currentUserRole === 1 && data.time_left > 0) {
+                startTimeCooldown(data.time_left);
+            } else if (currentUserRole > 1) {
+                // 教师/管理员无限制
+                hideCooldown();
+            }
         } else {
-            // 检查是否有错误信息
+            // 处理错误响应
             const errorMsg = data.error || '加载学生数据失败';
-            showMessage(errorMsg, 'error');
+            
+            // 特殊处理刷新频率限制错误
+            if (response.status === 429 && data.time_left) {
+                showMessage(`⏳ ${errorMsg}`, 'warning');
+                startTimeCooldown(data.time_left);
+            } else {
+                showMessage(errorMsg, 'error');
+            }
             console.error('API错误:', errorMsg);
         }
     } catch (error) {
         console.error('加载学生档案失败:', error);
-        showMessage('加载学生档案失败: ' + error.message, 'error');
+        showMessage('❌ 加载学生档案失败: ' + error.message, 'error');
     }
 }
 
@@ -638,6 +718,82 @@ function resetCharts() {
     document.getElementById('learningSuggestions').innerHTML = '<p class="text-muted">请选择学生查看个性化学习建议</p>';
 }
 
+// 启动倒计时
+function startTimeCooldown(seconds) {
+    timeLeftSeconds = seconds;
+    
+    // 显示倒计时元素
+    const cooldownElement = document.getElementById('refreshCooldown');
+    const refreshBtn = document.getElementById('refreshBtn');
+    
+    cooldownElement.classList.remove('d-none');
+    refreshBtn.disabled = true;
+    refreshBtn.classList.add('btn-secondary');
+    refreshBtn.classList.remove('btn-light');
+    
+    // 清除之前的定时器
+    if (cooldownInterval) {
+        clearInterval(cooldownInterval);
+    }
+    
+    // 更新显示
+    updateCooldownDisplay();
+    
+    // 启动定时器
+    cooldownInterval = setInterval(() => {
+        timeLeftSeconds--;
+        updateCooldownDisplay();
+        
+        if (timeLeftSeconds <= 0) {
+            clearInterval(cooldownInterval);
+            cooldownInterval = null;
+            hideCooldown();
+        }
+    }, 1000);
+}
+
+// 更新倒计时显示
+function updateCooldownDisplay() {
+    const minutes = Math.floor(timeLeftSeconds / 60);
+    const seconds = timeLeftSeconds % 60;
+    const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    
+    document.getElementById('cooldownTime').textContent = timeStr;
+    
+    // 根据剩余时间改变颜色
+    const cooldownElement = document.getElementById('refreshCooldown');
+    if (timeLeftSeconds <= 60) {
+        cooldownElement.className = 'badge bg-danger text-white';
+    } else if (timeLeftSeconds <= 300) {  // 5分钟
+        cooldownElement.className = 'badge bg-warning text-dark';
+    } else {
+        cooldownElement.className = 'badge bg-info text-white';
+    }
+}
+
+// 隐藏倒计时
+function hideCooldown() {
+    const cooldownElement = document.getElementById('refreshCooldown');
+    const refreshBtn = document.getElementById('refreshBtn');
+    
+    cooldownElement.classList.add('d-none');
+    refreshBtn.disabled = false;
+    refreshBtn.classList.remove('btn-secondary');
+    refreshBtn.classList.add('btn-light');
+    
+    if (cooldownInterval) {
+        clearInterval(cooldownInterval);
+        cooldownInterval = null;
+    }
+    timeLeftSeconds = 0;
+}
+
+// 按班级筛选学生
+function filterStudentsByClass(classId) {
+    // 这个功能需要后端API支持
+    showMessage('班级筛选功能正在开发中...暂不可用', 'info');
+}
+
 // 导出学生报告
 function exportStudentReport() {
     if (!currentStudentId) {
@@ -645,13 +801,7 @@ function exportStudentReport() {
         return;
     }
     
-    showMessage('报告导出功能正在开发中...', 'info');
-}
-
-// 按班级筛选学生
-function filterStudentsByClass(classId) {
-    // 这个功能需要后端API支持
-    showMessage('班级筛选功能正在开发中...暂不可用', 'info');
+    showMessage('学生报告导出功能正在开发中...暂不可用', 'info');
 }
 
 // 显示消息提示（支持多条同时显示）

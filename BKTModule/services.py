@@ -283,6 +283,40 @@ class BKTService:
             return 'low'
     
     @classmethod
+    def refresh_student_profile(cls, student_id: int) -> dict:
+        """
+        刷新学生的完整知识掌握画像（重新计算所有知识点）
+        
+        Args:
+            student_id: 学生ID
+        Returns:
+            更新后的知识掌握画像
+        """
+        logger.info(f"开始刷新学生 {student_id} 的BKT档案...")
+        
+        # 1. 获取该学生所有有学习记录的知识点
+        from .models import LearningTrace
+        knowledge_point_ids = LearningTrace.objects.filter(
+            student_id=student_id
+        ).values_list('knowledge_point_id', flat=True).distinct()
+        
+        updated_count = 0
+        
+        # 2. 对每个知识点重新计算掌握概率
+        for kp_id in knowledge_point_ids:
+            try:
+                # 这会基于历史轨迹重新计算掌握概率
+                cls.initialize_student_state(student_id, kp_id)
+                updated_count += 1
+            except Exception as e:
+                logger.error(f"重新计算学生 {student_id} 知识点 {kp_id} 失败: {e}")
+        
+        logger.info(f"学生 {student_id} 的BKT档案刷新完成，更新了 {updated_count} 个知识点")
+        
+        # 3. 返回更新后的档案
+        return cls.get_student_knowledge_profile(student_id)
+    
+    @classmethod
     def update_class_analytics(cls, class_identifier: str, class_type: str = 'CLASS'):
         """
         更新班级知识点掌握分析

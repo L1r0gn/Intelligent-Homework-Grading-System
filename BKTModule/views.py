@@ -173,6 +173,9 @@ def wx_process_learning_event(request):
 def student_knowledge_profile(request, student_id):
     """
     获取学生的知识掌握画像（管理系统）
+    支持智能刷新控制：
+    - 学生用户：30分钟内只能刷新一次
+    - 教师/管理员：无限制刷新
     """
     try:
         # 验证权限（学生只能查看自己的数据，教师可以查看班级学生数据）
@@ -183,11 +186,64 @@ def student_knowledge_profile(request, student_id):
                 'error': '权限不足，无法查看其他学生数据'
             }, status=status.HTTP_403_FORBIDDEN)
         
-        profile = BKTService.get_student_knowledge_profile(student_id)
+        # 检查是否需要强制刷新
+        force_refresh = request.GET.get('refresh', 'false').lower() == 'true'
+        refresh_allowed = True
+        time_left = 0
+        
+        # 学生用户需要检查刷新频率限制
+        if current_user.user_attribute == 1:  # 学生
+            from django.core.cache import cache
+            from django.utils import timezone
+            from datetime import timedelta
+            
+            cache_key = f"bkt_refresh_limit_{current_user.id}_{student_id}"
+            last_refresh = cache.get(cache_key)
+            
+            if last_refresh:
+                # 计算剩余冷却时间（30分钟）
+                time_since_last = timezone.now() - last_refresh
+                cooldown_period = timedelta(minutes=30)
+                
+                if time_since_last < cooldown_period:
+                    refresh_allowed = False
+                    time_left = int((cooldown_period - time_since_last).total_seconds())
+        
+        # 如果不允许刷新且请求强制刷新，则返回错误
+        if force_refresh and not refresh_allowed:
+            minutes_left = time_left // 60
+            seconds_left = time_left % 60
+            return Response({
+                'success': False,
+                'error': f'刷新过于频繁，请在 {minutes_left}分{seconds_left}秒 后再次尝试',
+                'time_left': time_left,
+                'can_refresh_at': (timezone.now() + timedelta(seconds=time_left)).isoformat()
+            }, status=status.HTTP_429_TOO_MANY_REQUESTS)
+        
+        # 执行数据刷新（如果允许）
+        if force_refresh and refresh_allowed:
+            from django.core.cache import cache
+            from django.utils import timezone
+            
+            # 调用服务层刷新数据
+            profile = BKTService.refresh_student_profile(student_id)
+            
+            # 记录刷新时间（仅对学生用户）
+            if current_user.user_attribute == 1:
+                cache_key = f"bkt_refresh_limit_{current_user.id}_{student_id}"
+                cache.set(cache_key, timezone.now(), timeout=1800)  # 缓存30分钟
+                
+            refreshed = True
+        else:
+            # 获取现有数据
+            profile = BKTService.get_student_knowledge_profile(student_id)
+            refreshed = False
         
         return Response({
             'success': True,
-            'data': profile  # 直接返回profile数据
+            'data': profile,
+            'refreshed': refreshed,
+            'time_left': time_left if not refresh_allowed else 0
         })
         
     except Exception as e:
