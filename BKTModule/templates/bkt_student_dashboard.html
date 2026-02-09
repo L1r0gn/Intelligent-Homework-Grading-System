@@ -384,9 +384,9 @@ async function loadStudentProfile(studentId, forceRefresh = false) {
         if (response.ok && data.success) {
             // 显示刷新状态消息
             if (data.refreshed) {
-                showMessage('✅ 学生数据已重新计算并更新', 'success');
+                showMessage('🔄 基于最新提交记录重建BKT数据完成', 'success');
             } else if (forceRefresh) {
-                showMessage('🔄 正在获取最新数据...', 'info');
+                showMessage('🔄 正在基于提交记录重建数据...', 'info');
             } else {
                 showMessage('📊 学生档案加载成功');
             }

@@ -225,7 +225,7 @@ def student_knowledge_profile(request, student_id):
             from django.core.cache import cache
             from django.utils import timezone
             
-            # 调用服务层刷新数据
+            # 调用服务层刷新数据（基于提交记录重建）
             profile = BKTService.refresh_student_profile(student_id)
             
             # 记录刷新时间（仅对学生用户）

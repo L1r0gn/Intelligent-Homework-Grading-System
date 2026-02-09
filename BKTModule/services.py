@@ -283,38 +283,98 @@ class BKTService:
             return 'low'
     
     @classmethod
-    def refresh_student_profile(cls, student_id: int) -> dict:
+    def refresh_student_profile_from_submissions(cls, student_id: int) -> dict:
         """
-        刷新学生的完整知识掌握画像（重新计算所有知识点）
+        基于学生的所有提交记录重新构建BKT档案
+        这会清空现有学习轨迹并根据提交记录重新生成
         
         Args:
             student_id: 学生ID
         Returns:
             更新后的知识掌握画像
         """
-        logger.info(f"开始刷新学生 {student_id} 的BKT档案...")
+        logger.info(f"开始基于提交记录重建学生 {student_id} 的BKT档案...")
         
-        # 1. 获取该学生所有有学习记录的知识点
-        from .models import LearningTrace
-        knowledge_point_ids = LearningTrace.objects.filter(
-            student_id=student_id
-        ).values_list('knowledge_point_id', flat=True).distinct()
+        from gradingModule.models import Submission
+        from questionManageModule.models import KnowledgePoint
+        from django.db import transaction
         
-        updated_count = 0
+        try:
+            with transaction.atomic():
+                # 1. 删除该学生现有的所有学习轨迹和状态
+                from .models import LearningTrace, BKTStudentState
+                LearningTrace.objects.filter(student_id=student_id).delete()
+                BKTStudentState.objects.filter(student_id=student_id).delete()
+                logger.info(f"已清理学生 {student_id} 的旧BKT数据")
+                
+                # 2. 获取该学生的所有已批改提交记录（按时间顺序）
+                submissions = Submission.objects.filter(
+                    student_id=student_id,
+                    status__in=['ACCEPTED', 'GRADED', 'WRONG_ANSWER']  # 只处理已批改的
+                ).select_related('problem').order_by('submitted_time')
+                
+                logger.info(f"找到 {submissions.count()} 条提交记录")
+                
+                processed_count = 0
+                error_count = 0
+                
+                # 3. 按时间顺序处理每条提交记录
+                for submission in submissions:
+                    try:
+                        # 获取题目关联的知识点
+                        knowledge_points = submission.problem.knowledge_points.all()
+                        
+                        if not knowledge_points.exists():
+                            continue
+                            
+                        # 判断答题是否正确
+                        if submission.problem.problem_type.name == "选择":
+                            is_correct = (submission.status == 'ACCEPTED')
+                        else:
+                            # 主观题按得分率判断（60%以上为正确）
+                            is_correct = (
+                                submission.score and 
+                                submission.problem.points and 
+                                (submission.score / submission.problem.points) >= 0.6
+                            ) if submission.score is not None and submission.problem.points else False
+                        
+                        # 为每个知识点创建学习事件
+                        for kp in knowledge_points:
+                            cls.process_learning_event(
+                                student_id=student_id,
+                                knowledge_point_id=kp.id,
+                                is_correct=is_correct,
+                                submission_id=submission.id
+                            )
+                        
+                        processed_count += 1
+                        
+                    except Exception as e:
+                        logger.error(f"处理提交记录 {submission.id} 失败: {e}")
+                        error_count += 1
+                        continue
+                
+                logger.info(f"BKT重建完成: 成功处理 {processed_count} 条记录, 失败 {error_count} 条")
+                
+                # 4. 返回更新后的档案
+                return cls.get_student_knowledge_profile(student_id)
+                
+        except Exception as e:
+            logger.error(f"基于提交记录重建BKT档案失败: {e}")
+            raise
+
+    @classmethod
+    def refresh_student_profile(cls, student_id: int) -> dict:
+        """
+        刷新学生的完整知识掌握画像（基于提交记录重新构建）
         
-        # 2. 对每个知识点重新计算掌握概率
-        for kp_id in knowledge_point_ids:
-            try:
-                # 这会基于历史轨迹重新计算掌握概率
-                cls.initialize_student_state(student_id, kp_id)
-                updated_count += 1
-            except Exception as e:
-                logger.error(f"重新计算学生 {student_id} 知识点 {kp_id} 失败: {e}")
-        
-        logger.info(f"学生 {student_id} 的BKT档案刷新完成，更新了 {updated_count} 个知识点")
-        
-        # 3. 返回更新后的档案
-        return cls.get_student_knowledge_profile(student_id)
+        Args:
+            student_id: 学生ID
+        Returns:
+            更新后的知识掌握画像
+        """
+        # 调用基于提交记录的重建方法
+        return cls.refresh_student_profile_from_submissions(student_id)
     
     @classmethod
     def update_class_analytics(cls, class_identifier: str, class_type: str = 'CLASS'):
