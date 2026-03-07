@@ -1,0 +1,101 @@
+{% extends 'page_base.html' %}
+
+{% block title %}学生学习情况查看{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h4 class="fw-bold mb-0">学生列表</h4>
+                    <p class="text-muted small mb-0">共管理 {{ students|length }} 名学员的掌握度数据</p>
+                </div>
+                <div class="col-md-6 mt-3 mt-md-0">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" id="student-search" class="form-control border-start-0 ps-0 shadow-none"
+                               placeholder="输入姓名或学号快速检索...">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4" id="student-grid">
+        {% for student in class_students %}
+        <div class="col-xl-3 col-lg-4 col-md-6 student-card-col"
+             data-student-name="{{ student.username }}"
+             data-student-id="{{ student.id }}">
+            <div class="card h-100 shadow-sm border-0 student-card transition-all">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="avatar-placeholder me-3">
+                            {{ student.username|slice:":1"|upper }}
+                        </div>
+                        <div class="overflow-hidden">
+                            <h5 class="mb-0 fw-bold text-dark text-truncate">{{ student.username }}</h5>
+                            <small class="text-muted">ID: {{ student.id }}</small>
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        <a href="{% url 'dkt_app:view_student_mastery' student.id %}" class="btn btn-outline-primary btn-sm rounded-pill">
+                            查看学情报告 <i class="fas fa-chart-line ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-top-dashed py-3">
+                    <div class="d-flex justify-content-between align-items-center text-muted small">
+                        <span><i class="far fa-calendar-alt me-1"></i> 最近活跃</span>
+                        <span>{{ student.last_login|date:"Y-m-d"|default:"从未" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <div class="text-muted">
+                <i class="fas fa-user-slash fa-3x mb-3"></i>
+                <p>未找到相关学生信息</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .student-card { border-radius: 12px; }
+    .student-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.08)!important; }
+    .avatar-placeholder {
+        width: 45px; height: 45px; background: #4f46e5; color: white;
+        border-radius: 10px; display: flex; align-items: center; justify-content: center;
+        font-weight: bold; flex-shrink: 0;
+    }
+    .border-top-dashed { border-top: 1px dashed #dee2e6; }
+    .transition-all { transition: all 0.25s ease-in-out; }
+</style>
+
+<script>
+    // 保留原有的搜索过滤 JS 逻辑
+    document.addEventListener('DOMContentLoaded', function () {
+        const searchInput = document.getElementById('student-search');
+        const allCards = document.querySelectorAll('.student-card-col');
+
+        searchInput.addEventListener('input', function (e) {
+            const term = e.target.value.toLowerCase().trim();
+            allCards.forEach(card => {
+                const name = card.getAttribute('data-student-name').toLowerCase();
+                const id = card.getAttribute('data-student-id').toLowerCase();
+                if (name.includes(term) || id.includes(term)) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

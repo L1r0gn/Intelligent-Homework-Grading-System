@@ -1,0 +1,297 @@
+{% extends 'backend_sys_base_page.html' %}
+{% load dkt_extras %}
+
+{% block title %}知识掌握度分析{% endblock %}
+
+{% block custom_js %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const chartDom = document.getElementById('main-chart');
+        if (!chartDom) return;
+        const myChart = echarts.init(chartDom);
+
+        // 从后端获取数据
+        const conceptLabels = {{ dkt_data.concept_labels|safe|default:"[]" }};
+        const conceptMasteryHistory = {{ dkt_data.concept_mastery_history|safe|default:"{}" }};
+        const exerciseTimes = {{ dkt_data.exercise_times|safe|default:"[]" }};
+        
+        // 定义颜色方案（为每个知识点分配不同的颜色）
+        const colorPalette = [
+            '#4f46e5', // 靛蓝
+            '#0ea5e9', // 天蓝
+            '#10b981', // 翠绿
+            '#f59e0b', // 琥珀
+            '#ef4444', // 红
+            '#8b5cf6', // 紫
+            '#ec4899', // 粉红
+            '#14b8a6', // 青绿
+            '#f97316', // 橙
+            '#06b6d4', // 氰
+            '#84cc16', // 石灰绿
+            '#d946ef', // 紫红
+            '#22d3ee', // 天蓝
+            '#fb7185', // 玫瑰
+            '#a855f7'  // 紫色
+        ];
+
+        // 构建 series 数据 - 每个知识点一条曲线
+        const seriesData = [];
+        conceptLabels.forEach((conceptName, index) => {
+            const color = colorPalette[index % colorPalette.length];
+            const masteryData = conceptMasteryHistory[conceptName] || [];
+            
+            seriesData.push({
+                name: conceptName,
+                type: 'line',
+                smooth: true,
+                data: masteryData,
+                lineStyle: { 
+                    width: 2, 
+                    color: color,
+                    type: 'solid'
+                },
+                itemStyle: { 
+                    color: color,
+                    borderWidth: 2
+                },
+                symbol: 'circle',
+                symbolSize: 6,
+                showSymbol: false,
+                emphasis: {
+                    focus: 'series',
+                    lineStyle: {
+                        width: 4
+                    }
+                },
+                areaStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        {
+                            offset: 0,
+                            color: hexToRgba(color, 0.2)
+                        },
+                        {
+                            offset: 1,
+                            color: hexToRgba(color, 0.02)
+                        }
+                    ]),
+                    opacity: 0.3
+                }
+            });
+        });
+
+        // 图表配置
+        const option = {
+            tooltip: { 
+                trigger: 'axis', 
+                backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+                borderRadius: 8,
+                borderColor: '#e5e7eb',
+                borderWidth: 1,
+                textStyle: {
+                    color: '#374151'
+                },
+                formatter: function(params) {
+                    let result = `<div style="font-weight: bold; margin-bottom: 8px;">${params[0].axisValue}</div>`;
+                    params.forEach(param => {
+                        const value = (param.value * 100).toFixed(1);
+                        const color = param.color;
+                        result += `<div style="display: flex; align-items: center; margin: 4px 0;">
+                            <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background-color: ${color}; margin-right: 8px;"></span>
+                            <span style="flex: 1;">${param.seriesName}</span>
+                            <span style="font-weight: bold; margin-left: 12px;">${value}%</span>
+                        </div>`;
+                    });
+                    return result;
+                }
+            },
+            legend: { 
+                bottom: 0,
+                type: 'scroll',
+                data: conceptLabels,
+                textStyle: {
+                    fontSize: 12
+                },
+                padding: [10, 20, 10, 20]
+            },
+            grid: { 
+                left: '3%', 
+                right: '4%', 
+                top: '10%', 
+                bottom: '20%', 
+                containLabel: true 
+            },
+            xAxis: { 
+                type: 'category', 
+                boundaryGap: false, 
+                data: exerciseTimes,
+                axisLine: {
+                    lineStyle: {
+                        color: '#9ca3af'
+                    }
+                },
+                axisTick: {
+                    show: false
+                },
+                axisLabel: {
+                    color: '#6b7280',
+                    rotate: conceptLabels.length > 5 ? 45 : 0
+                }
+            },
+            yAxis: { 
+                type: 'value', 
+                min: 0, 
+                max: 1,
+                axisLine: {
+                    show: false
+                },
+                axisTick: {
+                    show: false
+                },
+                splitLine: {
+                    lineStyle: {
+                        color: '#e5e7eb',
+                        type: 'dashed'
+                    }
+                },
+                axisLabel: {
+                    color: '#6b7280',
+                    formatter: function(value) {
+                        return (value * 100) + '%';
+                    }
+                }
+            },
+            series: seriesData
+        };
+
+        myChart.setOption(option);
+        
+        // 响应窗口大小变化
+        window.addEventListener('resize', () => myChart.resize());
+        
+        // 辅助函数：将十六进制颜色转换为 RGBA
+        function hexToRgba(hex, alpha) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="fw-bold mb-1 text-dark">知识掌握度分析</h4>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><span class="text-decoration-none">DKT知识追踪</span></li>
+                        <li class="breadcrumb-item active">掌握度报告</li>
+                    </ol>
+                </nav>
+            </div>
+            {% if is_teacher_viewing %}
+            <a href="{% url 'dkt_app:student_list' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-reply me-1"></i> 返回列表
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 mb-4 h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="card-title mb-0"><i class="fas fa-chart-area text-primary me-2"></i>掌握度演变趋势</h5>
+                </div>
+                <div class="card-body">
+                    <div id="main-chart" style="width: 100%; height: 400px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body text-center py-4">
+                    <div class="avatar-lg bg-primary-soft text-primary rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; font-size: 2rem; background: #eef2ff;">
+                        {{ dkt_data.student_name|slice:":1"|upper }}
+                    </div>
+                    <h5 class="fw-bold mb-1">{{ dkt_data.student_name }}</h5>
+                    <p class="text-muted small mb-3">学号: {{ dkt_data.student_id }}</p>
+                    <div class="row g-2 text-start">
+                        <div class="col-6">
+                            <div class="p-2 border rounded bg-light">
+                                <small class="text-muted d-block">练习总数</small>
+                                <span class="fw-bold text-dark">{{ dkt_data.exercise_sequence|length }}</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-2 border rounded bg-light">
+                                <small class="text-muted d-block">平均掌握</small>
+                                <span class="fw-bold text-success">{{ dkt_data.current_avg_mastery|multiply:100|floatformat:1 }}%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-0 py-3">
+                    <h6 class="mb-0 fw-bold"><i class="fas fa-lightbulb text-warning me-2"></i>学习建议</h6>
+                </div>
+                <div class="card-body pt-0" id="advice-list">
+                    </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4">知识点名称</th>
+                                <th>掌握进度</th>
+                                <th class="text-center">当前数值</th>
+                                <th class="text-center pe-4">状态评级</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for concept, mastery in dkt_data.last_concept_mastery.items %}
+                            <tr>
+                                <td class="ps-4 fw-medium">{{ concept }}</td>
+                                <td style="width: 35%;">
+                                    <div class="progress" style="height: 6px;">
+                                        <div class="progress-bar {% if mastery > 0.8 %}bg-success{% elif mastery > 0.6 %}bg-primary{% else %}bg-warning{% endif %}"
+                                             role="progressbar" style="width: {{ mastery|multiply:100 }}%"></div>
+                                    </div>
+                                </td>
+                                <td class="text-center text-dark fw-bold">{{ mastery|multiply:100|floatformat:1 }}%</td>
+                                <td class="text-center pe-4">
+                                    {% if mastery > 0.8 %}
+                                    <span class="badge bg-success-soft text-success">精通</span>
+                                    {% elif mastery > 0.6 %}
+                                    <span class="badge bg-primary-soft text-primary">良好</span>
+                                    {% else %}
+                                    <span class="badge bg-warning-soft text-warning">待加强</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-success-soft { background-color: #e6fcf5; color: #0ca678; }
+    .bg-primary-soft { background-color: #f0f4ff; color: #4f46e5; }
+    .bg-warning-soft { background-color: #fff9db; color: #f08c00; }
+</style>
+{% endblock %}
