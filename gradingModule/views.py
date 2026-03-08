@@ -186,6 +186,57 @@ def serve_submission_image(request, submission_id):
 
 @jwt_login_required
 def showMySubmissions(request):
+    """
+    获取当前登录用户的所有提交记录。
+    支持分页、筛选、排序功能，并可限制返回的记录数量。
+
+    请求方法:
+        GET
+
+    参数:
+        - page (int, optional): 当前页码，默认为 1。必须大于 0。
+        - limit (int, optional): 每页返回的记录数，默认为 20。必须在 1 到 100 之间。
+        - offset (int, optional): 偏移量，用于计算分页。如果同时提供 page 和 offset，page 优先。
+        - querycounts (int, optional): 限制返回的记录总数。如果提供，将只返回前 querycounts 条记录，
+                                       忽略分页参数 (page, limit, offset)。必须是正整数。
+        - sort_by (str, optional): 排序字段和顺序，格式为 "字段:顺序"。
+                                   支持字段: 'submitted_time', 'score', 'created_at' (同 submitted_time)。
+                                   支持顺序: 'desc' (降序, 默认), 'asc' (升序)。
+                                   例如: "submitted_time:desc"。
+        - filter_by (str, optional): 筛选条件，格式为 "字段:值"。
+                                    支持字段: 'status', 'question_type', 'problem_id'。
+                                    例如: "status:ACCEPTED"。
+        - user_id (int, optional): 用于管理员查询其他用户的提交记录。非管理员用户尝试查询他人记录将返回权限错误。
+
+    返回:
+        JsonResponse: 包含提交记录列表、总数、当前页、每页限制和是否有更多记录。
+                      示例:
+                      {
+                          "data": [
+                              {
+                                  "record_id": 1,
+                                  "question_id": 101,
+                                  "question_title": "数学题1",
+                                  "user_answer": "...",
+                                  "is_correct": true,
+                                  "score": 100,
+                                  "status": "ACCEPTED",
+                                  "created_at": "2023-01-01 10:00:00"
+                              }
+                          ],
+                          "total_count": 50,
+                          "page": 1,
+                          "limit": 20,
+                          "has_more": true
+                      }
+
+    错误响应:
+        - 400 Bad Request: 参数校验失败 (e.g., page < 1, limit out of range, invalid querycounts)。
+        - 403 Forbidden: 非管理员用户尝试查询其他用户提交记录。
+        - 405 Method Not Allowed: 非 GET 请求。
+        - 404 Not Found: (当 user_id 指定的用户不存在时)
+        - 500 Internal Server Error: 服务器内部错误。
+    """
     if request.method != "GET":
         return HttpResponseBadRequest("Method Not Allowed")
 
@@ -204,6 +255,18 @@ def showMySubmissions(request):
             return JsonResponse({'error': 'Limit must be between 1 and 100'}, status=400)
         if offset < 0:
             return JsonResponse({'error': 'Offset must be non-negative'}, status=400)
+
+        # === 新增：处理 querycounts 参数 ===
+        query_counts_str = request.GET.get('querycounts')
+        query_counts = None
+        if query_counts_str:
+            try:
+                query_counts = int(query_counts_str)
+                if query_counts < 1:
+                    return JsonResponse({'error': 'querycounts must be a positive integer'}, status=400)
+            except ValueError:
+                return JsonResponse({'error': 'Invalid querycounts parameter. Must be an integer.'}, status=400)
+        # ==================================
 
         # 2. 获取筛选和排序参数
         sort_by = request.GET.get('sort_by', 'submitted_time:desc')
@@ -260,6 +323,11 @@ def showMySubmissions(request):
                 queryset = queryset.order_by('-submitted_time') # 默认排序
         else:
              queryset = queryset.order_by('-submitted_time')
+
+        # === 新增：应用 query_counts 限制 ===
+        if query_counts is not None:
+            queryset = queryset[:query_counts]
+        # ==================================
 
         # 6. 计算分页
         total_count = queryset.count()
