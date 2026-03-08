@@ -17,7 +17,7 @@ import string
 import random
 from userManageModule.serializers import serializeUserInfo
 import json
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseForbidden
 from rest_framework import status, generics
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -262,6 +262,8 @@ def class_add(request):
     """
     if request.method == "GET":
         return render(request,  "class_add.html")
+    if request.user.user_attribute < 3:
+        return HttpResponseForbidden("无权限")
     name = request.POST.get('name')
     className.objects.create(name=name)
     return render(request, 'user_list.html')
@@ -380,7 +382,7 @@ def wx_user_edit(request, user_id):
                 'user_attribute': user.user_attribute,
                 'class_in':class1user,
                 'phone': user.phone,
-                'last_login_time': user.last_login_time
+                'last_login_time': user.last_login_time.strftime('%Y-%m-%d %H:%M:%S'),  # 格式化时间
             },
             'classNameList': list(classNameList)
         }
@@ -641,17 +643,19 @@ def get_class_members(request, class_id):
         return JsonResponse({'error': 'Method Not Allowed'}, status=405)
 
     try:
+        # 获取班级
         target_class = className.objects.get(id=class_id)
-        
-        members = target_class.members.all().values('id', 'wx_nickName', 'wx_avatar', 'username')
+        # 获取成员
+        members = target_class.members.all().values('id', 'wx_nickName', 'wx_avatar', 'username', 'uid')
         member_list = []
+        # 将成员列表转换为字典列表
         for m in members:
             member_list.append({
                 'id': m['id'],
                 'name': m['wx_nickName'] or m['username'],
-                'avatar': m['wx_avatar']
+                'avatar': m['wx_avatar'],
+                'uid': m['uid'],
             })
-
         return JsonResponse({'data': member_list}, status=200)
 
     except className.DoesNotExist:
@@ -679,3 +683,33 @@ class UserProfileUpdateView(generics.UpdateAPIView):
             "message": "个人信息更新成功",
             "data": serializer.data
         }, status=status.HTTP_200_OK)
+
+@jwt_login_required
+@csrf_exempt
+def quit_class(request, class_id):
+    """
+    处理学生退出班级的 API 请求。
+    """
+    # 检查请求方法是否为POST
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method Not Allowed'}, status=405)
+    # 获取当前用户
+    current_user = request.user
+    # 获取目标班级
+    try:
+        target_class = className.objects.get(id=class_id)
+    except className.DoesNotExist:
+        return JsonResponse({'error': '班级不存在'}, status=404)
+    # 检查当前用户是否在目标班级中
+    if current_user not in target_class.members.all():
+        return JsonResponse({'error': '你不在该班级中'}, status=400)
+    # 从班级中移除当前用户
+    try:
+        current_user.class_in.remove(target_class)
+        current_user.save()
+        # 返回成功信息
+        return JsonResponse({'success': True, 'message': '成功退出班级'}, status=200)
+    except Exception as e:
+        # 处理异常
+        return JsonResponse({'error': f'退出班级失败：{str(e)}'}, status=500)
+

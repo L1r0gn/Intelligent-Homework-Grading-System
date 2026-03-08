@@ -7,6 +7,8 @@ class User(AbstractUser):
         (1, '男'),
         (2, '女'),
     ]
+    # 用户唯一标识符 - 用户可见
+    uid = models.CharField(max_length=6, unique=True, null=True, blank=True, verbose_name="用户ID")
     phone = models.BigIntegerField(verbose_name="手机号",null=True,blank=True,default=13500000000)
     gender = models.SmallIntegerField(verbose_name="性别", choices=genders_choices,null=True,blank=True)
     user_attribute = models.SmallIntegerField(verbose_name="属性", choices=[
@@ -37,6 +39,29 @@ class User(AbstractUser):
         related_name='members',  # 反向查询：class.members.all() 获取所有成员
         verbose_name="所属班级"
     )
+    
+    def save(self, *args, **kwargs):
+        """重写save方法，确保用户有唯一的uid"""
+        if not self.uid:
+            self.uid = self.generate_unique_uid()
+        super().save(*args, **kwargs)
+    
+    def generate_unique_uid(self):
+        """生成唯一用户ID，格式：年份后2位+4位随机数"""
+        import random
+        from datetime import datetime
+        
+        # 获取当前年份的后2位
+        current_year = str(datetime.now().year)[-2:]
+        
+        while True:
+            # 生成4位随机数
+            random_part = str(random.randint(1000, 9999))
+            uid = current_year + random_part
+            
+            # 检查uid的唯一性
+            if not User.objects.filter(uid=uid).exists():
+                return uid
 
 
 class className(models.Model):

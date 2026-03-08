@@ -2,3 +2,6 @@
 debug.log
 */migrations/
 config.py
+.venv/
+.vscode/
+media/

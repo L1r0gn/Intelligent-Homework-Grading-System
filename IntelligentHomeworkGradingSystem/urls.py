@@ -24,18 +24,19 @@ from IntelligentHomeworkGradingSystem import views as core_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('class_name/add/',user_views.class_add,name = 'class_add'),
-    path('question/', include('questionManageModule.urls')),  # 添加这一行
+    path('class_name/add/',user_views.class_add,name = 'class_add'), # 处理添加新班级的请求（网页端）。
+    path('question/', include('questionManageModule.urls')),
     path('user/',include('userManageModule.urls')),
     path('grading/', include('gradingModule.urls')),
     path('assignment/', include('assignmentAndClassModule.urls')),
     path('bkt/', include('BKTModule.urls')),  # BKT模块路由
-    path('', core_views.dashboard, name='dashboard'), # Modified to point to dashboard
+    path('dkt/', include('dkt_app.urls')), # DKT模块路由
+    path('', core_views.dashboard, name='dashboard'), # DASHBOARD
     path('register/',user_views.user_register,name='user_register'), # Moved register to /register/
     path('class/create/', user_views.create_class, name='create_class'),
     path('class/<int:class_id>/',user_views.class_detail,name='class_detail'),
     path('class/<int:class_id>/members/', user_views.get_class_members, name='get_class_members'),
-
+    path('class/class_id=<int:class_id>/quit/', user_views.quit_class, name='quit_class'), # 处理学生退出班级的 API 请求
 
 ]
 if settings.DEBUG:

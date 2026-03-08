@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'gradingModule.apps.GradingmoduleConfig',
     'assignmentAndClassModule.apps.AssignmentandclassmoduleConfig',
     'BKTModule.apps.BktmoduleConfig',
+    'dkt_app.apps.DktAppConfig',
     'rest_framework',
     'rest_framework_simplejwt',
 ]

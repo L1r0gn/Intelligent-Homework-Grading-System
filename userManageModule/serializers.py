@@ -1,4 +1,5 @@
 from django.http import JsonResponse
+from django.utils import timezone
 from .models import User
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
@@ -11,8 +12,11 @@ def serializeUserInfo(user_id):
         return JsonResponse({'error': '用户不存在'}, status=404)
         # 处理关联字段和枚举值转换（关键优化）
     class1user = serializeClassInfo(user_id)
+    user.last_login_time = timezone.now()
+    user.save()
     data = {
         'id': user.id,
+        'uid':user.uid,
         'username': user.username,
         'wx_nickName': user.wx_nickName,
         'wx_avatar': user.wx_avatar,
@@ -23,7 +27,8 @@ def serializeUserInfo(user_id):
         'wx_country': user.wx_country,
         'wx_province': user.wx_province,
         'wx_city': user.wx_city,
-        'last_login_time': user.last_login_time.strftime('%Y-%m-%d %H:%M:%S')  # 格式化时间
+        'last_login_time': user.last_login_time.strftime('%Y-%m-%d %H:%M:%S'),  # 格式化时间
+        'date_joined': user.date_joined.strftime('%Y-%m-%d'),  # 格式化时间
     }
     return data
 

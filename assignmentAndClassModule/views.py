@@ -316,7 +316,7 @@ def student_assignments(request):
             'deadline': assignment.deadline.strftime('%Y-%m-%d %H:%M') if assignment.deadline else None,
             'problem_id': assignment.problem.id if assignment.problem else None,
             'problem_title': assignment.problem.title if assignment.problem else '传统作业',
-            'score': assignmentStatusOfThisAssignment.submission.score if assignmentStatusOfThisAssignment.submission else None,
+            'score': assignmentStatusOfThisAssignment.submission.score if assignmentStatusOfThisAssignment and assignmentStatusOfThisAssignment.submission else None,
             'student_count': assignment.assignmentstatus_set.count(),
             'submit_count': assignment.assignmentstatus_set.filter(submission__isnull=False).count(),
             'status': assignment_status,

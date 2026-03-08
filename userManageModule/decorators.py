@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
-
+# JWT登录验证
 def jwt_login_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):

@@ -259,19 +259,25 @@
                     <!-- === 修改结束 === -->
 
                     <!-- BKT知识追踪菜单 -->
+{#                    综合了DKT知识追踪菜单，沿用BKT的命名 #}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle {% if 'bkt' in request.resolver_match.url_name %}active{% endif %}"
+                        <a class="nav-link dropdown-toggle {% if 'bkt' in request.resolver_match.url_name or 'dkt' in request.resolver_match.url_name %}active{% endif %}"
                            href="#"
                            id="bktDropdown"
                            role="button"
                            data-bs-toggle="dropdown"
                            aria-expanded="false">
-                           <i class="fas fa-chart-line me-1"></i>BKT分析
+                           <i class="fas fa-chart-line me-1"></i>知识追踪分析
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="bktDropdown">
                             <li>
                                 <a class="dropdown-item" href="{% url 'bkt:student_dashboard' %}">
-                                    <i class="fas fa-user-graduate me-2"></i>学生知识追踪
+                                    <i class="fas fa-user-graduate me-2"></i>BKT学生知识追踪
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'dkt_app:my_mastery' %}">
+                                    <i class="fas fa-user-graduate me-2"></i>DKT学生知识追踪
                                 </a>
                             </li>
                             {% if request.user.user_attribute >= 2 %}

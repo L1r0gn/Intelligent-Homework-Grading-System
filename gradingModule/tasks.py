@@ -41,10 +41,24 @@ def grade_submission_with_ai(standard_answer, total_score, submission_id=None, a
     【合并后的核心函数】
     实现"重载"效果：可以通过 submission_id 或 assignment_status_id 调用。
     优先使用 submission_id。
+    
+    Args:
+        standard_answer (str): 标准答案文本，用于与学生答案进行比对
+        total_score (int/float): 题目总分，AI将在此范围内进行评分
+        submission_id (int, optional): 提交记录ID，用于直接获取提交信息
+        assignment_status_id (int, optional): 作业状态ID，通过状态获取对应的提交信息
+    
+    Returns:
+        str/None: 返回AI评分的JSON格式结果字符串，包含score和justification字段；
+                 如果调用失败则返回None
+                
+    功能说明:
+        1. 根据提供的ID获取对应的提交对象
+        2. 构造AI评分prompt，包含标准答案、总分等信息
+        3. 调用阿里云千问VL模型进行图片内容分析和评分
+        4. 返回结构化的评分结果
     """
-
-    # 1. 参数解析与对象获取
-    # submission = None
+    # 1. 获取 Submission 对象
     if submission_id:
         try:
             submission = Submission.objects.get(id=submission_id)
@@ -63,6 +77,7 @@ def grade_submission_with_ai(standard_answer, total_score, submission_id=None, a
         logger.error("❌ 必须提供 submission_id 或 assignment_status_id")
         return None
 
+    # 检查 submission
     if not submission:
         return None
 
@@ -101,6 +116,7 @@ def grade_submission_with_ai(standard_answer, total_score, submission_id=None, a
         api_key=settings.OPENROUTER_API_KEY,  # 确保 settings 里有这个 KEY
     )
 
+    # 4. 处理结果
     try:
         completion = client.chat.completions.create(
             model="qwen-vl-plus",
@@ -134,12 +150,12 @@ def process_and_grade_submission(assignment_status_id=None, submission_id=None):
     既可以处理作业状态流程 (AssignmentStatus)，也可以处理单纯的提交 (Submission)。
     如果调用时只传一个参数，默认视为 assignment_status_id (兼容旧代码逻辑)。
     """
-
-    # 1. 获取 Submission 对象和上下文
-    # submission = None
-    # problem = None
+    #============初始化==============
     assignment_status = None
-
+    submission = None
+    problem = None
+    #===============================
+    # 1. 获取 Submission 对象和上下文
     try:
         if assignment_status_id:
             assignment_status = AssignmentStatus.objects.get(id=assignment_status_id)
@@ -157,6 +173,7 @@ def process_and_grade_submission(assignment_status_id=None, submission_id=None):
         logger.error(f"❌ 获取对象失败: {e}")
         return
 
+    # 检查数据
     if not submission or not problem:
         logger.error("❌ 数据不完整，无法评分")
         if submission:
@@ -165,7 +182,6 @@ def process_and_grade_submission(assignment_status_id=None, submission_id=None):
         return
 
     # 2. 路由评分逻辑
-
     # A. 选择题 (文本匹配)
     if problem.problem_type.name == "选择":
         logger.info('正在判选择题...')
@@ -189,9 +205,10 @@ def process_and_grade_submission(assignment_status_id=None, submission_id=None):
             submission.save()
             return
 
+        # 比较答案
         logger.info(f'标准答案: {problem.answer.content} | 学生答案: {student_choose}')
         if student_choose.upper() == problem.answer.content.upper():
-            submission.status = 'ACCEPTED'
+            submission.status = 'GRADED'
             submission.score = problem.points
             logger.info("✅ 选择题 - 答案正确")
         else:
@@ -200,8 +217,10 @@ def process_and_grade_submission(assignment_status_id=None, submission_id=None):
             submission.justification = f'正确答案是 {problem.answer.content}'
             logger.info("❌ 选择题 - 答案错误")
 
+        # 保存
         submission.save()
-        if assignment_status: assignment_status.save()
+        if assignment_status:
+            assignment_status.save()
 
         # === 核心：更新知识点掌握度 ===
         if MasteryService:
@@ -209,7 +228,7 @@ def process_and_grade_submission(assignment_status_id=None, submission_id=None):
         
         # === BKT：更新贝叶斯知识追踪 ===
         if BKTService and problem.knowledge_points.exists():
-            is_correct = (submission.status == 'ACCEPTED')
+            is_correct = (submission.status == 'GRADED')
             for kp in problem.knowledge_points.all():
                 try:
                     BKTService.process_learning_event(
@@ -226,6 +245,7 @@ def process_and_grade_submission(assignment_status_id=None, submission_id=None):
     # B. 主观题 (AI 图片分析)
     logger.info('正在判填空/大题 (AI 图片评分)...')
 
+    # 检查图片
     if not submission.submitted_image:
         submission.status = 'RUNTIME_ERROR'
         submission.justification = '错误：未找到提交的图片'
