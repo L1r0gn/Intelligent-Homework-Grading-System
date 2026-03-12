@@ -3,20 +3,15 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
 from django.db import transaction
-from django.utils import timezone
-from gradingModule.models import Submission
-from gradingModule.tasks import process_and_grade_submission
 from gradingModule.views import logger
 from rest_framework.response import Response
-from rest_framework import status
 from questionManageModule.models import (
     ProblemType, Subject, ProblemTag,
     Problem, ProblemContent, Answer, KnowledgePoint
 )
 from rest_framework import status
-from django.shortcuts import render, get_object_or_404, redirect
+from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator
-from django.contrib import messages
 from django.db.models import Avg, Count, Q
 from userManageModule.decorators import jwt_login_required, admin_required
 

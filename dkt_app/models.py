@@ -1,60 +1,73 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+
 
 class DKTModel(nn.Module):
-    def __init__(self, topic_size):
+    def __init__(self, topic_size, emb_size=64):
         super(DKTModel, self).__init__()
         self.topic_size = topic_size
-        self.rnn = nn.GRU(topic_size * 2, topic_size, 1)
-        # self.score = nn.Linear(topic_size * 2, 1)
-        #changed
-        self.score = nn.Linear(topic_size,topic_size)
+        self.emb_size = emb_size
 
-    def forward(self, v, s, h):
+        # 1. 引入 Embedding 层 (参考代码的精髓)
+        # 将 (知识点索引 + 掌握情况) 映射到稠密向量空间
+        # topic_size * 2 是因为每个知识点有“对”和“错”两种状态
+        self.interaction_emb = nn.Embedding(topic_size * 2, emb_size)
+
+        # 2. 使用多层 GRU 提高时序特征提取能力
+        self.rnn = nn.GRU(emb_size, topic_size, num_layers=2, batch_first=True, dropout=0.2)
+
+        # 3. 输出层与解耦
+        self.dropout = nn.Dropout(0.4)
+        self.score = nn.Linear(topic_size, topic_size)
+
+        # 4. 初始化负偏置，让掌握度从 0 附近起步
+        nn.init.constant_(self.score.bias, -3.0)
+
+    def forward(self, q, r, h):
+        """
+        q: 知识点索引 (0 ~ topic_size-1)
+        r: 回答情况 (0 或 1)
+        h: 隐藏状态
+        """
         if h is None:
             h = self.default_hidden()
-            
-        v = v.type_as(h)
 
-        # score = self.score(torch.cat([h.view(-1), v.view(-1)]))
-        #
-        # x = torch.cat([v.view(-1),
-        #                (v * (s > 0.5).type_as(v).
-        #                 expand_as(v).type_as(v)).view(-1)])
-        # _, h = self.rnn(x.view(1, 1, -1), h)
+        # --- 优化点：模拟遗忘衰减 ---
+        # 在处理新练习前，先让旧记忆衰减 3%
+        h = h * 0.999
 
-        all_logits = self.score(h.view(1, -1))  # shape: [1, topic_size]
+        # 1. 计算当前所有知识点的掌握度 (用于预测和可视化)
+        # 取 GRU 最后一层的隐藏状态 h[-1]
+        all_logits = self.score(self.dropout(h[-1]))
 
-        # 2. 根据当前练习的题目 v，提取出对应知识点的预测分数（用于训练时的 Loss）
-        # 使用题目向量 v 作为掩码，选取对应的 logit
-        # 如果 v 是 one-hot，这里相当于取出了对应索引的预测值
-        score = torch.sum(all_logits * v.view(1, -1), dim=1)
+        # 2. 提取当前练习题目的预测分 (用于 Loss)
+        # 假设 q 是 one-hot 或 索引
+        score_pred = torch.sum(all_logits * q.view(1, -1), dim=1)
 
-        # 3. 更新隐状态 (DKT 标准更新逻辑)
-        # 表现向量：如果做对了，保留知识点特征；做错了，表现为 0
-        performance = v * (s > 0.5).type_as(v)
-        x = torch.cat([v.view(-1), performance.view(-1)])
+        # 3. 构造交互输入 (参考标准 DKT 做法)
+        # 将题目和表现合并为一个索引：如果做对，索引变为 q + topic_size
+        # 这种做法比直接拼接向量更能学习到“错误”带来的深层信息
+        interaction_idx = (q.argmax(dim=-1) + self.topic_size * r.long()).view(1, 1)
+        x_emb = self.interaction_emb(interaction_idx)
 
-        _, h = self.rnn(x.view(1, 1, -1), h)
+        # 4. 更新隐状态
+        _, h_next = self.rnn(x_emb, h)
 
-        # 返回：当前题目的预测分数（供 train 计算 loss），所有知识点的掌握度 logits（供推理），以及更新后的 h
-        return score, all_logits, h
+        # 5. 平滑处理：防止曲线锯齿状跳变
+        alpha = 0.5
+        h_final = (1 - alpha) * h_next + alpha * h
 
-        # return score.view(1), h
+        return score_pred, all_logits, h_final
 
     def default_hidden(self):
-        return torch.zeros(1, 1, self.topic_size)
+        # 维度：(层数, batch_size, hidden_size)
+        return torch.zeros(2, 1, self.topic_size)
 
 
 class DKT(nn.Module):
     def __init__(self, knowledge_n):
         super(DKT, self).__init__()
-        self.knowledge_n = knowledge_n
-        self.seq_model = DKTModel(self.knowledge_n)
-        
+        self.seq_model = DKTModel(knowledge_n)
+
     def forward(self, topic, score, hidden=None):
-        # s, hidden = self.seq_model(topic, score, hidden)
-        # return s, hidden
-        s, all_logits, hidden, = self.seq_model(topic, score, hidden)
-        return s, all_logits, hidden
+        return self.seq_model(topic, score, hidden)
