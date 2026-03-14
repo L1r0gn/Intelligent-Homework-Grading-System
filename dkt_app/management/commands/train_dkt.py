@@ -28,7 +28,7 @@ class Command(BaseCommand):
         # 2. Define training options
         opts = {
             'knowledge_n': knowledge_n,
-            'epoch_n': 10,  # You can adjust the number of epochs
+            'epoch_n': 50,  # You can adjust the number of epochs
         }
 
         # 3. Train the DKT model

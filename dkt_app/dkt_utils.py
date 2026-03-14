@@ -50,7 +50,7 @@ class Data_Loader(object):
             problem_knowledge_codes = []
             for kp in sub.problem.knowledge_points.all():
                 if kp.id in knowledge_point_map:
-                    problem_knowledge_codes.append(knowledge_point_map[kp.id] + 1) # +1 because knowledge_code in tmp.py is 1-indexed
+                    problem_knowledge_codes.append(knowledge_point_map[kp.id]) # +1 because knowledge_code in tmp.py is 1-indexed
             
             # 将得分转换为DKT模型期望的0或1
             # 假设及格线是0.6，这里需要根据实际情况调整
@@ -66,17 +66,11 @@ class Data_Loader(object):
 
                 # 3. 计算正确率 (确保转为 float)
                 try:
-                    correct_percentage = float(student_score) / float(problem_points)
-
-                    # 4. 二值化判断 (去掉多余的 'and correct_percentage'，直接比较数值)
-                    # 注意：如果 correct_percentage 是 0.0， 0.0 >= 0.6 为 False，逻辑正确
-                    if correct_percentage >= 0.6:
-                        binary_score = 1.0
-                    else:
-                        binary_score = 0.0
+                    # 直接计算百分比得分，不要用 if percentage >= 0.6 这种硬阈值
+                    # binary_score = float(student_score) / float(problem_points)
+                    binary_score = 1.0 if student_score/problem_points >= 0.6 else 0.0
 
                 except (ValueError, ZeroDivisionError):
-                    # 捕获任何意外的转换错误或除零错误
                     binary_score = 0.0
 
             # 将结果加入 Item
@@ -132,8 +126,9 @@ def train(data_st, opts):
     epoch_n = opts['epoch_n']
     
     dkt = DKT(knowledge_n)
-    optimizer = torch.optim.Adam(dkt.parameters())
-    
+    optimizer = torch.optim.Adam(dkt.parameters(),lr=0.01,weight_decay=1e-5)
+    criterion = torch.nn.MSELoss()
+
     for epoch in range(epoch_n):
         total_loss = 0
         total_seq_cnt = 0
@@ -155,18 +150,21 @@ def train(data_st, opts):
             loss = 0
             h = None
             score_all[student] = []
-            
+
             for item in item_list:
-                knowledge = [0.] * knowledge_n
-                for knowledge_code in item.knowledge_code:
-                    if knowledge_code <= knowledge_n:
-                        knowledge[knowledge_code-1] = 1.0 
-                knowledge = torch.Tensor(knowledge)
-                score = torch.FloatTensor([float(item.score)])
-                s,_,h = dkt(knowledge, score, h)
-                s = s[0]
-                loss += F.binary_cross_entropy_with_logits(s, score.view_as(s))
-                score_all[student].append(s)
+                # 构造 one-hot 题目向量
+                knowledge = torch.zeros(knowledge_n)
+                for k_code in item.knowledge_code:
+                    if 0 <= k_code < knowledge_n:  # 严格检查索引
+                        knowledge[k_code] = 1.0
+
+                score = torch.FloatTensor([float(item.score)])  # 这里的 score 建议传百分比
+
+                # 调用新模型
+                s_pred, all_logits, h = dkt(knowledge, score, h)
+
+                # 使用 MSELoss 或 BCEWithLogitsLoss
+                loss += F.binary_cross_entropy_with_logits(s_pred, score.view_as(s_pred))
                 
             H[student] = h
             loss /= item_num
@@ -187,22 +185,20 @@ def get_student_predictions(dkt_model, student_items, knowledge_n):
 
     with torch.no_grad():
         for item in student_items:
-            # 构造输入
             knowledge = torch.zeros(knowledge_n)
             for code in item.knowledge_code:
-                if 0 < code <= knowledge_n:
-                    knowledge[code - 1] = 1.0
-            score = torch.FloatTensor([float(item.score)])
+                # 重要：Data_Loader 已经映射好了，直接用 code，不要 -1
+                if 0 <= code < knowledge_n:
+                    knowledge[code] = 1.0
 
-            # 调用修改后的模型
-            # s: 当前题目的预测值, all_logits: 这一步所有知识点的掌握度
+            score = torch.FloatTensor([float(item.score)])
             s, all_logits, h = dkt_model(knowledge, score, h)
 
-            # 直接获取这一步全量知识点的概率，无需再拼接探针循环预测
+            # 记录概率
             probs = torch.sigmoid(all_logits).view(-1).cpu().numpy()
             pred_matrix_list.append(probs)
 
-            main_k_idx = item.knowledge_code[0] - 1 if item.knowledge_code else 0
+            main_k_idx = item.knowledge_code[0] if item.knowledge_code else 0
             exercise_seq.append({
                 'score': item.score,
                 'concept_idx': main_k_idx

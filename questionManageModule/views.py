@@ -14,6 +14,9 @@ from questionManageModule.models import  StudentMastery
 from userManageModule.decorators import jwt_login_required
 # 确保导入 KnowledgePoint
 from .models import Problem, ProblemContent, Answer, ProblemType, Subject, ProblemTag, KnowledgePoint
+from dkt_app.recommendation_utils import get_user_mastery_probabilities
+import numpy as np
+import random
 
 logger = logging.getLogger(__name__)
 
@@ -392,21 +395,107 @@ def wx_question_detail_random(request):
     """问题详情"""
     if request.method == 'GET':
         try:
-            # 使用order_by('?')随机排序并获取第一条记录
-            question = Problem.objects.filter(is_active=True).order_by('?').first()
-            # question = Problem.objects.filter(id = 435).first()
-            logger.info(question.problem_type.name)
-            logger.info(question.answer)
-            if question:
-                # 序列化数据，确保只返回可JSON序列化的对象
+            # logger.info("进入 wx_question_detail_random 视图。")
+            user = request.user
+            logger.info(f"当前用户ID: {user.id}，发起了随机问题请求")
+
+            mastery_probs_raw = get_user_mastery_probabilities(user)
+            # test
+            # logger.info(f"用户 {user.id} 的原始知识点掌握度: {mastery_probs_raw}")
+
+            # 方案三 + 方案二 组合推荐逻辑
+            mastery_threshold_T = 0.7  # 掌握度上限
+            alpha = 0.7  # 平滑因子
+
+            eligible_kps_with_mastery = {}
+            for kp, mastery in mastery_probs_raw.items():
+                if mastery < mastery_threshold_T:
+                    eligible_kps_with_mastery[kp] = mastery
+            
+            # logger.info(f"用户 {user.id} 掌握度低于 {mastery_threshold_T} 的知识点: {[(kp.name, mastery) for kp, mastery in eligible_kps_with_mastery.items()]}")
+
+            if not eligible_kps_with_mastery:
+                logger.info(f"用户 {user.id} 没有掌握度低于 {mastery_threshold_T} 的知识点，进行随机推荐。")
+                # Fallback to pure random if no weak knowledge points
+                question = Problem.objects.filter(is_active=True).order_by('?').first()
+                if question:
+                    logger.info(f"为用户 {user.id} 随机推荐了题目: {question.id} ({question.problem_type.name})")
+                    data = {
+                        'id': question.id,
+                        'content': question.content.content,
+                        'problem_type': question.problem_type.name,
+                    }
+                    return JsonResponse({'question': data})
+                else:
+                    logger.warning(f"用户 {user.id} 随机推荐失败，没有可用题目。")
+                    return JsonResponse({'error': 'No questions available'}, status=404)
+
+            # 计算推荐概率 (方案二)
+            knowledge_points = list(eligible_kps_with_mastery.keys())
+            weaknesses = np.array([1 - mastery for mastery in eligible_kps_with_mastery.values()])
+            
+            # 避免所有弱点都为0导致除以零，或者所有弱点相同导致概率计算问题
+            if np.all(weaknesses == 0):
+                selection_probabilities = np.ones(len(weaknesses)) / len(weaknesses)
+                # logger.info(f"所有薄弱点掌握度相同，平均分配推荐概率。")
+            else:
+                weighted_weaknesses = weaknesses ** alpha
+                selection_probabilities = weighted_weaknesses / np.sum(weighted_weaknesses)
+            
+            # logger.info(f"用户 {user.id} 知识点薄弱度: {[(kp.name, w) for kp, w in zip(knowledge_points, weaknesses)]}")
+            # logger.info(f"用户 {user.id} 知识点推荐概率: {[(kp.name, p) for kp, p in zip(knowledge_points, selection_probabilities)]}")
+
+            selected_question = None
+            max_attempts = 5  # 尝试从薄弱知识点中选择问题的次数
+            attempts = 0
+
+            while selected_question is None and attempts < max_attempts:
+                attempts += 1
+                try:
+                    # 随机选择一个知识点
+                    chosen_kp = np.random.choice(knowledge_points, p=selection_probabilities)
+                    logger.info(f"尝试 {attempts}/{max_attempts}: 选中知识点 '{chosen_kp.name}' (掌握度: {eligible_kps_with_mastery[chosen_kp]:.2f})。")
+                    
+                    # 查找与该知识点关联的题目
+                    # 确保题目是激活的，并且至少有一个知识点与 chosen_kp 匹配
+                    candidate_questions = Problem.objects.filter(
+                        is_active=True,
+                        knowledge_points=chosen_kp
+                    ).order_by('?') # 可以在这些题目中再随机一个
+
+                    if candidate_questions.exists():
+                        selected_question = candidate_questions.first()
+                        logger.info(f"成功为用户 {user.id} 推荐了基于薄弱知识点 '{chosen_kp.name}' 的题目: {selected_question.id}.")
+                    else:
+                        logger.warning(f"知识点 '{chosen_kp.name}' 没有找到可用题目，尝试重新选择。")
+                except ValueError as ve:
+                    logger.error(f"选择知识点或题目时发生ValueError: {ve}")
+                    break # Break if probabilities are messed up
+
+            if selected_question:
+                logger.info(f"最终为用户 {user.id} 推荐了题目: {selected_question.id} ({selected_question.problem_type.name})。")
                 data = {
-                    'id': question.id,
-                    'content': question.content.content,
-                    'problem_type': question.problem_type.name,
+                    'id': selected_question.id,
+                    'content': selected_question.content.content,
+                    'problem_type': selected_question.problem_type.name,
                 }
                 return JsonResponse({'question': data})
             else:
-                return JsonResponse({'error': 'No questions available'}, status=404)
+                logger.warning(f"经过 {max_attempts} 次尝试，未能为用户 {user.id} 找到基于薄弱知识点的题目。最终进行随机推荐。")
+                # 最终 fallback 到纯随机推荐
+                question = Problem.objects.filter(is_active=True).order_by('?').first()
+                if question:
+                    logger.info(f"最终 fallback: 为用户 {user.id} 随机推荐了题目: {question.id} ({question.problem_type.name})")
+                    data = {
+                        'id': question.id,
+                        'content': question.content.content,
+                        'problem_type': question.problem_type.name,
+                    }
+                    return JsonResponse({'question': data})
+                else:
+                    logger.warning(f"最终 fallback 失败: 用户 {user.id} 没有可用题目。")
+                    return JsonResponse({'error': 'No questions available'}, status=404)
+
         except Exception as e:
             # 记录异常到日志，便于调试
             logger.error(f"Error in random_question view: {str(e)}")

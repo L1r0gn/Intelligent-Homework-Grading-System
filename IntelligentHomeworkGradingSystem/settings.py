@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
-
+from distutils.cygwinccompiler import CONFIG_H_OK
 from pathlib import Path
 import os
 import pymysql
@@ -33,10 +33,11 @@ DEBUG = True
 AUTH_USER_MODEL = 'userManageModule.User'  # 格式：app名称.模型类名
 
 # 允许的域名
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost','119.29.152.140','www.ihgs.com']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost',{config.DOMAIN_ID},{config.DOMAIN_NAME}]
 
-WECHAT_APPID = 'wx144180b95c1f6746'
-WECHAT_SECRET = '3772679a541e4d7ff0dba5aebfe4c606'
+import config
+WECHAT_APPID = config.WECHAT_APPID
+WECHAT_SECRET = config.WECHAT_SECRET
 
 # --- Celery 配置 ---
 # 使用 Redis 作为消息代理 (Broker)

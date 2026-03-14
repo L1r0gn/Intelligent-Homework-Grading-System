@@ -144,33 +144,29 @@ def grade_submission_with_ai(standard_answer, total_score, submission_id=None, a
 
 
 @shared_task
-def process_and_grade_submission(assignment_status_id=None, submission_id=None):
+def process_and_grade_submission(submission_id=None):
     """
     【合并后的 Celery 任务】
     既可以处理作业状态流程 (AssignmentStatus)，也可以处理单纯的提交 (Submission)。
     如果调用时只传一个参数，默认视为 assignment_status_id (兼容旧代码逻辑)。
     """
     #============初始化==============
+    assignment = None
     assignment_status = None
     submission = None
     problem = None
     #===============================
     # 1. 获取 Submission 对象和上下文
     try:
-        if assignment_status_id:
-            assignment_status = AssignmentStatus.objects.get(id=assignment_status_id)
-            submission = assignment_status.submission
-            # 如果是作业，题目来自 assignment
-            problem = assignment_status.assignment.problem
-        elif submission_id:
+        if submission_id:
             submission = Submission.objects.get(id=submission_id)
             # 如果是单独提交，题目直接来自 submission
             problem = submission.problem
         else:
-            logger.error("❌ 任务调用错误：未提供 ID")
+            logger.error("❌ 任务调用错误：未提供 submission id")
             return
     except Exception as e:
-        logger.error(f"❌ 获取对象失败: {e}")
+        logger.error(f"❌ 获取submissions对象失败: {e}")
         return
 
     # 检查数据

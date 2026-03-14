@@ -1,4 +1,5 @@
 from audioop import reverse
+from datetime import timezone
 from functools import wraps
 from http.client import responses
 
@@ -57,19 +58,25 @@ def submissionprocess(request):
             })
         return JsonResponse(data, safe=False)
     elif request.method == 'POST':
-        #解析json数据
+        # 1. 解析json数据
         if request.content_type == 'application/json':
             try:
-                request.POST = json.loads(request.body)
+                data = json.loads(request.body)
             except json.JSONDecodeError:
                 return HttpResponseBadRequest("JSON 解析错误")
 
         # 2. 从解析后的 data 字典中获取数据
-        submitted_text = request.POST.get('submitted_text')
-        problem_id = request.POST.get('questionId')
-        choose_answer = request.POST.get('selectedAnswer')  # 用于选择题
-        userId = request.POST.get('userId')
+        submitted_text = data.get('submitted_text')
+        problem_id = data.get('questionId')
+        choose_answer = data.get('selectedAnswer')  # 用于选择题
+        userId = data.get('userId')
         submitted_image = request.FILES.get('submitted_image')  # 用于主观题
+
+        ### important - decide use assignment/question ###
+        source = data.get('from')
+        if not source:
+            return HttpResponseBadRequest("请求必须包含 'from'")
+
         if not problem_id:
             return HttpResponseBadRequest("请求必须包含 'problem_id'")
         try:
@@ -80,19 +87,41 @@ def submissionprocess(request):
         try:
             user = User.objects.get(id=userId)
         except User.DoesNotExist:
-            return HttpResponseBadRequest({'error':'用户不存在'},status=405)
+            return HttpResponseBadRequest('用户不存在')
         logger.info(f"用户 {user.wx_nickName}创建了新提交")
 
+        from django.utils import timezone
         # 创建新的 submission 实例，保存图片
         submission = Submission.objects.create(
-            student=user,
             problem=problem,
+            student=user,
             submitted_text=submitted_text,
-            choose_answer=choose_answer,
+            submitted_time=timezone.now(),
             submitted_image=submitted_image,
+            choose_answer=choose_answer,
             status='PENDING', # 初始状态为判题中
+            score=0,
+            feedback='',
+            justification='',
         )
-
+        if source == 'assignment':
+            assignment_id = data.get('assignment_id')
+            if not assignment_id:
+                return HttpResponseBadRequest("请求必须包含 'assignment_id'")
+            from assignmentAndClassModule.models import AssignmentStatus,Assignment
+            assignment=Assignment.objects.get(id=assignment_id)
+            assignment_status,created = AssignmentStatus.objects.get_or_create(
+                assignment=assignment,
+                submission=submission,
+                student=user,
+                defaults={
+                    'submitted_at': timezone.now(),
+                    # 其他需要的默认字段
+                }
+            )
+            assignment_status.save()
+        elif source == 'question':
+            submission.save()
         ### test
         submissions = Submission.objects.filter(student=user).order_by('-submitted_time')
         logger.info("用户 %s 当前共有 %d 条提交记录", user.wx_nickName, submissions.count())
@@ -101,13 +130,14 @@ def submissionprocess(request):
         # 触发异步任务！使用 .delay() 方法，任务会被发送到 Celery 队列中等待执行
         process_and_grade_submission.delay(submission_id=submission.id)
 
+
         # 立即返回响应给用户
         response_data = {
             'id': submission.id,
             'message': '提交成功，正在判题中...',
-            'status': submission.status
+            # 'status': submission.status
         }
-        return JsonResponse(response_data, status=201)
+        return JsonResponse(response_data, status=200)
     else:
         return JsonResponse({'error': '不支持的请求方法'}, status=405)
 @admin_required
@@ -361,6 +391,8 @@ def showMySubmissions(request):
                 'question_title': sub.problem.title,
                 'user_answer': sub.submitted_text or sub.choose_answer or (sub.submitted_image.url if sub.submitted_image else ""),
                 'is_correct': sub.status == 'ACCEPTED', # 假设 ACCEPTED 为正确
+                'student_score':sub.score,
+                'question_score':sub.problem.points,
                 'score': sub.score,
                 'status': sub.status, # 补充返回具体状态
                 'created_at': sub.submitted_time.strftime('%Y-%m-%d %H:%M:%S')

@@ -18,9 +18,6 @@ cd Intelligent-Homework-Grading-System
 source venv/bin/activate
 gunicorn --bind 0.0.0.0:8000 IntelligentHomeworkGradingSystem.wsgi:application
 
-# 服务器地址
-119.29.152.140
-
 # 从服务器克隆项目
 git clone https://L1r0gn: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@github.com/L1r0gn/Intelligent-Homework-Grading-System.git
 
