@@ -33,7 +33,7 @@ DEBUG = True
 AUTH_USER_MODEL = 'userManageModule.User'  # 格式：app名称.模型类名
 
 # 允许的域名
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost',{config.DOMAIN_ID},{config.DOMAIN_NAME}]
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost','119.29.152.140']
 
 import config
 WECHAT_APPID = config.WECHAT_APPID
