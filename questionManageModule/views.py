@@ -16,7 +16,6 @@ from userManageModule.decorators import jwt_login_required
 from .models import Problem, ProblemContent, Answer, ProblemType, Subject, ProblemTag, KnowledgePoint
 from dkt_app.recommendation_utils import get_user_mastery_probabilities
 import numpy as np
-import random
 
 logger = logging.getLogger(__name__)
 
@@ -403,6 +402,7 @@ def wx_question_detail_random(request):
             # test
             # logger.info(f"用户 {user.id} 的原始知识点掌握度: {mastery_probs_raw}")
 
+
             # 方案三 + 方案二 组合推荐逻辑
             mastery_threshold_T = 0.7  # 掌握度上限
             alpha = 0.7  # 平滑因子
@@ -498,7 +498,7 @@ def wx_question_detail_random(request):
 
         except Exception as e:
             # 记录异常到日志，便于调试
-            logger.error(f"Error in random_question view: {str(e)}")
+            logger.error(f"Error in random_question view: {e}")
             return JsonResponse({'error': 'Internal server error'}, status=500)
 
 
