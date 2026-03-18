@@ -6,3 +6,5 @@ config.py
 .vscode/
 media/
 venv/
+.idea/
+ihgs.sql

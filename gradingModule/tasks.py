@@ -5,7 +5,7 @@ from celery import shared_task
 from openai import OpenAI
 from django.conf import settings  # 确保正确引用 settings
 
-from assignmentAndClassModule.models import AssignmentStatus
+from assignmentAndClassModule.models import AssignmentStatus, Assignment
 from .models import Submission
 # === 导入知识点分析服务 ===
 try:
@@ -36,7 +36,7 @@ def encode_image_to_base64(image_path):
         return None
 
 
-def grade_submission_with_ai(standard_answer, total_score, submission_id=None, assignment_status_id=None):
+def grade_submission_with_ai(standard_answer, total_score, submission_id=None, assignment_status_id=None, custom_prompt=None):
     """
     【合并后的核心函数】
     实现"重载"效果：可以通过 submission_id 或 assignment_status_id 调用。
@@ -47,6 +47,7 @@ def grade_submission_with_ai(standard_answer, total_score, submission_id=None, a
         total_score (int/float): 题目总分，AI将在此范围内进行评分
         submission_id (int, optional): 提交记录ID，用于直接获取提交信息
         assignment_status_id (int, optional): 作业状态ID，通过状态获取对应的提交信息
+        custom_prompt (str, optional): 教师自定义的评分提示词，用于增强批改反馈
     
     Returns:
         str/None: 返回AI评分的JSON格式结果字符串，包含score和justification字段；
@@ -54,7 +55,7 @@ def grade_submission_with_ai(standard_answer, total_score, submission_id=None, a
                 
     功能说明:
         1. 根据提供的ID获取对应的提交对象
-        2. 构造AI评分prompt，包含标准答案、总分等信息
+        2. 构造AI评分prompt，包含标准答案、总分、自定义提示词等信息
         3. 调用阿里云千问VL模型进行图片内容分析和评分
         4. 返回结构化的评分结果
     """
@@ -88,20 +89,33 @@ def grade_submission_with_ai(standard_answer, total_score, submission_id=None, a
     image_url = f"{settings.SERVER_BASE_URL}/grading/submission-image/{submission_id}"
     logger.info(f"图片 URL: {image_url}")
 
+    # 构建自定义提示词部分
+    custom_prompt_section = ""
+    if custom_prompt and custom_prompt.strip():
+        custom_prompt_section = f"""
+    # 教师特别要求（请优先严格按照此要求评分）
+    {custom_prompt}
+
+    """
+        logger.info(f"使用自定义提示词: {custom_prompt[:100]}...")
+
     prompt = f"""
     # 角色
     你是一名经验丰富、严格公正的阅卷老师。
     # 任务
-    请根据提供的“标准答案”，对“学生提交的答案图片”进行分析和打分。
+    请根据提供的"标准答案"，对"学生提交的答案图片"进行分析和打分。
     # 上下文
     - 题目总分: {total_score}分
     - 标准答案: ```{standard_answer}```
-    # 评分要求
-    1.  仔细阅读并比对“标准答案”和“学生提交的答案图片”。
+    - 评分要求 {custom_prompt_section}# 评分要求
+    1.  仔细阅读并比对"标准答案"和"学生提交的答案图片"。
     2.  识别出学生答对的关键得分点。
     3.  识别出学生遗漏的、或回答错误的地方。
     4.  综合分析，给出一个合理的分数。分数必须是整数。
     5.  用简洁的语言给出评分的理由。
+    6.  对于理科题目（数学、物理、化学等），请重点关注学生的解题思维链（chain of thought），
+    分析学生的解题思路是否清晰、逻辑是否正确、步骤是否完整。即使最终答案有误，如果解题过程正确
+    也应给予部分分数，并在评语中指出思维链的优点和不足。
     # 输出格式
     请严格按照以下 JSON 格式返回你的评分结果，不要包含任何额外的解释或文字。
     {{
@@ -155,6 +169,7 @@ def process_and_grade_submission(submission_id=None):
     assignment_status = None
     submission = None
     problem = None
+    custom_prompt = None  # 自定义评分提示词
     #===============================
     # 1. 获取 Submission 对象和上下文
     try:
@@ -162,6 +177,15 @@ def process_and_grade_submission(submission_id=None):
             submission = Submission.objects.get(id=submission_id)
             # 如果是单独提交，题目直接来自 submission
             problem = submission.problem
+            # 尝试获取关联的 Assignment（通过 AssignmentStatus）
+            try:
+                assignment_status = AssignmentStatus.objects.filter(submission=submission).first()
+                if assignment_status:
+                    assignment = assignment_status.assignment
+                    custom_prompt = assignment.custom_prompt
+                    logger.info(f"获取到作业关联的自定义提示词: {custom_prompt[:50] if custom_prompt else '无'}...")
+            except Exception as e:
+                logger.warning(f"未找到关联的作业: {e}")
         else:
             logger.error("❌ 任务调用错误：未提供 submission id")
             return
@@ -248,11 +272,12 @@ def process_and_grade_submission(submission_id=None):
         submission.save()
         return
 
-    # 调用上面合并后的 AI 函数
+    # 调用上面合并后的 AI 函数，传入自定义提示词
     ai_response_str = grade_submission_with_ai(
         standard_answer=problem.answer.explanation if problem.answer else "略",
         total_score=problem.points,
-        submission_id=submission.id  # 明确传入 submission_id
+        submission_id=submission.id,  # 明确传入 submission_id
+        custom_prompt=custom_prompt  # 传入教师自定义提示词
     )
 
     if ai_response_str is None:

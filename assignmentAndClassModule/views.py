@@ -160,6 +160,9 @@ def push_assignment(request):
         # 答案和解析信息
         answer_text = data.get('answer')
         explanation_text = data.get('explanation')
+        
+        # 自定义评分提示词
+        custom_prompt = data.get('custom_prompt', '')
 
         # --- 2. 验证并获取关联对象 ---
         try:
@@ -210,7 +213,8 @@ def push_assignment(request):
                 title=assignment_title,  # 作业标题
                 description=assignment_description or problem_content_text,  # 描述
                 deadline=deadline,
-                problem=new_problem  # --- 核心：关联刚创建的题目 ---
+                problem=new_problem,  # --- 核心：关联刚创建的题目 ---
+                custom_prompt=custom_prompt  # 自定义评分提示词
             )
 
             # --- 5. 为学生创建状态 (AssignmentStatus) ---
@@ -546,6 +550,7 @@ def teacher_get_assignments_detail(request, class_id, assignment_id):
             'submittedCount': submittedCount,
             'problem_id': assignment.problem.id if assignment.problem else None,
             'problem_title': assignment.problem.title if assignment.problem else '传统作业 (仅附件)',
+            'custom_prompt': assignment.custom_prompt or '',  # 返回自定义提示词
         }
         return JsonResponse({'data': return_data})
 
@@ -628,6 +633,7 @@ def update_assignment(request, assignment_id):
         title = data.get('title')
         description = data.get('description')
         deadline = data.get('deadline') # 格式: "2023-11-30 23:59"
+        custom_prompt = data.get('custom_prompt')  # 自定义评分提示词
 
         # 3. 更新 Assignment 表
         if title:
@@ -636,6 +642,8 @@ def update_assignment(request, assignment_id):
             assignment.description = description
         if deadline:
             assignment.deadline = deadline
+        if custom_prompt is not None:
+            assignment.custom_prompt = custom_prompt
         assignment.save()
 
         # 4. 同步更新关联的 Problem 表 (如果存在)

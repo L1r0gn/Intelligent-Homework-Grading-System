@@ -21,6 +21,12 @@ class Assignment(models.Model): # for class
     created_at = models.DateTimeField(auto_now_add=True)
     deadline = models.DateTimeField(null=True, blank=True,default=None)
     attachment = models.FileField(upload_to='assignments/', null=True, blank=True)
+    custom_prompt = models.TextField(
+        null=True, 
+        blank=True, 
+        verbose_name="自定义评分提示词",
+        help_text="教师自定义的AI评分提示词，用于增强批改反馈"
+    )
 
 class AssignmentStatus(models.Model): # for student
     STATUS_CHOICES = [
