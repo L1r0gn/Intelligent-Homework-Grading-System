@@ -747,6 +747,7 @@ def wx_search_questions(request):
             'problem_type': q.problem_type.name,
             'difficulty': q.get_difficulty_display(),
             'knowledge_points': kp_names,
+            'subject': q.subject.name,
             # 截取一部分内容作为预览
             'content_preview': q.content.content[:40] + '...' if q.content else ''
         })
