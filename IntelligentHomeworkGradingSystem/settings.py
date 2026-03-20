@@ -9,11 +9,9 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
-from distutils.cygwinccompiler import CONFIG_H_OK
 from pathlib import Path
 import os
 import pymysql
-import config
 
 pymysql.install_as_MySQLdb()
 
@@ -35,9 +33,14 @@ AUTH_USER_MODEL = 'userManageModule.User'  # 格式：app名称.模型类名
 # 允许的域名
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost','119.29.152.140']
 
-import config
-WECHAT_APPID = config.WECHAT_APPID
-WECHAT_SECRET = config.WECHAT_SECRET
+# wechat
+WECHAT_APPID = 'wx144180b95c1f6746'
+WECHAT_SECRET = '3772679a541e4d7ff0dba5aebfe4c606'
+
+# 服务器地址
+# 119.29.152.140
+DOMAIN_ID = '119.29.152.140'
+DOMAIN_NAME = 'www.ihgs.com'
 
 # --- Celery 配置 ---
 # 使用 Redis 作为消息代理 (Broker)
@@ -158,7 +161,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',  # 切换到mysql
         'NAME': 'ihgs',
         'USER': 'root',
-        'PASSWORD': config.DATABASES_PASSWORD,
+        'PASSWORD': 'root',
         'HOST': 'localhost',
         'PORT': '3306',
     }
@@ -212,7 +215,10 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'  # 生产环境收集静态文件的目�
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-OPENROUTER_API_KEY = config.OPENROUTER_API_KEY
+# OpenRouter API Key (用于AI评分)
+# 可以从环境变量获取，或者直接设置
+import os
+OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', 'sk-a57f72efbd53491f87d3c46eb911ca10')
 
 # 图片服务器基础地址
 SERVER_BASE_URL = 'http://119.29.152.140:8000'

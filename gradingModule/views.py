@@ -534,3 +534,69 @@ def getSubmissionsByAssignmentId(request, assignment_id):
     except Exception as e:
         logger.error(f"Error in getSubmissionsByAssignmentId: {str(e)}")
         return JsonResponse({"error": "Internal Server Error"}, status=500)
+
+@csrf_exempt
+@jwt_login_required
+def wx_upload_image(request):
+    """
+    小程序图片上传API
+    用于手动输入题目时上传题目图片
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': '只支持POST请求'}, status=405)
+    
+    try:
+        # 检查是否有文件上传
+        if 'file' not in request.FILES:
+            return JsonResponse({'success': False, 'error': '没有上传文件'}, status=400)
+        
+        uploaded_file = request.FILES['file']
+        
+        # 验证文件类型
+        allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/jpg']
+        if uploaded_file.content_type not in allowed_types:
+            return JsonResponse({'success': False, 'error': '只支持JPEG、PNG、GIF格式的图片'}, status=400)
+        
+        # 验证文件大小（限制为5MB）
+        max_size = 5 * 1024 * 1024  # 5MB
+        if uploaded_file.size > max_size:
+            return JsonResponse({'success': False, 'error': '图片大小不能超过5MB'}, status=400)
+        
+        # 生成文件名
+        import os
+        from django.utils import timezone
+        from django.conf import settings
+        
+        # 使用时间戳和随机字符串生成唯一文件名
+        import uuid
+        timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
+        random_str = str(uuid.uuid4())[:8]
+        file_ext = os.path.splitext(uploaded_file.name)[1]
+        filename = f"manual_input_{timestamp}_{random_str}{file_ext}"
+        
+        # 保存文件到media目录
+        media_path = os.path.join(settings.MEDIA_ROOT, 'manual_input')
+        os.makedirs(media_path, exist_ok=True)
+        
+        file_path = os.path.join(media_path, filename)
+        
+        with open(file_path, 'wb+') as destination:
+            for chunk in uploaded_file.chunks():
+                destination.write(chunk)
+        
+        # 构建URL
+        file_url = f"{settings.MEDIA_URL}manual_input/{filename}"
+        
+        # 返回完整的URL（包含服务器地址）
+        full_url = f"{settings.SERVER_BASE_URL}{file_url}"
+        
+        return JsonResponse({
+            'success': True,
+            'url': full_url,
+            'filename': filename,
+            'message': '图片上传成功'
+        })
+        
+    except Exception as e:
+        logger.error(f"图片上传失败: {str(e)}")
+        return JsonResponse({'success': False, 'error': f'上传失败: {str(e)}'}, status=500)

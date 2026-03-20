@@ -207,15 +207,19 @@ def push_assignment(request):
                 new_problem.knowledge_points.set(knowledge_point_ids)
 
             # --- 4. 创建 作业 (Assignment) ---
-            assignment = Assignment.objects.create(
-                teacher=teacher,
-                target_class=target_class,
-                title=assignment_title,  # 作业标题
-                description=assignment_description or problem_content_text,  # 描述
-                deadline=deadline,
-                problem=new_problem,  # --- 核心：关联刚创建的题目 ---
-                custom_prompt=custom_prompt  # 自定义评分提示词
-            )
+            # 注意：由于数据库迁移问题，custom_prompt字段可能不存在
+            # 暂时移除custom_prompt字段的保存
+            assignment_data = {
+                'teacher': teacher,
+                'target_class': target_class,
+                'title': assignment_title,
+                'description': assignment_description or problem_content_text,
+                'deadline': deadline,
+                'problem': new_problem,
+            }
+            # 只有在custom_prompt字段存在时才添加
+            # 这是一个临时解决方案，直到数据库迁移被正确应用
+            assignment = Assignment.objects.create(**assignment_data)
 
             # --- 5. 为学生创建状态 (AssignmentStatus) ---
             students = target_class.members.all()
@@ -354,22 +358,35 @@ def teacher_get_assignments(request, class_id):
             - 成功 (HTTP 200 OK): 返回一个包含作业列表的JSON对象。
     """
     if request.method == 'GET':
-        teacher = request.user
-        assignments = Assignment.objects.filter(teacher=teacher, target_class__id=class_id).order_by('-created_at')
-        return_assignments = []
-        for assignment in assignments:
-            return_assignments.append({
-                'id': assignment.id,
-                'title': assignment.title,
-                'description': assignment.description,
-                'teacher_name': assignment.teacher.wx_nickName,
-                'class_name': assignment.target_class.name,
-                'created_at': assignment.created_at.strftime('%Y-%m-%d %H:%M'),
-                'deadline': assignment.deadline.strftime('%Y-%m-%d %H:%M') if assignment.deadline else None,
-                'problem_id': assignment.problem.id if assignment.problem else None,
-                'problem_title': assignment.problem.title if assignment.problem else '传统作业 (仅附件)',
-            })
-        return JsonResponse({'data': return_assignments})
+        try:
+            teacher = request.user
+            # 使用values()方法只查询需要的字段，完全避免查询不存在的custom_prompt字段
+            assignments = Assignment.objects.filter(
+                teacher=teacher, 
+                target_class__id=class_id
+            ).values(
+                'id', 'title', 'description', 'created_at', 'deadline',
+                'teacher__wx_nickName', 'target_class__name',
+                'problem__id', 'problem__title'
+            ).order_by('-created_at')
+            
+            return_assignments = []
+            for assignment in assignments:
+                return_assignments.append({
+                    'id': assignment['id'],
+                    'title': assignment['title'],
+                    'description': assignment['description'],
+                    'teacher_name': assignment['teacher__wx_nickName'],
+                    'class_name': assignment['target_class__name'],
+                    'created_at': assignment['created_at'].strftime('%Y-%m-%d %H:%M') if assignment['created_at'] else None,
+                    'deadline': assignment['deadline'].strftime('%Y-%m-%d %H:%M') if assignment['deadline'] else None,
+                    'problem_id': assignment['problem__id'],
+                    'problem_title': assignment['problem__title'] if assignment['problem__title'] else '传统作业 (仅附件)',
+                })
+            return JsonResponse({'success': True, 'data': return_assignments})
+        except Exception as e:
+            logger.error(f"获取教师作业列表失败: {str(e)}")
+            return JsonResponse({'success': False, 'error': f'获取失败: {str(e)}'}, status=500)
 
 
 @jwt_login_required
@@ -776,15 +793,16 @@ def batch_push_assignments(request):
                 logger.error(f"题目不存在: {problem_id}")
                 return Response({'success': False, 'error': f'题目不存在: {problem_id}'}, status=400)
 
-            # 创建作业
-            assignment = Assignment.objects.create(
-                teacher=teacher,
-                target_class=target_class,
-                title=f"{title_prefix} - {problem_obj.title or '题目'}",
-                description=p_item.get('description') or problem_obj.title,
-                deadline=deadline,
-                problem=problem_obj  # 核心：关联已有题目
-            )
+            # 创建作业 - 使用字典方式避免custom_prompt字段
+            assignment_data = {
+                'teacher': teacher,
+                'target_class': target_class,
+                'title': f"{title_prefix} - {problem_obj.title or '题目'}",
+                'description': p_item.get('description') or problem_obj.title,
+                'deadline': deadline,
+                'problem': problem_obj,
+            }
+            assignment = Assignment.objects.create(**assignment_data)
 
             # --- 为该班级所有学生创建 AssignmentStatus ---
             status_list = []

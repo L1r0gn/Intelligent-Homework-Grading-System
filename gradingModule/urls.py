@@ -11,4 +11,6 @@ urlpatterns = [
     path('wx/submissions/<int:submission_id>/', views.getASubmission, name='get_a_submission'),
     path('submissions/batch-action/', views.submission_batch_action, name='submission_batch_action'),
     path('wx/submissions/assignment_id=<int:assignment_id>/', views.getSubmissionsByAssignmentId, name='get_submissions_by_assignment_id'),
+    # 新增图片上传API
+    path('wx/upload/image/', views.wx_upload_image, name='wx_upload_image'),
 ]

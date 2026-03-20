@@ -712,11 +712,14 @@ def wx_search_questions(request):
     支持参数：
     - keyword: 搜索标题、内容
     - kp_id: 知识点ID
-    - page: 分页
+    - page: 分页页码（默认1）
+    - pageSize: 每页数量（默认20）
     """
     keyword = request.GET.get('keyword', '').strip()
     kp_id = request.GET.get('kp_id')
-
+    page = int(request.GET.get('page', 1))
+    page_size = int(request.GET.get('pageSize', 20))
+    
     # 只查询激活的题目
     questions = Problem.objects.filter(is_active=True).select_related('problem_type', 'subject')
 
@@ -732,26 +735,53 @@ def wx_search_questions(request):
             Q(knowledge_points__name__icontains=keyword)
         ).distinct()
 
-    # 默认按时间倒序，限制返回数量防止数据量过大
+    # 计算总数
     total_count = questions.count()
-    questions = questions.order_by('-create_time')[:50]
+    
+    # 计算分页
+    start_index = (page - 1) * page_size
+    end_index = start_index + page_size
+    
+    # 按时间倒序，分页查询
+    questions = questions.order_by('-create_time')[start_index:end_index]
 
     data = []
     for q in questions:
         # 获取该题关联的知识点名称
         kp_names = [kp.name for kp in q.knowledge_points.all()[:3]]
+        
+        # 获取题目内容（用于预览）
+        content_preview = ''
+        if q.content and q.content.content:
+            content_preview = q.content.content[:100] + '...' if len(q.content.content) > 100 else q.content.content
 
         data.append({
             'id': q.id,
             'title': q.title if q.title else f'题目 #{q.id}',
             'problem_type': q.problem_type.name,
-            'difficulty': q.get_difficulty_display(),
+            'problem_type_id': q.problem_type.id,
+            'subject': q.subject.name if q.subject else '',
+            'subject_id': q.subject.id if q.subject else None,
+            'difficulty': q.difficulty,
+            'difficulty_display': q.get_difficulty_display(),
+            'points': q.points,
             'knowledge_points': kp_names,
-            # 截取一部分内容作为预览
-            'content_preview': q.content.content[:40] + '...' if q.content else ''
+            'content': q.content.content if q.content else '',
+            'content_preview': content_preview,
+            'answer': q.answer.content if q.answer else '',
+            'explanation': q.answer.explanation if q.answer else '',
+            'estimated_time': q.estimated_time,
+            'create_time': q.create_time.strftime('%Y-%m-%d %H:%M') if q.create_time else ''
         })
 
-    return JsonResponse({'success': True, 'data': data, 'total': total_count})
+    return JsonResponse({
+        'success': True, 
+        'data': data, 
+        'total': total_count,
+        'page': page,
+        'pageSize': page_size,
+        'hasMore': total_count > end_index
+    })
 
 
 @jwt_login_required
