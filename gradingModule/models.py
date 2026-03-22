@@ -9,6 +9,8 @@ class Submission(models.Model):
         ('PENDING', '待批改'),
         ('GRADING', '批改中'),
         ('SUBMITTED','已提交'),
+        #新增重做状态
+        ('REDOING','重做中'),
         #提交正确
         ('GRADED', '已批改'),
         ('ACCEPTED', '答案正确'),
@@ -35,5 +37,9 @@ class Submission(models.Model):
     #     ordering = ['-submitted_at'] # 默认按提交时间降序排列
     #     verbose_name = "提交记录"
     #     verbose_name_plural = verbose_name
+
+    #新增重做标记
+    is_redo = models.BooleanField(default=False, verbose_name="是否为重做提交")  # 标记是否是重做
+
     def __str__(self):
         return f'{self.student.username} - {self.problem.title} ({self.status})'

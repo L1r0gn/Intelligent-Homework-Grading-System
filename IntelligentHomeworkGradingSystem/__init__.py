@@ -12,7 +12,10 @@ redis-server --port 6380
 celery -A IntelligentHomeworkGradingSystem worker -l info --pool=solo
 python manage.py runserver
 
-# 部署
+# 部署#本地部署
+# redis-server --port 6380
+# celery -A IntelligentHomeworkGradingSystem worker -l info --pool=solo
+# python manage.py runserver
 # cd Intelligent_Homework_Grading_System/
 cd Intelligent-Homework-Grading-System
 source venv/bin/activate

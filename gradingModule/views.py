@@ -91,19 +91,32 @@ def submissionprocess(request):
         logger.info(f"用户 {user.wx_nickName}创建了新提交")
 
         from django.utils import timezone
-        # 创建新的 submission 实例，保存图片
-        submission = Submission.objects.create(
-            problem=problem,
-            student=user,
-            submitted_text=submitted_text,
-            submitted_time=timezone.now(),
-            submitted_image=submitted_image,
-            choose_answer=choose_answer,
-            status='PENDING', # 初始状态为判题中
-            score=0,
-            feedback='',
-            justification='',
-        )
+        # 先判断是否有重做中的记录
+        if Submission.objects.filter(student=user, problem=problem, status='REDOING').exists():
+            # 重做提交：获取这条记录并更新
+            submission = Submission.objects.get(student=user, problem=problem, status='REDOING')
+            submission.submitted_text = submitted_text
+            submission.choose_answer = choose_answer
+            submission.submitted_time = timezone.now()
+            submission.status = 'PENDING'
+            submission.is_redo = True
+            submission.save()
+        else:
+            # 创建新的 submission 实例，保存图片
+            submission = Submission.objects.create(
+                problem=problem,
+                student=user,
+                submitted_text=submitted_text,
+                submitted_time=timezone.now(),
+                submitted_image=submitted_image,
+                choose_answer=choose_answer,
+                status='PENDING',  # 初始状态为判题中
+                score=0,
+                feedback='',
+                justification='',
+                is_redo=False  # 判断为第一次提交
+            )
+
         if source == 'assignment':
             assignment_id = data.get('assignment_id')
             if not assignment_id:
@@ -531,3 +544,75 @@ def getSubmissionsByAssignmentId(request, assignment_id):
     except Exception as e:
         logger.error(f"Error in getSubmissionsByAssignmentId: {str(e)}")
         return JsonResponse({"error": "Internal Server Error"}, status=500)
+
+
+@csrf_exempt
+@jwt_login_required
+def redo_problem(request):
+    """
+    处理用户重做题目请求
+    核心逻辑：将指定题目最新提交记录标记为 REDOING 状态，清空作答内容
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': '仅支持POST请求'}, status=405)
+
+    try:
+        # 1. 解析JSON请求数据
+        if request.content_type == 'application/json':
+            try:
+                data = json.loads(request.body)
+            except json.JSONDecodeError:
+                return JsonResponse({'error': 'JSON解析错误'}, status=400)
+        else:
+            return JsonResponse({'error': '请使用application/json格式'}, status=400)
+
+        # 2. 获取并校验参数
+        problem_id = data.get('problem_id')
+        user_id = data.get('userId')  # 兼容你现有接口的参数命名
+
+        if not problem_id or not user_id:
+            return JsonResponse({'error': 'problem_id和userId不能为空'}, status=400)
+
+        # 3. 查询用户和题目
+        try:
+            user = User.objects.get(id=user_id)
+            problem = Problem.objects.get(id=problem_id)
+        except (User.DoesNotExist, Problem.DoesNotExist):
+            return JsonResponse({'error': '用户或题目不存在'}, status=404)
+
+        # 4. 查询该用户这道题的最新提交记录
+        submission = Submission.objects.filter(
+            student=user,
+            problem=problem
+        ).order_by('-submitted_time').first()
+
+        if not submission:
+            return JsonResponse({'error': '暂无提交记录，无需重做'}, status=404)
+
+        # 5. 重置提交记录（标记为重做中）
+        submission.status = 'REDOING'  # 使用新增的REDOING状态
+        submission.is_redo = True  # 标记为重做
+        # 可选：清空原有作答内容（保留历史则注释）
+        submission.submitted_text = ''
+        submission.choose_answer = ''
+        submission.submitted_image = 'default_submissionImage.png'
+        submission.score = None
+        submission.feedback = ''
+        submission.justification = ''
+        submission.save()
+
+        logger.info(f"用户 {user.wx_nickName} 触发题目 {problem.title} 重做，提交记录ID: {submission.id}")
+
+        # 6. 返回成功响应
+        return JsonResponse({
+            'code': 200,
+            'msg': '可重新作答该题目',
+            'data': {
+                'submission_id': submission.id,
+                'problem_id': problem_id
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"重做题目失败: {str(e)}")
+        return JsonResponse({'error': f'服务器内部错误: {str(e)}'}, status=500)

@@ -13,7 +13,7 @@ class SubmissionSerializer(serializers.ModelSerializer):
         model = Submission
         # fields = '__all__' # 显示所有字段
         # 或者更好地，指定需要的字段
-        fields = ['id', 'problem', 'student', 'submitted_text', 'submitted_time', 'status', 'score', 'feedback']
+        fields = ['id', 'problem', 'student', 'submitted_text', 'submitted_time', 'status', 'score', 'feedback', 'is_redo']
 
         # 将结果字段设置为只读，防止用户在提交时直接修改分数和状态
-        read_only_fields = ['id', 'student', 'submitted_time', 'status', 'score', 'feedback']
+        read_only_fields = ['id', 'student', 'submitted_time', 'status', 'score', 'feedback', 'is_redo']
