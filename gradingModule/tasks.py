@@ -129,7 +129,7 @@ def grade_submission_with_ai(standard_answer, total_score, submission_id=None, a
         base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         api_key=settings.OPENROUTER_API_KEY,  # 确保 settings 里有这个 KEY
     )
-    import skill
+    import gradingModule.skill
     skill = skill.get_vlm_skill_config(total_score, standard_answer)
     # 4. 处理结果
     try:
