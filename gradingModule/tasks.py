@@ -99,47 +99,59 @@ def grade_submission_with_ai(standard_answer, total_score, submission_id=None, a
     """
         logger.info(f"使用自定义提示词: {custom_prompt[:100]}...")
 
-    prompt = f"""
-    # 角色
-    你是一名经验丰富、严格公正的阅卷老师。
-    # 任务
-    请根据提供的"标准答案"，对"学生提交的答案图片"进行分析和打分。
-    # 上下文
-    - 题目总分: {total_score}分
-    - 标准答案: ```{standard_answer}```
-    - 评分要求 {custom_prompt_section}# 评分要求
-    1.  仔细阅读并比对"标准答案"和"学生提交的答案图片"。
-    2.  识别出学生答对的关键得分点。
-    3.  识别出学生遗漏的、或回答错误的地方。
-    4.  综合分析，给出一个合理的分数。分数必须是整数。
-    5.  用简洁的语言给出评分的理由。
-    6.  对于理科题目（数学、物理、化学等），请重点关注学生的解题思维链（chain of thought），
-    分析学生的解题思路是否清晰、逻辑是否正确、步骤是否完整。即使最终答案有误，如果解题过程正确
-    也应给予部分分数，并在评语中指出思维链的优点和不足。
-    # 输出格式
-    请严格按照以下 JSON 格式返回你的评分结果，不要包含任何额外的解释或文字。
-    {{
-      "score": <你给出的分数 (整数)>,
-      "justification": "<你给出的评分理由 (字符串)>"
-    }}
-    """
+    # prompt = f"""
+    # # 角色
+    # 你是一名经验丰富、严格公正的阅卷老师。
+    # # 任务
+    # 请根据提供的"标准答案"，对"学生提交的答案图片"进行分析和打分。
+    # # 上下文
+    # - 题目总分: {total_score}分
+    # - 标准答案: ```{standard_answer}```
+    # - 评分要求 {custom_prompt_section}# 评分要求
+    # 1.  仔细阅读并比对"标准答案"和"学生提交的答案图片"。
+    # 2.  识别出学生答对的关键得分点。
+    # 3.  识别出学生遗漏的、或回答错误的地方。
+    # 4.  综合分析，给出一个合理的分数。分数必须是整数。
+    # 5.  用简洁的语言给出评分的理由。
+    # 6.  对于理科题目（数学、物理、化学等），请重点关注学生的解题思维链（chain of thought），
+    # 分析学生的解题思路是否清晰、逻辑是否正确、步骤是否完整。即使最终答案有误，如果解题过程正确
+    # 也应给予部分分数，并在评语中指出思维链的优点和不足。
+    # # 输出格式
+    # 请严格按照以下 JSON 格式返回你的评分结果，不要包含任何额外的解释或文字。
+    # {{
+    #   "score": <你给出的分数 (整数)>,
+    #   "justification": "<你给出的评分理由 (字符串)>"
+    # }}
+    # """
 
     # 3. 调用 AI 接口
     client = OpenAI(
         base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         api_key=settings.OPENROUTER_API_KEY,  # 确保 settings 里有这个 KEY
     )
-
+    import skill
+    skill = skill.get_vlm_skill_config(total_score, standard_answer)
     # 4. 处理结果
     try:
         completion = client.chat.completions.create(
             model="qwen-vl-plus",
             messages=[
                 {
+                    "role": "system",
+                    "content": f"# 角色\n{skill['role_definition']}\n\n# 执行工作流\n" + "\n".join(
+                        skill['workflow_steps'])
+                },
+                {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": prompt},
-                        {"type": "image_url", "image_url": image_url}
+                        {
+                            "type": "text",
+                            "text": skill['core_prompt'] + "\n\n请严格按照 JSON 格式返回评分结果。"
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": image_url}
+                        }
                     ]
                 }
             ],
