@@ -28,10 +28,14 @@ IntelligentHomeworkGradingSystem/
 │
 ├── userManageModule/                     # 用户管理模块
 │   ├── models.py                         # User、className、ClassTeacher 模型
-│   ├── views.py                          # 用户注册、登录、班级管理视图
+│   ├── views.py                          # 用户注册、登录视图
+│   ├── class_views.py                    # 班级管理视图
 │   ├── urls.py                           # 用户模块路由
 │   ├── admin.py                          # Admin 后台配置
 │   ├── decorators.py                     # JWT 认证装饰器
+│   ├── forms.py                          # 表单定义
+│   ├── serializers.py                    # REST Framework 序列化器
+│   ├── tests.py                          # 单元测试
 │   ├── templates/                        # 用户模块模板
 │   └── static/                           # 静态资源（Bootstrap等）
 │
@@ -40,6 +44,7 @@ IntelligentHomeworkGradingSystem/
 │   ├── views.py                          # 题目 CRUD、导入导出视图
 │   ├── urls.py                           # 题目模块路由
 │   ├── admin.py                          # Admin 后台配置
+│   ├── info.md                           # 模块说明文档
 │   ├── management/                       # 自定义管理命令
 │   │   └── commands/
 │   │       └── import_questions.py       # 批量导入题目命令
@@ -51,45 +56,71 @@ IntelligentHomeworkGradingSystem/
 │   ├── urls.py                           # 批改模块路由
 │   ├── serializers.py                    # REST Framework 序列化器
 │   ├── forms.py                          # 表单定义
-│   └── analysis_logic.py                 # 核心算法：掌握度计算服务
+│   ├── tasks.py                          # Celery 异步任务（AI 批改）
+│   ├── analysis_logic.py                 # 核心算法：掌握度计算服务
+│   ├── tests.py                          # 单元测试
+│   └── templates/                        # 批改模块模板
 │
 ├── assignmentAndClassModule/             # 作业与班级管理模块
 │   ├── models.py                         # Assignment、AssignmentStatus 模型
 │   ├── views.py                          # 作业布置、状态管理视图
 │   ├── urls.py                           # 作业模块路由
-│   └── serializers.py                    # REST Framework 序列化器
+│   ├── serializers.py                    # REST Framework 序列化器
+│   ├── tests.py                          # 单元测试
+│   └── templates/                        # 作业模块模板
 │
 ├── BKTModule/                            # 贝叶斯知识追踪模块（AI 算法）
 │   ├── views.py                          # BKT 相关 API（知识画像、预测等）
 │   ├── urls.py                           # BKT 模块路由
 │   ├── services.py                       # BKT 核心算法服务
+│   ├── bkt_engine.py                     # BKT 引擎实现
 │   ├── models.py                         # BKT 数据模型
-│   └── data_migration.py                 # 数据迁移服务
+│   ├── data_migration.py                 # 数据迁移服务
+│   ├── migration_models.py               # 迁移数据模型
+│   ├── admin.py                          # Admin 后台配置
+│   ├── README.md                         # 模块说明文档
+│   └── templates/                        # BKT 模块模板
 │
 ├── dkt_app/                              # 深度知识追踪模块（AI 算法）
 │   ├── views.py                          # DKT 掌握度预测视图
 │   ├── urls.py                           # DKT 模块路由
 │   ├── models.py                         # DKT 模型
 │   ├── dkt_utils.py                      # DKT 工具函数
-│   └── trained_models/                   # 训练好的模型文件
-│       └── dkt_model.pth
+│   ├── recommendation_utils.py           # 推荐算法工具
+│   ├── management/                       # 自定义管理命令
+│   │   └── commands/
+│   │       ├── train_dkt.py              # DKT 模型训练命令
+│   │       ├── test_dkt_prediction.py    # DKT 预测测试命令
+│   │       └── create_test_data.py       # 创建测试数据命令
+│   ├── templatetags/                     # Django 模板标签
+│   │   └── dkt_extras.py                 # DKT 自定义模板标签
+│   ├── trained_models/                   # 训练好的模型文件
+│   │   └── dkt_model.pth                 # DKT 神经网络模型
+│   ├── templates/                        # DKT 模块模板
+│   └── BUGFIX_REPORT.md                  # Bug 修复报告
 │
 ├── media/                                # 媒体文件目录
 │   ├── defaults/                         # 默认图片
 │   ├── submissions/                      # 学生提交的图片
-│   ├── problem_attachments/              # 题目附件
-│   └── assignments/                      # 作业附件
+│   └── default_submissionImage.png       # 默认提交图片
 │
 ├── static/                               # 静态文件目录
 ├── .venv/                                # Python 虚拟环境
 ├── .idea/                                # PyCharm 项目配置
 ├── .vscode/                              # VS Code 配置
+├── .qoder/                               # Qoder 配置
 │
 ├── manage.py                             # Django 管理脚本（项目入口）
 ├── config.py                             # 敏感配置（数据库密码、API密钥）
 ├── requirements.txt                      # 依赖包列表
 ├── requirements_py3.8.txt                # Python 3.8 依赖
-└── requirements_py3.10.txt               # Python 3.10 依赖
+├── requirements_py3.10.txt               # Python 3.10 依赖
+├── runserver.bat                         # Windows 启动脚本
+├── deploy.bat                            # Windows 部署脚本
+├── deploy.sh                             # Linux 部署脚本
+├── api_structure.md                      # API 结构文档
+├── database_models.md                    # 数据库模型文档
+└── project_structure.md                  # 项目结构文档（本文件）
 ```
 
 ---
@@ -129,6 +160,8 @@ IntelligentHomeworkGradingSystem/
 | **`manage.py`** | Django 项目主入口，用于运行开发服务器和管理命令 |
 | **`IntelligentHomeworkGradingSystem/wsgi.py`** | WSGI 部署入口（生产环境） |
 | **`IntelligentHomeworkGradingSystem/asgi.py`** | ASGI 部署入口（异步应用） |
+| **`runserver.bat`** | Windows 快速启动脚本 |
+| **`deploy.bat` / `deploy.sh`** | 部署脚本 |
 
 ---
 
@@ -136,12 +169,12 @@ IntelligentHomeworkGradingSystem/
 
 | 模块 | 功能描述 |
 |------|----------|
-| **userManageModule** | 用户注册登录、班级管理、角色权限（学生/教师/管理员） |
-| **questionManageModule** | 题库管理、知识点管理、题目类型、标签系统 |
-| **gradingModule** | 作业提交、AI 批改、掌握度计算 |
+| **userManageModule** | 用户注册登录、班级管理、角色权限（学生/教师/管理员）、微信小程序登录 |
+| **questionManageModule** | 题库管理、知识点管理、题目类型、标签系统、批量导入导出 |
+| **gradingModule** | 作业提交、AI 批改（Celery 异步）、掌握度计算 |
 | **assignmentAndClassModule** | 作业布置、截止日期、作业状态追踪 |
-| **BKTModule** | 贝叶斯知识追踪算法，预测学生知识掌握度 |
-| **dkt_app** | 深度知识追踪（DKT）神经网络模型，知识状态预测 |
+| **BKTModule** | 贝叶斯知识追踪算法，预测学生知识掌握度，知识画像分析 |
+| **dkt_app** | 深度知识追踪（DKT）神经网络模型，知识状态预测，题目推荐 |
 
 ---
 
@@ -185,16 +218,48 @@ StudentMastery (学生掌握度)
 /dkt/                      # DKT 知识追踪 API
 /register/                 # 用户注册
 /class/                    # 班级管理
+/class_name/add/           # 添加班级
+/class/<int:class_id>/     # 班级详情
 ```
 
 ---
 
-## 9. 项目特点
+## 9. Django 管理命令
+
+| 命令 | 模块 | 说明 |
+|------|------|------|
+| `python manage.py import_questions` | questionManageModule | 批量导入题目 |
+| `python manage.py train_dkt` | dkt_app | 训练 DKT 模型 |
+| `python manage.py test_dkt_prediction` | dkt_app | 测试 DKT 预测 |
+| `python manage.py create_test_data` | dkt_app | 创建测试数据 |
+
+---
+
+## 10. 环境配置
+
+### 数据库配置
+- 数据库名: `ihgs`
+- 端口: `3306`
+- 密码存储在 `config.py`
+
+### Redis 配置
+- Broker URL: `redis://localhost:6380/0`
+- 用于 Celery 异步任务队列
+
+### JWT 配置
+- Access Token 有效期: 7 天
+- Refresh Token 有效期: 15 天
+
+---
+
+## 11. 项目特点
 
 这是一个功能完整的智能教育系统，整合了：
 
-- 传统 Web 管理
-- 微信小程序端
+- 传统 Web 管理界面
+- 微信小程序端支持
 - AI 知识追踪算法（BKT/DKT）
+- AI 智能批改（OpenRouter LLM）
+- Celery 异步任务处理
 
 主要用于作业批改和学生知识掌握度分析。
