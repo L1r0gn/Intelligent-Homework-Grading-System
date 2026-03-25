@@ -64,6 +64,9 @@ def submissionprocess(request):
                 data = json.loads(request.body)
             except json.JSONDecodeError:
                 return HttpResponseBadRequest("JSON 解析错误")
+        else:
+            # 当使用 wx.uploadFile 时，参数会在这里
+            data = request.POST
 
         # 2. 从解析后的 data 字典中获取数据
         submitted_text = data.get('submitted_text')

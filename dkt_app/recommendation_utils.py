@@ -43,6 +43,7 @@ def _load_dkt_model_and_mappings():
     knowledge_dim = len(all_knowledge_points)
 
     # 2. 初始化 DKT 模型
+    from dkt_app.models import DKTModel,DKT
     dkt_model = DKT(knowledge_dim)
 
     # 3. 加载训练好的权重

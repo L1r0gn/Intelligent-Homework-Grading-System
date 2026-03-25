@@ -160,6 +160,9 @@ def push_assignment(request):
         # 答案和解析信息
         answer_text = data.get('answer')
         explanation_text = data.get('explanation')
+        
+        # 自定义评分提示词
+        custom_prompt = data.get('custom_prompt', '')
 
         # --- 2. 验证并获取关联对象 ---
         try:
@@ -210,7 +213,8 @@ def push_assignment(request):
                 title=assignment_title,  # 作业标题
                 description=assignment_description or problem_content_text,  # 描述
                 deadline=deadline,
-                problem=new_problem  # --- 核心：关联刚创建的题目 ---
+                problem=new_problem,  # --- 核心：关联刚创建的题目 ---
+                custom_prompt=custom_prompt  # 自定义评分提示词
             )
 
             # --- 5. 为学生创建状态 (AssignmentStatus) ---
@@ -507,7 +511,7 @@ def teacher_get_assignments_detail(request, class_id, assignment_id):
 
     功能描述:
         该视图供教师（已认证）调用，返回特定班级下单个作业的详细统计信息，
-        包括总人数、已提交人数等。
+        包括总人数、已提交人数等，以及完整的题目信息用于编辑。
 
     Args:
         request (Request): DRF的Request对象。
@@ -521,7 +525,9 @@ def teacher_get_assignments_detail(request, class_id, assignment_id):
     """
     if request.method == 'GET':
         teacher = request.user
-        assignment = Assignment.objects.filter(id=assignment_id, teacher=teacher, target_class__id=class_id).first()
+        assignment = Assignment.objects.select_related(
+            'problem', 'problem__content', 'problem__answer', 'problem__problem_type', 'problem__subject'
+        ).filter(id=assignment_id, teacher=teacher, target_class__id=class_id).first()
         if not assignment:
             return JsonResponse({'error': '作业不存在'}, status=404)
 
@@ -533,9 +539,11 @@ def teacher_get_assignments_detail(request, class_id, assignment_id):
             if status_obj and status_obj.submission and status_obj.submission.status != 'PENDING':
                 submittedCount += 1
 
+        problem = assignment.problem
         return_data = {
             'id': assignment.id,
-            'subject': assignment.problem.subject.name if assignment.problem and assignment.problem.subject else '未知',
+            'subject': problem.subject.id if problem and problem.subject else None,
+            'subject_name': problem.subject.name if problem and problem.subject else '未知',
             'title': assignment.title,
             'description': assignment.description,
             'teacher_name': assignment.teacher.wx_nickName,
@@ -544,8 +552,17 @@ def teacher_get_assignments_detail(request, class_id, assignment_id):
             'deadline': assignment.deadline.strftime('%Y-%m-%d %H:%M') if assignment.deadline else None,
             'totalCount': total_members,
             'submittedCount': submittedCount,
-            'problem_id': assignment.problem.id if assignment.problem else None,
-            'problem_title': assignment.problem.title if assignment.problem else '传统作业 (仅附件)',
+            'problem_id': problem.id if problem else None,
+            'problem_title': problem.title if problem else '传统作业 (仅附件)',
+            'custom_prompt': assignment.custom_prompt or '',
+            # 题目详细信息（用于编辑）
+            'content': problem.content.content if problem and problem.content else '',
+            'answer': problem.answer.content if problem and problem.answer else '',
+            'explanation': problem.answer.explanation if problem and problem.answer else '',
+            'difficulty': problem.difficulty if problem else 3,
+            'points': problem.points if problem else 10,
+            'problem_type': problem.problem_type.id if problem and problem.problem_type else None,
+            'knowledge_points': list(problem.knowledge_points.values_list('id', flat=True)) if problem else [],
         }
         return JsonResponse({'data': return_data})
 
@@ -612,34 +629,50 @@ def teacher_get_students_assignments_list(request, class_id, assignment_id):
 def update_assignment(request, assignment_id):
     """
     编辑/更新作业信息
+    支持更新：标题、描述、截止时间、自定义提示词、题目内容、答案、解析、知识点、难度、分值、科目、题目类型
     """
     try:
         teacher = request.user
         data = request.data
         
         # 1. 获取作业对象，并检查权限
-        # 使用 select_related 预加载 problem 和 problem_content，减少数据库查询
-        assignment = Assignment.objects.select_related('problem', 'problem__content').get(id=assignment_id)
+        # 使用 select_related 预加载 problem、problem_content、answer，减少数据库查询
+        assignment = Assignment.objects.select_related(
+            'problem', 'problem__content', 'problem__answer', 'problem__problem_type', 'problem__subject'
+        ).get(id=assignment_id)
         
         if assignment.teacher != teacher:
             return Response({'success': False, 'message': '无权修改此作业'}, status=status.HTTP_403_FORBIDDEN)
 
         # 2. 获取前端提交的数据
+        # 作业基础信息
         title = data.get('title')
         description = data.get('description')
-        deadline = data.get('deadline') # 格式: "2023-11-30 23:59"
+        deadline = data.get('deadline')  # 格式: "2023-11-30 23:59"
+        custom_prompt = data.get('custom_prompt')  # 自定义评分提示词
+        
+        # 题目相关信息
+        content = data.get('content')  # 题目内容
+        answer = data.get('answer')  # 正确答案
+        explanation = data.get('explanation')  # 答案解析
+        knowledge_points = data.get('knowledge_points')  # 知识点ID列表
+        difficulty = data.get('difficulty')  # 难度
+        points = data.get('points')  # 分值
+        subject_id = data.get('subject')  # 科目ID
+        problem_type_id = data.get('problem_type')  # 题目类型ID
 
         # 3. 更新 Assignment 表
         if title:
             assignment.title = title
-        if description:
+        if description is not None:
             assignment.description = description
         if deadline:
             assignment.deadline = deadline
+        if custom_prompt is not None:
+            assignment.custom_prompt = custom_prompt
         assignment.save()
 
-        # 4. 同步更新关联的 Problem 表 (如果存在)
-        # 因为在 push_assignment 中，我们是用作业的 title 和 description 来填充 Problem 的
+        # 4. 更新关联的 Problem 表 (如果存在)
         if assignment.problem:
             problem = assignment.problem
             
@@ -647,10 +680,46 @@ def update_assignment(request, assignment_id):
             if title:
                 problem.title = title
             
+            # 更新难度
+            if difficulty is not None:
+                problem.difficulty = difficulty
+            
+            # 更新分值
+            if points is not None:
+                problem.points = points
+            
+            # 更新科目
+            if subject_id:
+                try:
+                    subject = Subject.objects.get(id=subject_id)
+                    problem.subject = subject
+                except Subject.DoesNotExist:
+                    pass
+            
+            # 更新题目类型
+            if problem_type_id:
+                try:
+                    problem_type = ProblemType.objects.get(id=problem_type_id)
+                    problem.problem_type = problem_type
+                except ProblemType.DoesNotExist:
+                    pass
+            
+            # 更新知识点
+            if knowledge_points is not None:
+                problem.knowledge_points.set(knowledge_points)
+            
             # 更新题目内容 (ProblemContent)
-            if description and problem.content:
-                problem.content.content = description
+            if content is not None and problem.content:
+                problem.content.content = content
                 problem.content.save()
+            
+            # 更新答案和解析 (Answer)
+            if problem.answer:
+                if answer is not None:
+                    problem.answer.content = answer
+                if explanation is not None:
+                    problem.answer.explanation = explanation
+                problem.answer.save()
             
             problem.save()
 
