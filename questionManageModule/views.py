@@ -1,3 +1,4 @@
+import traceback
 from functools import wraps
 from django.http import JsonResponse
 from django.urls import reverse
@@ -394,14 +395,12 @@ def wx_question_detail_random(request):
     """问题详情"""
     if request.method == 'GET':
         try:
-            # logger.info("进入 wx_question_detail_random 视图。")
             user = request.user
             logger.info(f"当前用户ID: {user.id}，发起了随机问题请求")
 
             mastery_probs_raw = get_user_mastery_probabilities(user)
             # test
             # logger.info(f"用户 {user.id} 的原始知识点掌握度: {mastery_probs_raw}")
-
 
             # 方案三 + 方案二 组合推荐逻辑
             mastery_threshold_T = 0.7  # 掌握度上限
@@ -442,9 +441,6 @@ def wx_question_detail_random(request):
                 weighted_weaknesses = weaknesses ** alpha
                 selection_probabilities = weighted_weaknesses / np.sum(weighted_weaknesses)
             
-            # logger.info(f"用户 {user.id} 知识点薄弱度: {[(kp.name, w) for kp, w in zip(knowledge_points, weaknesses)]}")
-            # logger.info(f"用户 {user.id} 知识点推荐概率: {[(kp.name, p) for kp, p in zip(knowledge_points, selection_probabilities)]}")
-
             selected_question = None
             max_attempts = 5  # 尝试从薄弱知识点中选择问题的次数
             attempts = 0
@@ -499,6 +495,7 @@ def wx_question_detail_random(request):
         except Exception as e:
             # 记录异常到日志，便于调试
             logger.error(f"Error in random_question view: {e}")
+            logger.error(traceback.format_exc())
             return JsonResponse({'error': 'Internal server error'}, status=500)
 
 
