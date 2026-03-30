@@ -30,13 +30,26 @@
 pip install -r requirements.txt
 ```
 
-### 2. 配置数据库
+### 2. 配置config
 
-创建 MySQL 数据库 `ihgs`，并在 `config.py` 中配置数据库密码。
+在根目录创建文件 `config.py` ，并配置以下内容：
+```code
+DATABASES_PASSWORD=' '
+OPENROUTER_API_KEY=' '
+
+# wechat
+WECHAT_APPID=' '
+WECHAT_SECRET=' '
+
+# 服务器地址
+DOMAIN_ID = ' '
+DOMAIN_NAME = ' '
+```
 
 ### 3. 数据库迁移
 
 ```bash
+python manage.py makemigrations
 python manage.py migrate
 ```
 
@@ -47,10 +60,12 @@ python manage.py migrate
 python manage.py runserver
 
 # 启动 Celery Worker (另一个终端)
-celery -A IntelligentHomeworkGradingSystem worker -l info
+celery -A IntelligentHomeworkGradingSystem worker -l info --pool=solo
 
 # 启动 Redis (需要先安装 Redis)
-redis-server
+redis-server --port 6380
 ```
 
 访问 http://127.0.0.1:8000 使用系统。
+
+注：如果不配置到服务器可能小程序端无法正常进行问答题作业批改
