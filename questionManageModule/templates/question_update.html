@@ -81,7 +81,7 @@
                                 <select class="form-select" id="subject" name="subject" required>
                                     <option value="" disabled>请选择科目...</option>
                                     {% for sub in subjects %}
-                                        <option value="{{ sub.id }}" {% if question.subject_id == sub.id %}selected{% endif %}>{{ sub.name }}</option>
+                                        <option value="{{ sub.id }}" {% if question.subject_id == sub.id %}selected{% endif %}>{{ sub.name }} ({% if sub.question_count > 200 %}200+{% else %}{{ sub.question_count }}{% endif %}题)</option>
                                     {% endfor %}
                                 </select>
                             </div>

@@ -1,5 +1,4 @@
 from audioop import reverse
-from datetime import timezone
 from functools import wraps
 from http.client import responses
 
@@ -319,23 +318,23 @@ def showMySubmissions(request):
 
         queryset = Submission.objects.filter(student=target_user)
 
-        # 4. 应用过滤
-        if filter_by:
+        # 4. 应用过滤 (支持多个 filter_by 参数)
+        filter_by_list = request.GET.getlist('filter_by')
+        if filter_by and filter_by not in filter_by_list:
+            filter_by_list.append(filter_by)
+        for fb in filter_by_list:
             try:
-                filter_key, filter_value = filter_by.split(':')
-                # 映射允许过滤的字段，防止任意字段查询的安全风险
+                filter_key, filter_value = fb.split(':', 1)
                 allowed_filters = {
                     'status': 'status',
-                    'question_type': 'problem__problem_type__name', # 假设关联路径
+                    'question_type': 'problem__problem_type__name',
                     'problem_id': 'problem__id'
                 }
-                
                 if filter_key in allowed_filters:
-                    # 对于关联字段，可能需要根据实际模型调整
                     db_field = allowed_filters[filter_key]
                     queryset = queryset.filter(**{db_field: filter_value})
             except ValueError:
-                pass # 忽略格式错误的筛选条件
+                pass
 
         # 5. 应用排序
         if sort_by:
@@ -393,10 +392,13 @@ def showMySubmissions(request):
                 'question_id': sub.problem.id,
                 'question_title': sub.problem.title,
                 'user_answer': sub.submitted_text or sub.choose_answer or (sub.submitted_image.url if sub.submitted_image else ""),
-                'is_correct': sub.status == 'ACCEPTED', # 假设 ACCEPTED 为正确
-                'student_score':sub.score,
-                'question_score':sub.problem.points,
+                'is_correct': sub.status == 'ACCEPTED',
+                'student_score': sub.score,
+                'question_score': sub.problem.points,
                 'score': sub.score,
+                'problem_type_name': sub.problem.problem_type.name if sub.problem.problem_type else '',
+                'problem_type_code': sub.problem.problem_type.code if sub.problem.problem_type else '',
+                'knowledge_points': list(sub.problem.knowledge_points.values_list('name', flat=True)),
                 'status': sub.status, # 补充返回具体状态
                 'created_at': sub.submitted_time.strftime('%Y-%m-%d %H:%M:%S')
             })
@@ -426,8 +428,14 @@ def getASubmission(request, submission_id):
         else:
             image_url = None
         # 提取需要的字段
+        problem_content_text = ""
+        if hasattr(submission.problem, 'content') and submission.problem.content:
+            problem_content_text = submission.problem.content.content
+
         data = {
             "problem_title": submission.problem.title,
+            "problem_id": submission.problem.id,
+            "problem_content": problem_content_text,
             "submitted_time": submission.submitted_time.strftime("%Y-%m-%d %H:%M:%S"),
             "submitted_image": image_url,
             "status": submission.status,
@@ -437,6 +445,8 @@ def getASubmission(request, submission_id):
             "choose_answer": submission.choose_answer,
             "submitted_text": submission.submitted_text,
             "problem_type": submission.problem.problem_type.name,
+            "problem_type_code": submission.problem.problem_type.code if submission.problem.problem_type else '',
+            "question_score": submission.problem.points,
         }
         # 返回JSON格式的数据
         return JsonResponse(data)

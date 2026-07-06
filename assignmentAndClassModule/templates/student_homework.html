@@ -1,0 +1,1926 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能作业批改系统 - 学生端</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --sidebar-width: 0px;
+        }
+        body {
+            background: #f0f2f5;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        .login-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .login-card {
+            width: 100%;
+            max-width: 420px;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        }
+        .login-header {
+            padding: 2rem 1.5rem 1rem;
+            text-align: center;
+        }
+        .login-header .logo-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 28px;
+            color: white;
+        }
+        .login-body {
+            padding: 0 1.5rem 2rem;
+        }
+        .login-card .form-control {
+            height: 48px;
+            border-radius: 10px;
+            border: 2px solid #e8ecf1;
+            padding-left: 1rem;
+            font-size: 0.95rem;
+        }
+        .login-card .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.15);
+        }
+        .login-card .btn-login {
+            height: 48px;
+            border-radius: 10px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+        }
+        .login-card .btn-login:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 25px rgba(102,126,234,0.4);
+        }
+        .login-card .input-group-text {
+            background: transparent;
+            border: 2px solid #e8ecf1;
+            border-right: none;
+            border-radius: 10px 0 0 10px;
+            color: #9aa0b0;
+        }
+        .login-card .input-group .form-control {
+            border-left: none;
+            border-radius: 0 10px 10px 0;
+        }
+
+        .app-nav {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .app-nav .nav-brand {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--primary-color);
+        }
+        .app-nav .user-info {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        .nav-tab-btn {
+            border: none;
+            background: transparent;
+            color: #6c757d;
+            font-weight: 500;
+            border-radius: 8px;
+            padding: 6px 14px;
+            transition: all 0.15s;
+        }
+        .nav-tab-btn:hover {
+            background: #f0f2f5;
+            color: var(--primary-color);
+        }
+        .nav-tab-btn.active {
+            background: #e8f0fe;
+            color: var(--primary-color);
+        }
+
+        .page-section {
+            display: none;
+        }
+        .page-section.active {
+            display: block;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transition: transform 0.15s;
+            height: 100%;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+        .stat-card .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .assignment-card {
+            background: white;
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transition: box-shadow 0.2s, transform 0.15s;
+            cursor: pointer;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .assignment-card:hover {
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
+        }
+        .assignment-card .deadline-badge {
+            font-size: 0.8rem;
+        }
+        .assignment-card .status-badge {
+            font-size: 0.75rem;
+        }
+        .assignment-card .card-footer-row {
+            margin-top: auto;
+        }
+
+        .homework-header {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .question-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .question-card .question-content {
+            font-size: 1.05rem;
+            line-height: 1.8;
+            white-space: pre-wrap;
+        }
+        .qb-card {
+            background: white;
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            cursor: pointer;
+            transition: box-shadow 0.2s, transform 0.15s;
+        }
+        .qb-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        @media (min-width: 768px) {
+            .qb-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (min-width: 992px) {
+            .qb-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        .qb-card:hover {
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            transform: translateY(-1px);
+        }
+        .qb-card .difficulty-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 4px;
+        }
+        .qb-card .kp-tag {
+            font-size: 0.75rem;
+            background: #e8f0fe;
+            color: var(--primary-color);
+            padding: 2px 8px;
+            border-radius: 10px;
+            display: inline-block;
+            margin: 2px 4px 2px 0;
+        }
+        #choiceOptions .list-group-item {
+            border: 2px solid #e8ecf1;
+            border-radius: 10px !important;
+            cursor: pointer;
+            margin-bottom: 8px;
+            padding: 12px 16px;
+        }
+        #choiceOptions .list-group-item:hover {
+            border-color: var(--primary-color);
+            background: #f0f4ff;
+            z-index: 0;
+        }
+        #choiceOptions .list-group-item.active {
+            border-color: var(--primary-color);
+            background: #e8f0fe;
+            color: inherit;
+        }
+        #choiceOptions .list-group-item input {
+            display: none;
+        }
+
+        .result-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0 auto;
+        }
+        .score-circle.excellent { background: #d4edda; color: #155724; }
+        .score-circle.good { background: #fff3cd; color: #856404; }
+        .score-circle.fail { background: #f8d7da; color: #721c24; }
+        .score-circle.pending { background: #e2e3e5; color: #383d41; }
+
+        .loading-spinner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            color: #6c757d;
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 9999;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 1rem;
+            color: #9aa0b0;
+        }
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 576px) {
+            .login-card { margin: 1rem; }
+            .assignment-card .row > div:last-child {
+                margin-top: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ==================== LOGIN PAGE ==================== -->
+<div id="pageLogin" class="login-page">
+    <div class="login-card bg-white">
+        <div class="login-header">
+            <div class="logo-icon">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+            <h4 class="fw-bold mb-1">智能作业批改系统</h4>
+            <p class="text-muted small mb-0">学生端 · 登录</p>
+        </div>
+        <div class="login-body">
+            <form id="loginForm" autocomplete="off">
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold text-muted">用户名</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-user"></i></span>
+                        <input type="text" class="form-control" id="loginUsername" placeholder="请输入用户名" required>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label small fw-semibold text-muted">密码</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                        <input type="password" class="form-control" id="loginPassword" placeholder="请输入密码" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-login w-100" id="loginBtn">
+                    <span id="loginBtnText">登 录</span>
+                    <span id="loginBtnSpinner" class="spinner-border spinner-border-sm d-none"></span>
+                </button>
+                <div id="loginError" class="alert alert-danger mt-3 d-none py-2 small"></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== MAIN APP ==================== -->
+<div id="appMain" style="display:none">
+
+    <!-- Top Navigation -->
+    <nav class="app-nav py-2 px-3 px-md-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-graduation-cap" style="color:var(--primary-color);font-size:1.3rem;"></i>
+                <span class="nav-brand d-none d-sm-inline me-2">智能作业批改系统</span>
+                <button class="nav-tab-btn active" id="tabAssignments" onclick="showAssignments()">
+                    <i class="fas fa-book me-1"></i>作业
+                </button>
+                <button class="nav-tab-btn" id="tabQuestionBank" onclick="showQuestionBank()">
+                    <i class="fas fa-database me-1"></i>题单
+                </button>
+                <button class="nav-tab-btn" id="tabHistory" onclick="showHistory()">
+                    <i class="fas fa-history me-1"></i>历史
+                </button>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="user-info d-none d-md-inline" id="displayName"></span>
+                <button class="btn btn-outline-secondary btn-sm" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> <span class="d-none d-md-inline">退出</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-3 px-md-4 py-4">
+
+        <!-- ==================== ASSIGNMENTS PAGE ==================== -->
+        <div id="pageAssignments" class="page-section active">
+
+            <!-- Stats Row -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-3">
+                    <div class="stat-card p-3 d-flex align-items-center gap-3">
+                        <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                            <i class="fas fa-book"></i>
+                        </div>
+                        <div>
+                            <div class="fs-4 fw-bold" id="statTotal">0</div>
+                            <div class="small text-muted">全部作业</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card p-3 d-flex align-items-center gap-3">
+                        <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div>
+                            <div class="fs-4 fw-bold" id="statPending">0</div>
+                            <div class="small text-muted">待完成</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card p-3 d-flex align-items-center gap-3">
+                        <div class="stat-icon bg-info bg-opacity-10 text-info">
+                            <i class="fas fa-spinner"></i>
+                        </div>
+                        <div>
+                            <div class="fs-4 fw-bold" id="statGrading">0</div>
+                            <div class="small text-muted">批改中</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card p-3 d-flex align-items-center gap-3">
+                        <div class="stat-icon bg-success bg-opacity-10 text-success">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div>
+                            <div class="fs-4 fw-bold" id="statGraded">0</div>
+                            <div class="small text-muted">已完成</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Bar -->
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                <div class="input-group input-group-sm" style="max-width:260px;">
+                    <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                    <input type="text" class="form-control" id="searchAssignment" placeholder="搜索作业标题..." oninput="renderAssignments()">
+                </div>
+                <select class="form-select form-select-sm" id="classFilter" style="max-width:180px;" onchange="renderAssignments()">
+                    <option value="">全部班级</option>
+                </select>
+                <select class="form-select form-select-sm" id="statusFilter" style="max-width:140px;" onchange="renderAssignments()">
+                    <option value="">全部状态</option>
+                    <option value="PENDING">待完成</option>
+                    <option value="SUBMITTED">已提交</option>
+                    <option value="GRADING">批改中</option>
+                    <option value="GRADED">已批改</option>
+                    <option value="ACCEPTED">答案正确</option>
+                    <option value="WRONG_ANSWER">答案错误</option>
+                </select>
+                <button class="btn btn-sm btn-outline-primary" onclick="loadAssignments()">
+                    <i class="fas fa-sync-alt"></i> 刷新
+                </button>
+            </div>
+
+            <!-- Assignment List -->
+            <div id="assignmentList">
+                <div class="loading-spinner">
+                    <div class="text-center">
+                        <div class="spinner-border mb-2" role="status"></div>
+                        <div>加载作业列表...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== QUESTION BANK PAGE ==================== -->
+        <div id="pageQuestionBank" class="page-section">
+
+            <!-- Header -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                <h5 class="fw-bold mb-0"><i class="fas fa-database text-primary me-2"></i>题单练习</h5>
+                <button class="btn btn-outline-success btn-sm" onclick="openRandomQuestion()">
+                    <i class="fas fa-random me-1"></i>随机一题
+                </button>
+            </div>
+
+            <!-- Filter Bar -->
+            <div class="card shadow-sm border-0 mb-3">
+                <div class="card-body py-3">
+                    <div class="row g-2">
+                        <div class="col-md-3 col-6">
+                            <select class="form-select form-select-sm" id="qbSubject">
+                                <option value="">全部科目</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <select class="form-select form-select-sm" id="qbProblemType">
+                                <option value="">全部题型</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <select class="form-select form-select-sm" id="qbKnowledgePoint">
+                                <option value="">全部知识点</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control" id="qbKeyword" placeholder="搜索题目..." onkeydown="if(event.key==='Enter')searchQuestions()">
+                                <button class="btn btn-primary" onclick="searchQuestions()"><i class="fas fa-search"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results info -->
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <small class="text-muted" id="qbResultInfo">请设置筛选条件后搜索</small>
+                <button class="btn btn-sm btn-outline-primary" onclick="searchQuestions()">
+                    <i class="fas fa-sync-alt"></i> 刷新
+                </button>
+            </div>
+
+            <!-- Question List -->
+            <div id="questionBankList">
+                <div class="empty-state">
+                    <i class="fas fa-search"></i>
+                    <p>选择筛选条件后点击搜索，或点击"随机一题"</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== HOMEWORK DETAIL / ANSWER PAGE ==================== -->
+        <div id="pageHomework" class="page-section">
+            <button class="btn btn-sm btn-outline-secondary mb-3" id="backBtn" onclick="goBackFromHomework()">
+                <i class="fas fa-arrow-left"></i> 返回
+            </button>
+
+            <!-- Homework Header -->
+            <div class="homework-header p-3 p-md-4 mb-3">
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                    <div>
+                        <h4 class="fw-bold mb-1" id="hwTitle">-</h4>
+                        <p class="text-muted small mb-0">
+                            <span id="hwTeacher"></span>
+                            <span class="mx-2">|</span>
+                            <span id="hwClass"></span>
+                        </p>
+                    </div>
+                    <div class="text-end">
+                        <div class="small text-muted">截止时间</div>
+                        <div class="fw-semibold" id="hwDeadline">-</div>
+                    </div>
+                </div>
+                <hr class="my-2">
+                <div class="d-flex flex-wrap gap-3 small">
+                    <span><span class="text-muted">状态：</span><strong id="hwStatusText">-</strong></span>
+                    <span><span class="text-muted">得分：</span><strong id="hwScore">-</strong></span>
+                    <span><span class="text-muted">题型：</span><strong id="hwProblemType">-</strong></span>
+                    <span><span class="text-muted">分值：</span><strong id="hwPoints">-</strong></span>
+                </div>
+            </div>
+
+            <!-- Question Card -->
+            <div class="question-card p-3 p-md-4 mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0"><i class="fas fa-question-circle text-primary me-2"></i>题目内容</h5>
+                </div>
+                <div class="question-content mb-3" id="questionContent">加载中...</div>
+
+                <!-- Answer Area (dynamically populated) -->
+                <div id="answerArea" class="mt-4">
+                    <!-- Choice options injected here -->
+                    <!-- or text inputs -->
+                </div>
+
+                <!-- Submit Button -->
+                <div class="mt-4" id="submitArea">
+                    <button class="btn btn-primary px-5" id="submitBtn" onclick="submitAnswer()">
+                        <i class="fas fa-paper-plane me-1"></i> 提交答案
+                    </button>
+                    <span class="small text-muted ms-2" id="submitHint"></span>
+                </div>
+            </div>
+
+            <!-- Result Card (shown after submission / if already graded) -->
+            <div id="resultCard" class="result-card p-3 p-md-4 mb-3" style="display:none;">
+                <h5 class="fw-bold mb-3"><i class="fas fa-clipboard-check text-success me-2"></i>批改结果</h5>
+                <div class="row g-3">
+                    <div class="col-md-4 text-center">
+                        <div class="score-circle" id="scoreCircle">
+                            <span id="scoreValue">-</span>
+                        </div>
+                        <div class="mt-2 fw-semibold" id="scoreLabel">-</div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="mb-2">
+                            <span class="text-muted small">你的答案：</span>
+                            <div class="p-2 bg-light rounded mt-1" id="myAnswerDisplay">-</div>
+                        </div>
+                        <div class="mb-2">
+                            <span class="text-muted small">参考答案：</span>
+                            <div class="p-2 bg-light rounded mt-1" id="standardAnswerDisplay">-</div>
+                        </div>
+                        <div>
+                            <span class="text-muted small">AI 评语：</span>
+                            <div class="p-2 bg-light rounded mt-1" id="aiFeedback">-</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center mt-3" id="nextRandomBtn" style="display:none;">
+                    <button class="btn btn-primary px-4" onclick="nextRandomQuestion()">
+                        <i class="fas fa-random me-1"></i> 下一题
+                    </button>
+                </div>
+                <div class="text-center mt-2" id="askAiBtn" style="display:none;">
+                    <button class="btn btn-warning px-4" onclick="askAi()">
+                        <i class="fas fa-robot me-1"></i> 没搞懂？去问AI
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== HISTORY PAGE ==================== -->
+        <div id="pageHistory" class="page-section">
+
+            <!-- Stats Row -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-3">
+                    <div class="stat-card p-3 d-flex align-items-center gap-3">
+                        <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <div>
+                            <div class="fs-4 fw-bold" id="histTotal">0</div>
+                            <div class="small text-muted">总提交</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card p-3 d-flex align-items-center gap-3">
+                        <div class="stat-icon bg-success bg-opacity-10 text-success">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div>
+                            <div class="fs-4 fw-bold" id="histCorrect">0</div>
+                            <div class="small text-muted">正确</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card p-3 d-flex align-items-center gap-3">
+                        <div class="stat-icon bg-info bg-opacity-10 text-info">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div>
+                            <div class="fs-4 fw-bold" id="histAvgScore">-</div>
+                            <div class="small text-muted">平均得分</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card p-3 d-flex align-items-center gap-3">
+                        <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <div>
+                            <div class="fs-4 fw-bold" id="histCorrectRate">-</div>
+                            <div class="small text-muted">正确率</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Bar -->
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                <select class="form-select form-select-sm" id="histTypeFilter" style="max-width:160px;" onchange="loadHistory()">
+                    <option value="">全部题型</option>
+                </select>
+                <select class="form-select form-select-sm" id="histStatusFilter" style="max-width:140px;" onchange="loadHistory()">
+                    <option value="">全部状态</option>
+                    <option value="GRADED">已批改</option>
+                    <option value="ACCEPTED">答案正确</option>
+                    <option value="WRONG_ANSWER">答案错误</option>
+                    <option value="PENDING">待批改</option>
+                    <option value="GRADING">批改中</option>
+                </select>
+                <button class="btn btn-sm btn-outline-primary" onclick="loadHistory()">
+                    <i class="fas fa-sync-alt"></i> 刷新
+                </button>
+            </div>
+
+            <!-- History List -->
+            <div id="historyList">
+                <div class="loading-spinner">
+                    <div class="text-center">
+                        <div class="spinner-border mb-2" role="status"></div>
+                        <div>加载提交历史...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ============================================================
+// Django session auto-login — injected by server
+// ============================================================
+{% if initial_access_token %}
+window.__INITIAL_TOKENS__ = {
+    access: '{{ initial_access_token }}',
+    refresh: '{{ initial_refresh_token }}',
+    userId: {{ initial_user_id }},
+    username: '{{ initial_username }}'
+};
+{% endif %}
+
+// ============================================================
+// Configuration
+// ============================================================
+const API_BASE = window.location.origin;
+
+// ============================================================
+// JWT Helpers
+// ============================================================
+function parseJwt(token) {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+    } catch (e) {
+        return null;
+    }
+}
+
+function getAccessToken() { return localStorage.getItem('access_token'); }
+function getRefreshToken() { return localStorage.getItem('refresh_token'); }
+function getUserId() { return localStorage.getItem('user_id'); }
+function getUserName() { return localStorage.getItem('username'); }
+
+function setTokens(access, refresh, userId, username) {
+    localStorage.setItem('access_token', access);
+    localStorage.setItem('refresh_token', refresh);
+    localStorage.setItem('user_id', userId);
+    localStorage.setItem('username', username);
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function clearTokens() {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_id');
+    localStorage.removeItem('username');
+}
+
+function isLoggedIn() {
+    return !!getAccessToken();
+}
+
+// ============================================================
+// API Request Helper
+// ============================================================
+async function apiRequest(url, options = {}) {
+    const token = getAccessToken();
+    const headers = { ...options.headers };
+    if (token) {
+        headers['Authorization'] = 'Bearer ' + token;
+    }
+
+    const resp = await fetch(API_BASE + url, {
+        ...options,
+        headers: headers
+    });
+
+    if (resp.status === 401) {
+        // Try refresh
+        const refresh = getRefreshToken();
+        if (refresh) {
+            try {
+                const refreshResp = await fetch(API_BASE + '/user/api/token/refresh/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refresh })
+                });
+                if (refreshResp.ok) {
+                    const data = await refreshResp.json();
+                    localStorage.setItem('access_token', data.access);
+                    headers['Authorization'] = 'Bearer ' + data.access;
+                    const retryResp = await fetch(API_BASE + url, { ...options, headers });
+                    return retryResp;
+                }
+            } catch (e) { /* fall through to logout */ }
+        }
+        clearTokens();
+        showLogin();
+        throw new Error('登录已过期，请重新登录');
+    }
+
+    return resp;
+}
+
+async function apiJson(url, options = {}) {
+    const resp = await apiRequest(url, {
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            ...options.headers
+        }
+    });
+    const text = await resp.text();
+    try {
+        return JSON.parse(text);
+    } catch (e) {
+        return text;
+    }
+}
+
+// ============================================================
+// Toast Notifications
+// ============================================================
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toastContainer');
+    const colors = { success: '#198754', danger: '#dc3545', warning: '#ffc107', info: '#0dcaf0' };
+    const bg = colors[type] || '#6c757d';
+    const id = 't' + Date.now();
+    const html = `
+        <div id="${id}" class="toast align-items-center text-white border-0 show" role="alert" style="background:${bg};">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>`;
+    container.insertAdjacentHTML('beforeend', html);
+    setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) el.remove();
+    }, 4000);
+}
+
+// ============================================================
+// Page Navigation
+// ============================================================
+let currentSource = 'assignment'; // 'assignment' or 'question'
+
+function showPage(pageId) {
+    document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
+    const page = document.getElementById(pageId);
+    if (page) page.classList.add('active');
+}
+
+function setActiveTab(tabId) {
+    document.querySelectorAll('.nav-tab-btn').forEach(b => b.classList.remove('active'));
+    const btn = document.getElementById(tabId);
+    if (btn) btn.classList.add('active');
+}
+
+function showLogin() {
+    document.getElementById('pageLogin').style.display = 'flex';
+    document.getElementById('appMain').style.display = 'none';
+}
+
+function showApp() {
+    document.getElementById('pageLogin').style.display = 'none';
+    document.getElementById('appMain').style.display = 'block';
+}
+
+function showAssignments() {
+    showPage('pageAssignments');
+    setActiveTab('tabAssignments');
+}
+
+function showQuestionBank() {
+    showPage('pageQuestionBank');
+    setActiveTab('tabQuestionBank');
+}
+
+function showHistory() {
+    showPage('pageHistory');
+    setActiveTab('tabHistory');
+    loadHistory();
+}
+
+function goBackFromHomework() {
+    if (currentSource === 'assignment') {
+        showAssignments();
+    } else if (currentSource === 'history') {
+        showHistory();
+    } else {
+        showQuestionBank();
+    }
+}
+
+// ============================================================
+// Login
+// ============================================================
+document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const username = document.getElementById('loginUsername').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const btn = document.getElementById('loginBtn');
+    const errorEl = document.getElementById('loginError');
+
+    errorEl.classList.add('d-none');
+    if (!username || !password) {
+        showToast('请输入用户名和密码', 'warning');
+        return;
+    }
+
+    btn.disabled = true;
+    document.getElementById('loginBtnText').textContent = '登录中...';
+    document.getElementById('loginBtnSpinner').classList.remove('d-none');
+
+    try {
+        const resp = await fetch(API_BASE + '/user/api/token/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+
+        if (!resp.ok) {
+            const errData = await resp.json().catch(() => ({}));
+            throw new Error(errData.detail || '用户名或密码错误');
+        }
+
+        const data = await resp.json();
+        const payload = parseJwt(data.access);
+        const userId = payload ? payload.user_id : '';
+        setTokens(data.access, data.refresh, userId, username);
+        showToast('登录成功', 'success');
+        initApp();
+    } catch (err) {
+        errorEl.textContent = err.message;
+        errorEl.classList.remove('d-none');
+        showToast(err.message, 'danger');
+    } finally {
+        btn.disabled = false;
+        document.getElementById('loginBtnText').textContent = '登 录';
+        document.getElementById('loginBtnSpinner').classList.add('d-none');
+    }
+});
+
+// ============================================================
+// Logout
+// ============================================================
+function logout() {
+    clearTokens();
+    window.location.href = '/user/logout/';
+}
+
+// ============================================================
+// Initialize App
+// ============================================================
+function initApp() {
+    showApp();
+    document.getElementById('displayName').textContent = getUserName() || '学生';
+    loadMetaData();
+    loadAssignments();
+}
+
+// ============================================================
+// Load & Display Assignments
+// ============================================================
+let allAssignments = [];
+
+async function loadAssignments() {
+    const listEl = document.getElementById('assignmentList');
+    listEl.innerHTML = `<div class="loading-spinner"><div class="text-center"><div class="spinner-border mb-2"></div><div>加载作业列表...</div></div></div>`;
+
+    try {
+        const result = await apiJson('/assignment/wx/show_assignment/');
+        if (result.success === false) {
+            throw new Error(result.error || '加载失败');
+        }
+        allAssignments = result.data || [];
+        buildClassFilter();
+        renderAssignments();
+    } catch (err) {
+        listEl.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>加载失败：${err.message}</p></div>`;
+        showToast(err.message, 'danger');
+    }
+}
+
+function buildClassFilter() {
+    const classes = new Set();
+    allAssignments.forEach(a => { if (a.class_name) classes.add(a.class_name); });
+    const sel = document.getElementById('classFilter');
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">全部班级</option>';
+    [...classes].sort().forEach(c => {
+        sel.insertAdjacentHTML('beforeend', `<option value="${c}">${c}</option>`);
+    });
+    if (cur) sel.value = cur;
+}
+
+function renderAssignments() {
+    const listEl = document.getElementById('assignmentList');
+    const searchVal = document.getElementById('searchAssignment').value.trim().toLowerCase();
+    const classVal = document.getElementById('classFilter').value;
+    const statusVal = document.getElementById('statusFilter').value;
+
+    let filtered = allAssignments.filter(a => {
+        if (searchVal && !a.title.toLowerCase().includes(searchVal)) return false;
+        if (classVal && a.class_name !== classVal) return false;
+        if (statusVal && a.status !== statusVal) return false;
+        return true;
+    });
+
+    // Update stats
+    document.getElementById('statTotal').textContent = allAssignments.length;
+    document.getElementById('statPending').textContent = allAssignments.filter(a => a.status === 'PENDING').length;
+    document.getElementById('statGrading').textContent = allAssignments.filter(a => a.status === 'GRADING' || a.status === 'SUBMITTED').length;
+    document.getElementById('statGraded').textContent = allAssignments.filter(a => ['GRADED','ACCEPTED','WRONG_ANSWER'].includes(a.status)).length;
+
+    if (filtered.length === 0) {
+        listEl.innerHTML = `<div class="empty-state"><i class="fas fa-inbox"></i><p>暂无匹配的作业</p></div>`;
+        return;
+    }
+
+    const statusMap = {
+        'PENDING': { label: '待完成', class: 'bg-warning text-dark' },
+        'SUBMITTED': { label: '已提交', class: 'bg-primary' },
+        'GRADING': { label: '批改中', class: 'bg-info text-dark' },
+        'GRADED': { label: '已批改', class: 'bg-success' },
+        'ACCEPTED': { label: '答案正确', class: 'bg-success' },
+        'WRONG_ANSWER': { label: '答案错误', class: 'bg-danger' },
+        'COMPILE_ERROR': { label: '编译错误', class: 'bg-danger' },
+        'RUNTIME_ERROR': { label: '运行错误', class: 'bg-danger' }
+    };
+
+    let html = '<div class="row g-3">';
+    filtered.forEach(a => {
+        const st = statusMap[a.status] || { label: a.status_text || a.status, class: 'bg-secondary' };
+        const isOverdue = a.deadline && new Date(a.deadline) < new Date() && a.status === 'PENDING';
+        html += `
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="assignment-card p-3" onclick="openHomework(${a.id})">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="fw-bold mb-0 text-truncate me-2" title="${a.title}">${a.title}</h6>
+                    <span class="badge ${st.class} status-badge flex-shrink-0">${st.label}</span>
+                </div>
+                <div class="small text-muted mb-2">
+                    <i class="fas fa-chalkboard me-1"></i> ${a.class_name || '未知班级'}
+                    <span class="mx-1">|</span>
+                    <i class="fas fa-user-tie me-1"></i> ${a.teacher_name || '未知教师'}
+                </div>
+                <div class="d-flex justify-content-between align-items-center card-footer-row pt-2">
+                    <small class="${isOverdue ? 'text-danger fw-semibold' : 'text-muted'}">
+                        <i class="far fa-calendar-alt me-1"></i>
+                        ${a.deadline ? a.deadline : '无截止时间'}
+                        ${isOverdue ? ' (已逾期)' : ''}
+                    </small>
+                    ${a.score !== null && a.score !== undefined ? `<span class="badge bg-light text-dark fw-bold">${a.score} 分</span>` : ''}
+                </div>
+            </div>
+        </div>`;
+    });
+    html += '</div>';
+    listEl.innerHTML = html;
+}
+
+// ============================================================
+// Question Bank - Metadata & Search
+// ============================================================
+let metaData = { subjects: [], problemTypes: [], knowledgePoints: [] };
+
+async function loadMetaData() {
+    try {
+        const result = await apiJson('/assignment/wx/get_problem_meta_data/');
+        if (result.success && result.data) {
+            metaData = result.data;
+            populateFilters();
+        }
+    } catch (e) { /* metadata non-critical */ }
+}
+
+function populateFilters() {
+    const subjectSel = document.getElementById('qbSubject');
+    metaData.subjects.forEach(s => {
+        subjectSel.insertAdjacentHTML('beforeend', `<option value="${s.id}">${s.name}</option>`);
+    });
+    const typeSel = document.getElementById('qbProblemType');
+    const histTypeSel = document.getElementById('histTypeFilter');
+    metaData.problemTypes.forEach(t => {
+        typeSel.insertAdjacentHTML('beforeend', `<option value="${t.id}">${t.name}</option>`);
+        histTypeSel.insertAdjacentHTML('beforeend', `<option value="${t.name}">${t.name}</option>`);
+    });
+    const kpSel = document.getElementById('qbKnowledgePoint');
+    metaData.knowledgePoints.forEach(kp => {
+        kpSel.insertAdjacentHTML('beforeend', `<option value="${kp.id}">${kp.name}</option>`);
+    });
+}
+
+let qbCurrentPage = 1;
+let qbTotalPages = 1;
+
+async function searchQuestions(page) {
+    const listEl = document.getElementById('questionBankList');
+    const subjectId = document.getElementById('qbSubject').value;
+    const problemTypeId = document.getElementById('qbProblemType').value;
+    const kpId = document.getElementById('qbKnowledgePoint').value;
+    const keyword = document.getElementById('qbKeyword').value.trim();
+
+    listEl.innerHTML = `<div class="loading-spinner"><div class="text-center"><div class="spinner-border mb-2"></div><div>搜索中...</div></div></div>`;
+
+    try {
+        const params = new URLSearchParams();
+        if (keyword) params.set('keyword', keyword);
+        if (kpId) params.set('kp_id', kpId);
+        if (subjectId) params.set('subject_id', subjectId);
+        if (problemTypeId) params.set('problem_type_id', problemTypeId);
+        if (page) params.set('page', page);
+
+        const result = await apiJson(`/question/wx/search/?${params.toString()}`);
+        if (result.success === false) {
+            throw new Error(result.error || '搜索失败');
+        }
+        const questions = result.data || [];
+        qbCurrentPage = result.page || 1;
+        qbTotalPages = result.total_pages || 1;
+        document.getElementById('qbResultInfo').textContent = questions.length > 0
+            ? `共找到 ${result.total || questions.length} 道题目`
+            : '未找到匹配的题目';
+        renderQuestionBank(questions, result.total || 0, qbCurrentPage, qbTotalPages);
+    } catch (err) {
+        listEl.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>搜索失败：${err.message}</p></div>`;
+        showToast(err.message, 'danger');
+    }
+}
+
+function renderQuestionBank(questions, total, page, totalPages) {
+    const listEl = document.getElementById('questionBankList');
+    if (questions.length === 0) {
+        listEl.innerHTML = `<div class="empty-state"><i class="fas fa-inbox"></i><p>暂无匹配的题目</p></div>`;
+        return;
+    }
+
+    const diffColors = { '简单': '#28a745', '中等': '#ffc107', '困难': '#dc3545' };
+
+    let html = '<div class="qb-grid">';
+    questions.forEach(q => {
+        const color = diffColors[q.difficulty] || '#6c757d';
+        const title = escapeHtml(q.title || '');
+        const problemType = escapeHtml(q.problem_type || '');
+        const difficulty = escapeHtml(q.difficulty || '');
+        const preview = escapeHtml(q.content_preview || '');
+        const kps = (q.knowledge_points || []).map(kp => `<span class="kp-tag">${escapeHtml(kp)}</span>`).join('');
+        html += `
+        <div class="qb-card p-3" onclick="openQuestion(${q.id})">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h6 class="fw-bold mb-0 text-truncate me-2" title="${title}">${title}</h6>
+                    <span class="badge bg-light text-dark border flex-shrink-0">${problemType}</span>
+                </div>
+                <div class="small text-muted mb-2">
+                    <span class="difficulty-dot" style="background:${color}"></span>${difficulty}
+                </div>
+                <div class="small text-muted mb-1">${preview}</div>
+                <div class="card-footer-row pt-2">${kps}</div>
+            </div>`;
+    });
+    html += '</div>';
+
+    // Pagination
+    if (totalPages > 1) {
+        html += '<div class="d-flex justify-content-center align-items-center gap-2 mt-4">';
+        html += `<button class="btn btn-sm btn-outline-primary" onclick="searchQuestions(1)" ${page <= 1 ? 'disabled' : ''}><i class="fas fa-angle-double-left"></i></button>`;
+        html += `<button class="btn btn-sm btn-outline-primary" onclick="searchQuestions(${page - 1})" ${page <= 1 ? 'disabled' : ''}><i class="fas fa-angle-left"></i></button>`;
+        html += `<span class="small text-muted px-2">${page} / ${totalPages}</span>`;
+        html += `<button class="btn btn-sm btn-outline-primary" onclick="searchQuestions(${page + 1})" ${page >= totalPages ? 'disabled' : ''}><i class="fas fa-angle-right"></i></button>`;
+        html += `<button class="btn btn-sm btn-outline-primary" onclick="searchQuestions(${totalPages})" ${page >= totalPages ? 'disabled' : ''}><i class="fas fa-angle-double-right"></i></button>`;
+        html += '</div>';
+    }
+
+    listEl.innerHTML = html;
+}
+
+
+
+async function openRandomQuestion() {
+    showQuestionBank();
+    const listEl = document.getElementById('questionBankList');
+    listEl.innerHTML = `<div class="loading-spinner"><div class="text-center"><div class="spinner-border mb-2"></div><div>正在智能推荐题目...</div></div></div>`;
+
+    try {
+        const params = new URLSearchParams();
+        const subjectId = document.getElementById('qbSubject').value;
+        const problemTypeId = document.getElementById('qbProblemType').value;
+        const kpId = document.getElementById('qbKnowledgePoint').value;
+        if (subjectId) params.set('subject_id', subjectId);
+        if (problemTypeId) params.set('problem_type_id', problemTypeId);
+        if (kpId) params.set('kp_id', kpId);
+
+        const result = await apiJson(`/question/wx/detail/random/?${params.toString()}`);
+        if (result.error) throw new Error(result.error);
+        const q = result.question;
+        if (q && q.id) {
+            listEl.innerHTML = `<div class="empty-state"><i class="fas fa-check-circle text-success"></i><p>已为你推荐题目，正在跳转...</p></div>`;
+            setTimeout(() => openQuestion(q.id), 300);
+        } else {
+            throw new Error('没有可用的推荐题目');
+        }
+    } catch (err) {
+        listEl.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>推荐失败：${err.message}</p></div>`;
+        showToast(err.message, 'danger');
+    }
+}
+
+async function openQuestion(questionId) {
+    currentSource = 'question';
+    showPage('pageHomework');
+    document.getElementById('backBtn').innerHTML = '<i class="fas fa-arrow-left"></i> 返回题单';
+    document.getElementById('submitArea').style.display = 'block';
+    document.getElementById('resultCard').style.display = 'none';
+    document.getElementById('submitBtn').disabled = false;
+    document.getElementById('submitBtn').innerHTML = '<i class="fas fa-paper-plane me-1"></i> 提交答案';
+    document.getElementById('submitHint').textContent = '';
+    document.getElementById('questionContent').textContent = '加载中...';
+    document.getElementById('answerArea').innerHTML = '';
+
+    try {
+        const result = await apiJson(`/question/wx/detail/${questionId}/`);
+        if (result.success === false) {
+            throw new Error(result.error || '加载失败');
+        }
+        const q = result.question || result;
+
+        currentHomework = {
+            problem_id: q.id,
+            problem_type: q.problem_type || '未知',
+            problem_type_code: q.problem_type_code || '',
+            problem_points: q.points || 0,
+            problem_content: q.content || '',
+            assignment_title: q.title || `题目 #${q.id}`,
+            status: 'PENDING',
+            score: null,
+            standardAnswer: q.answer || '',
+            analysis: q.analysis || '',
+        };
+
+        document.getElementById('hwTitle').textContent = currentHomework.assignment_title;
+        document.getElementById('hwTeacher').textContent = '';
+        document.getElementById('hwTeacher').style.display = 'none';
+        document.getElementById('hwClass').textContent = '';
+        document.getElementById('hwClass').style.display = 'none';
+        document.getElementById('hwDeadline').textContent = '-';
+        document.getElementById('hwProblemType').textContent = q.problem_type || '未知';
+        document.getElementById('hwPoints').textContent = (q.points !== undefined ? q.points + ' 分' : '-');
+        document.getElementById('hwStatusText').textContent = '待答题';
+        document.getElementById('hwScore').textContent = '-';
+
+        currentProblemTypeCode = q.problem_type_code || '';
+        document.getElementById('questionContent').innerHTML = q.content || '(题目内容为空)';
+
+        buildAnswerArea(currentHomework);
+
+    } catch (err) {
+        document.getElementById('questionContent').textContent = '加载失败：' + err.message;
+        showToast(err.message, 'danger');
+    }
+}
+
+// ============================================================
+// Homework Detail / Answering
+// ============================================================
+let currentHomework = null;
+let currentProblemTypeCode = '';
+
+async function openHomework(assignmentId) {
+    currentSource = 'assignment';
+    showPage('pageHomework');
+    document.getElementById('backBtn').innerHTML = '<i class="fas fa-arrow-left"></i> 返回作业列表';
+    document.getElementById('submitArea').style.display = 'block';
+    document.getElementById('resultCard').style.display = 'none';
+    document.getElementById('submitBtn').disabled = false;
+    document.getElementById('submitBtn').innerHTML = '<i class="fas fa-paper-plane me-1"></i> 提交答案';
+    document.getElementById('submitHint').textContent = '';
+    document.getElementById('questionContent').textContent = '加载中...';
+    document.getElementById('answerArea').innerHTML = '';
+
+    try {
+        const result = await apiJson(`/assignment/wx/get_student_homework_detail/${assignmentId}/`);
+        if (result.success === false) {
+            throw new Error(result.error || '加载失败');
+        }
+        const data = result.data || result;
+        currentHomework = data;
+
+        document.getElementById('hwTitle').textContent = data.assignment_title || '未命名作业';
+        document.getElementById('hwTeacher').textContent = '教师：' + (data.teacher_name || '未知');
+        document.getElementById('hwTeacher').style.display = '';
+        document.getElementById('hwClass').textContent = data.class_name || '';
+        document.getElementById('hwClass').style.display = '';
+        document.getElementById('hwDeadline').textContent = data.deadline || '无截止时间';
+        document.getElementById('hwProblemType').textContent = data.problem_type || '未知';
+        document.getElementById('hwPoints').textContent = (data.problem_points !== undefined ? data.problem_points + ' 分' : '-');
+
+        // Status
+        const statusMap = {
+            'PENDING': '待完成', 'SUBMITTED': '已提交', 'GRADING': '批改中',
+            'GRADED': '已批改', 'ACCEPTED': '答案正确', 'WRONG_ANSWER': '答案错误',
+            'COMPILE_ERROR': '编译错误', 'RUNTIME_ERROR': '运行错误'
+        };
+        document.getElementById('hwStatusText').textContent = statusMap[data.status] || data.status || '未知';
+        document.getElementById('hwScore').textContent = data.score !== null && data.score !== undefined ? data.score + ' 分' : '-';
+
+        // Question content
+        currentProblemTypeCode = data.problem_type_code || '';
+        const content = data.problem_content || '(题目内容为空)';
+        document.getElementById('questionContent').innerHTML = content;
+
+        // Build answer area based on problem type
+        buildAnswerArea(data);
+
+        // If already submitted, show result
+        if (data.submission_id) {
+            document.getElementById('submitArea').style.display = 'none';
+            displayResult(data);
+        }
+
+    } catch (err) {
+        document.getElementById('questionContent').textContent = '加载失败：' + err.message;
+        showToast(err.message, 'danger');
+    }
+}
+
+function isChoiceType(code, name) {
+    const c = (code || '').toLowerCase();
+    const n = name || '';
+    if (['choice', 'single_choice'].includes(c) || n === '选择' || n.includes('选择')) return 'choice';
+    if (c === 'multiple_choice') return 'multiple_choice';
+    if (['true_false', 'judge'].includes(c) || n.includes('判断')) return 'true_false';
+    if (['fill', 'fill_blank'].includes(c) || n.includes('填空')) return 'fill';
+    return null;
+}
+
+function buildAnswerArea(data) {
+    const area = document.getElementById('answerArea');
+    const choiceType = isChoiceType(data.problem_type_code, data.problem_type);
+
+    let html = '';
+    if (choiceType === 'choice') {
+        const options = data.content_data || {};
+        const entries = Object.entries(options);
+        let optsHtml = '';
+        if (entries.length > 0) {
+            entries.forEach(([key, text]) => {
+                optsHtml += `<div class="list-group-item list-group-item-action d-flex align-items-center" onclick="selectChoice(this, '${key}')">
+                    <input type="radio" name="answer" value="${key}">
+                    <span class="fw-bold me-2">${key}.</span>
+                    <span>${text}</span>
+                </div>`;
+            });
+        } else {
+            optsHtml = `
+                <div class="list-group-item list-group-item-action d-flex align-items-center" onclick="selectChoice(this, 'A')">
+                    <input type="radio" name="answer" value="A">
+                    <span class="fw-bold me-2">A</span>
+                </div>
+                <div class="list-group-item list-group-item-action d-flex align-items-center" onclick="selectChoice(this, 'B')">
+                    <input type="radio" name="answer" value="B">
+                    <span class="fw-bold me-2">B</span>
+                </div>
+                <div class="list-group-item list-group-item-action d-flex align-items-center" onclick="selectChoice(this, 'C')">
+                    <input type="radio" name="answer" value="C">
+                    <span class="fw-bold me-2">C</span>
+                </div>
+                <div class="list-group-item list-group-item-action d-flex align-items-center" onclick="selectChoice(this, 'D')">
+                    <input type="radio" name="answer" value="D">
+                    <span class="fw-bold me-2">D</span>
+                </div>
+            `;
+        }
+        html = `
+            <label class="form-label fw-semibold">请选择答案：</label>
+            <div class="list-group" id="choiceOptions">
+                ${optsHtml}
+            </div>
+            <input type="hidden" id="selectedAnswer" value="">
+        `;
+    } else if (choiceType === 'multiple_choice') {
+        const options = data.content_data || {};
+        const entries = Object.entries(options);
+        let optsHtml = '';
+        if (entries.length > 0) {
+            entries.forEach(([key, text]) => {
+                optsHtml += `<div class="list-group-item list-group-item-action d-flex align-items-center" onclick="toggleMultiChoice(this, '${key}')">
+                    <input type="checkbox" value="${key}">
+                    <span class="fw-bold me-2">${key}.</span>
+                    <span>${text}</span>
+                </div>`;
+            });
+        } else {
+            optsHtml = `
+                <div class="list-group-item list-group-item-action d-flex align-items-center" onclick="toggleMultiChoice(this, 'A')">
+                    <input type="checkbox" value="A">
+                    <span class="fw-bold me-2">A</span>
+                </div>
+                <div class="list-group-item list-group-item-action d-flex align-items-center" onclick="toggleMultiChoice(this, 'B')">
+                    <input type="checkbox" value="B">
+                    <span class="fw-bold me-2">B</span>
+                </div>
+                <div class="list-group-item list-group-item-action d-flex align-items-center" onclick="toggleMultiChoice(this, 'C')">
+                    <input type="checkbox" value="C">
+                    <span class="fw-bold me-2">C</span>
+                </div>
+                <div class="list-group-item list-group-item-action d-flex align-items-center" onclick="toggleMultiChoice(this, 'D')">
+                    <input type="checkbox" value="D">
+                    <span class="fw-bold me-2">D</span>
+                </div>
+                <div class="list-group-item list-group-item-action d-flex align-items-center" onclick="toggleMultiChoice(this, 'E')">
+                    <input type="checkbox" value="E">
+                    <span class="fw-bold me-2">E</span>
+                </div>
+            `;
+        }
+        html = `
+            <label class="form-label fw-semibold">请选择答案（可多选）：</label>
+            <div class="list-group" id="choiceOptions">
+                ${optsHtml}
+            </div>
+            <input type="hidden" id="selectedAnswer" value="">
+        `;
+    } else if (choiceType === 'true_false') {
+        html = `
+            <label class="form-label fw-semibold">请判断：</label>
+            <div class="list-group" id="choiceOptions">
+                <div class="list-group-item list-group-item-action d-flex align-items-center" onclick="selectChoice(this, '正确')">
+                    <input type="radio" name="answer" value="正确">
+                    <span class="fw-bold me-2">正确</span>
+                </div>
+                <div class="list-group-item list-group-item-action d-flex align-items-center" onclick="selectChoice(this, '错误')">
+                    <input type="radio" name="answer" value="错误">
+                    <span class="fw-bold me-2">错误</span>
+                </div>
+            </div>
+            <input type="hidden" id="selectedAnswer" value="">
+        `;
+    } else if (choiceType === 'fill') {
+        html = `
+            <label class="form-label fw-semibold">请输入答案：</label>
+            <textarea class="form-control" id="fillAnswer" rows="2" placeholder="请输入你的答案..."></textarea>
+        `;
+    } else {
+        // Default: subjective / essay / text
+        html = `
+            <label class="form-label fw-semibold">请输入你的解答：</label>
+            <textarea class="form-control" id="fillAnswer" rows="6" placeholder="请输入你的解答..."></textarea>
+        `;
+    }
+
+    area.innerHTML = html;
+}
+
+// Status display map
+const statusMap = {
+    'PENDING': { label: '待批改', class: 'bg-warning text-dark' },
+    'SUBMITTED': { label: '已提交', class: 'bg-primary' },
+    'GRADING': { label: '批改中', class: 'bg-info text-dark' },
+    'GRADED': { label: '已批改', class: 'bg-success' },
+    'ACCEPTED': { label: '答案正确', class: 'bg-success' },
+    'WRONG_ANSWER': { label: '答案错误', class: 'bg-danger' },
+    'COMPILE_ERROR': { label: '编译错误', class: 'bg-danger' },
+    'RUNTIME_ERROR': { label: '运行错误', class: 'bg-danger' }
+};
+
+// Choice helpers
+function selectChoice(el, value) {
+    document.querySelectorAll('#choiceOptions .list-group-item').forEach(o => o.classList.remove('active'));
+    el.classList.add('active');
+    el.querySelector('input').checked = true;
+    document.getElementById('selectedAnswer').value = value;
+}
+
+function toggleMultiChoice(el, value) {
+    el.classList.toggle('active');
+    const cb = el.querySelector('input');
+    cb.checked = !cb.checked;
+    const selected = [];
+    document.querySelectorAll('#choiceOptions input[type="checkbox"]:checked').forEach(c => selected.push(c.value));
+    document.getElementById('selectedAnswer').value = selected.join(',');
+}
+
+// ============================================================
+// Submit Answer
+// ============================================================
+async function submitAnswer() {
+    const btn = document.getElementById('submitBtn');
+    const hint = document.getElementById('submitHint');
+    const choiceType = isChoiceType(currentProblemTypeCode, currentHomework?.problem_type || '');
+
+    let submittedText = '';
+    let selectedAnswer = '';
+
+    if (choiceType === 'choice' || choiceType === 'multiple_choice' || choiceType === 'true_false') {
+        selectedAnswer = document.getElementById('selectedAnswer').value;
+        if (!selectedAnswer) {
+            showToast('请先选择一个答案', 'warning');
+            return;
+        }
+    } else {
+        submittedText = document.getElementById('fillAnswer').value.trim();
+        if (!submittedText) {
+            showToast('请先输入答案', 'warning');
+            return;
+        }
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> 提交中...';
+    hint.textContent = '';
+
+    try {
+        const body = {
+            questionId: currentHomework.problem_id,
+            userId: getUserId(),
+            from: currentSource,
+        };
+        if (currentSource === 'assignment') {
+            body.assignment_id = currentHomework.assignment_id;
+        }
+        if (selectedAnswer) {
+            body.selectedAnswer = selectedAnswer;
+        } else {
+            body.submitted_text = submittedText;
+        }
+
+        const resp = await apiRequest('/grading/wx/submit/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        let result;
+        try {
+            result = await resp.json();
+        } catch (jsonErr) {
+            const text = await resp.text();
+            throw new Error(text || '提交失败');
+        }
+
+        if (!resp.ok) {
+            throw new Error(result.error || result.message || '提交失败');
+        }
+
+        showToast('提交成功！正在批改中...', 'success');
+
+        // Poll for result
+        const submissionId = result.id;
+        if (submissionId) {
+            hint.textContent = '正在获取批改结果...';
+            pollSubmissionResult(submissionId);
+        } else {
+            hint.textContent = '提交成功，等待批改...';
+        }
+
+    } catch (err) {
+        showToast('提交失败：' + err.message, 'danger');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> 提交答案';
+    }
+}
+
+// ============================================================
+// Poll for Submission Result
+// ============================================================
+async function pollSubmissionResult(submissionId) {
+    let attempts = 0;
+    const maxAttempts = 15;
+
+    const poll = async () => {
+        attempts++;
+        try {
+            const data = await apiJson(`/grading/wx/submissions/${submissionId}/`);
+            const status = data.status || '';
+            const finalStatuses = ['GRADED', 'ACCEPTED', 'WRONG_ANSWER', 'COMPILE_ERROR', 'RUNTIME_ERROR'];
+
+            if (finalStatuses.includes(status)) {
+                document.getElementById('submitArea').style.display = 'none';
+                displayResult({
+                    ...data,
+                    assignment_title: currentHomework?.assignment_title,
+                    problem_type: currentHomework?.problem_type,
+                    problem_type_code: currentHomework?.problem_type_code,
+                    problem_points: currentHomework?.problem_points
+                });
+                showToast('批改完成！', 'success');
+                return;
+            }
+
+            if (attempts >= maxAttempts) {
+                document.getElementById('submitBtn').disabled = false;
+                document.getElementById('submitBtn').innerHTML = '<i class="fas fa-paper-plane me-1"></i> 提交答案';
+                document.getElementById('submitHint').textContent = '批改仍在进行中，请稍后刷新查看结果';
+                showToast('批改正在进行中，请稍后查看', 'info');
+                return;
+            }
+
+            setTimeout(poll, 2000);
+        } catch (err) {
+            if (attempts >= maxAttempts) {
+                document.getElementById('submitHint').textContent = '获取结果失败，请刷新页面查看';
+                showToast('获取批改结果失败', 'danger');
+                return;
+            }
+            setTimeout(poll, 2000);
+        }
+    };
+
+    poll();
+}
+
+// ============================================================
+// Next Random Question
+// ============================================================
+async function nextRandomQuestion() {
+    document.getElementById('resultCard').style.display = 'none';
+    document.getElementById('nextRandomBtn').style.display = 'none';
+    try {
+        const params = new URLSearchParams();
+        const subjectId = document.getElementById('qbSubject').value;
+        const problemTypeId = document.getElementById('qbProblemType').value;
+        const kpId = document.getElementById('qbKnowledgePoint').value;
+        if (subjectId) params.set('subject_id', subjectId);
+        if (problemTypeId) params.set('problem_type_id', problemTypeId);
+        if (kpId) params.set('kp_id', kpId);
+
+        const result = await apiJson(`/question/wx/detail/random/?${params.toString()}`);
+        if (result.error) throw new Error(result.error);
+        const q = result.question;
+        if (q && q.id) {
+            openQuestion(q.id);
+        } else {
+            throw new Error('没有可用的推荐题目');
+        }
+    } catch (err) {
+        showToast('推荐失败：' + err.message, 'danger');
+        document.getElementById('nextRandomBtn').style.display = 'block';
+    }
+}
+
+// ============================================================
+// Ask AI (copy prompt & jump to DeepSeek)
+// ============================================================
+function askAi() {
+    const question = document.getElementById('questionContent').innerText || '';
+    const myAnswer = document.getElementById('myAnswerDisplay').textContent || '';
+    const correctAnswer = document.getElementById('standardAnswerDisplay').textContent || '';
+    const feedback = document.getElementById('aiFeedback').textContent || '';
+    const prompt = '请帮我理解这道题目：\n\n题目：' + question + '\n\n我的答案：' + myAnswer + '\n\n正确答案：' + correctAnswer + '\n\nAI评语：' + feedback + '\n\n请解释我错在哪里，以及如何正确理解这道题。';
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(prompt).then(function() {
+            window.open('https://chat.deepseek.com/', '_blank');
+        })['catch'](function() {
+            var ta = document.createElement('textarea');
+            ta.value = prompt;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            window.open('https://chat.deepseek.com/', '_blank');
+        });
+    } else {
+        var ta = document.createElement('textarea');
+        ta.value = prompt;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        window.open('https://chat.deepseek.com/', '_blank');
+    }
+}
+
+// ============================================================
+// Display Result
+// ============================================================
+function displayResult(data) {
+    const card = document.getElementById('resultCard');
+    card.style.display = 'block';
+
+    const score = data.score !== null && data.score !== undefined ? data.score : 0;
+    const maxScore = data.problem_points || 100;
+    const pct = maxScore > 0 ? (score / maxScore) * 100 : 0;
+
+    const circle = document.getElementById('scoreCircle');
+    circle.className = 'score-circle';
+    if (pct >= 80) circle.classList.add('excellent');
+    else if (pct >= 60) circle.classList.add('good');
+    else if (score === 0 && data.status === 'PENDING') circle.classList.add('pending');
+    else circle.classList.add('fail');
+
+    document.getElementById('scoreValue').textContent = score;
+    document.getElementById('scoreLabel').textContent = `${score} / ${maxScore} 分`;
+
+    document.getElementById('myAnswerDisplay').textContent = data.choose_answer || data.submitted_text || '(无)';
+
+    const refAnswer = data.standard_answer || (currentHomework ? currentHomework.standardAnswer : '') || data.feedback || '';
+    document.getElementById('standardAnswerDisplay').innerHTML = refAnswer || '(暂无)';
+
+    document.getElementById('aiFeedback').textContent = data.justification || data.ai_justification || '(暂无评语)';
+
+    // Update status text
+    const statusMap = {
+        'PENDING': '待批改', 'GRADING': '批改中', 'SUBMITTED': '已提交',
+        'GRADED': '已批改', 'ACCEPTED': '答案正确', 'WRONG_ANSWER': '答案错误',
+        'COMPILE_ERROR': '编译错误', 'RUNTIME_ERROR': '运行错误'
+    };
+    document.getElementById('hwStatusText').textContent = statusMap[data.status] || data.status || '未知';
+    document.getElementById('hwScore').textContent = score + ' 分';
+
+    // Show "下一题" button only when in question bank mode
+    document.getElementById('nextRandomBtn').style.display = currentSource === 'question' ? 'block' : 'none';
+
+    // Show "没搞懂？去问AI" button
+    document.getElementById('askAiBtn').style.display = 'block';
+}
+
+// ============================================================
+// History - Load & Display Past Submissions
+// ============================================================
+let historyState = {
+    page: 1,
+    limit: 20,
+    filterStatus: '',
+    filterType: ''
+};
+
+async function loadHistory() {
+    const listEl = document.getElementById('historyList');
+    listEl.innerHTML = `<div class="loading-spinner"><div class="text-center"><div class="spinner-border mb-2"></div><div>加载提交历史...</div></div></div>`;
+
+    historyState.filterType = document.getElementById('histTypeFilter').value;
+    historyState.filterStatus = document.getElementById('histStatusFilter').value;
+    historyState.page = 1;
+
+    try {
+        const params = new URLSearchParams();
+        params.set('page', historyState.page);
+        params.set('limit', historyState.limit);
+        params.set('sort_by', 'submitted_time:desc');
+
+        if (historyState.filterStatus) {
+            params.append('filter_by', 'status:' + historyState.filterStatus);
+        }
+        if (historyState.filterType) {
+            params.append('filter_by', 'question_type:' + historyState.filterType);
+        }
+
+        const result = await apiJson(`/grading/wx/submissions/?${params.toString()}`);
+        if (result.error) throw new Error(result.error);
+
+        renderHistory(result);
+    } catch (err) {
+        listEl.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>加载失败：${err.message}</p></div>`;
+        showToast(err.message, 'danger');
+    }
+}
+
+async function loadHistoryPage(page) {
+    const listEl = document.getElementById('historyList');
+    listEl.innerHTML = `<div class="loading-spinner"><div class="text-center"><div class="spinner-border mb-2"></div><div>加载中...</div></div></div>`;
+
+    historyState.page = page;
+
+    try {
+        const params = new URLSearchParams();
+        params.set('page', page);
+        params.set('limit', historyState.limit);
+        params.set('sort_by', 'submitted_time:desc');
+
+        if (document.getElementById('histStatusFilter').value) {
+            params.append('filter_by', 'status:' + document.getElementById('histStatusFilter').value);
+        }
+        if (document.getElementById('histTypeFilter').value) {
+            params.append('filter_by', 'question_type:' + document.getElementById('histTypeFilter').value);
+        }
+
+        const result = await apiJson(`/grading/wx/submissions/?${params.toString()}`);
+        if (result.error) throw new Error(result.error);
+
+        renderHistory(result);
+    } catch (err) {
+        listEl.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><p>加载失败：${err.message}</p></div>`;
+    }
+}
+
+function renderHistory(data) {
+    const listEl = document.getElementById('historyList');
+    const items = data.data || [];
+    const total = data.total_count || 0;
+    const page = data.page || 1;
+    const limit = data.limit || 20;
+    const hasMore = data.has_more || false;
+
+    // Update stats
+    const correctCount = items.filter(i => i.is_correct).length;
+    const gradedItems = items.filter(i => i.status !== 'PENDING' && i.status !== 'GRADING' && i.status !== 'SUBMITTED');
+    const totalScore = gradedItems.reduce((sum, i) => sum + (i.student_score || 0), 0);
+    const avgScore = gradedItems.length > 0 ? (totalScore / gradedItems.length).toFixed(1) : '-';
+    const correctRate = gradedItems.length > 0 ? Math.round((correctCount / gradedItems.length) * 100) + '%' : '-';
+
+    document.getElementById('histTotal').textContent = total;
+    document.getElementById('histCorrect').textContent = correctCount;
+    document.getElementById('histAvgScore').textContent = avgScore;
+    document.getElementById('histCorrectRate').textContent = correctRate;
+
+    if (items.length === 0) {
+        listEl.innerHTML = `<div class="empty-state"><i class="fas fa-inbox"></i><p>暂无提交记录</p></div>`;
+        return;
+    }
+
+    let html = '<div class="list-group mb-3">';
+    items.forEach(item => {
+        const st = statusMap[item.status] || { label: item.status || '未知', class: 'bg-secondary' };
+        const scoreText = item.student_score !== null && item.student_score !== undefined
+            ? `${item.student_score} / ${item.question_score || '?'} 分`
+            : '未评分';
+        const typeLabel = item.problem_type_name || '未知题型';
+        html += `
+        <div class="list-group-item list-group-item-action border-0 shadow-sm mb-2 rounded-3 p-3" style="cursor:pointer;" onclick="openHistorySubmission(${item.record_id})">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                <div class="flex-grow-1">
+                    <h6 class="fw-bold mb-1">${item.question_title || '未命名题目'}</h6>
+                    <div class="small text-muted">
+                        <span class="badge bg-light text-dark me-2">${typeLabel}</span>
+                        <i class="far fa-clock me-1"></i>${item.created_at || ''}
+                    </div>
+                </div>
+                <div class="text-end flex-shrink-0">
+                    <span class="badge ${st.class} mb-1 d-block">${st.label}</span>
+                    <span class="small fw-bold">${scoreText}</span>
+                </div>
+            </div>
+        </div>`;
+    });
+    html += '</div>';
+
+    // Pagination
+    const totalPages = Math.ceil(total / limit) || 1;
+    if (totalPages > 1) {
+        html += '<div class="d-flex justify-content-center align-items-center gap-2">';
+        html += `<button class="btn btn-sm btn-outline-primary" onclick="loadHistoryPage(1)" ${page <= 1 ? 'disabled' : ''}><i class="fas fa-angle-double-left"></i></button>`;
+        html += `<button class="btn btn-sm btn-outline-primary" onclick="loadHistoryPage(${page - 1})" ${page <= 1 ? 'disabled' : ''}><i class="fas fa-angle-left"></i></button>`;
+        html += `<span class="small text-muted px-2">${page} / ${totalPages}</span>`;
+        html += `<button class="btn btn-sm btn-outline-primary" onclick="loadHistoryPage(${page + 1})" ${page >= totalPages ? 'disabled' : ''}><i class="fas fa-angle-right"></i></button>`;
+        html += `<button class="btn btn-sm btn-outline-primary" onclick="loadHistoryPage(${totalPages})" ${page >= totalPages ? 'disabled' : ''}><i class="fas fa-angle-double-right"></i></button>`;
+        html += '</div>';
+    }
+
+    listEl.innerHTML = html;
+}
+
+async function openHistorySubmission(submissionId) {
+    currentSource = 'history';
+    showPage('pageHomework');
+    document.getElementById('backBtn').innerHTML = '<i class="fas fa-arrow-left"></i> 返回历史';
+    document.getElementById('submitArea').style.display = 'none';
+    document.getElementById('resultCard').style.display = 'none';
+    document.getElementById('submitBtn').disabled = false;
+    document.getElementById('submitBtn').innerHTML = '<i class="fas fa-paper-plane me-1"></i> 提交答案';
+    document.getElementById('submitHint').textContent = '';
+    document.getElementById('questionContent').textContent = '加载中...';
+    document.getElementById('answerArea').innerHTML = '';
+
+    try {
+        const data = await apiJson(`/grading/wx/submissions/${submissionId}/`);
+        if (data.error) throw new Error(data.error);
+
+        currentHomework = {
+            problem_id: data.problem_id || submissionId,
+            problem_type: data.problem_type_name || data.problem_type || '未知',
+            problem_type_code: data.problem_type_code || '',
+            problem_points: data.question_score || 100,
+            problem_content: data.submitted_text || data.choose_answer || '(详情加载中)',
+            assignment_title: data.problem_title || data.question_title || '历史记录',
+            status: data.status || 'UNKNOWN',
+            score: data.score,
+            standardAnswer: data.feedback || '',
+            analysis: '',
+        };
+
+        const qScore = data.question_score !== undefined ? data.question_score : currentHomework.problem_points;
+
+        document.getElementById('hwTitle').textContent = currentHomework.assignment_title;
+        document.getElementById('hwTeacher').textContent = '';
+        document.getElementById('hwTeacher').style.display = 'none';
+        document.getElementById('hwClass').textContent = '';
+        document.getElementById('hwClass').style.display = 'none';
+        document.getElementById('hwDeadline').textContent = '-';
+        document.getElementById('hwProblemType').textContent = data.problem_type_name || data.problem_type || '未知';
+        document.getElementById('hwPoints').textContent = (data.question_score !== undefined ? data.question_score + ' 分' : '-');
+        const st = statusMap[data.status];
+        document.getElementById('hwStatusText').textContent = st ? st.label : (data.status || '未知');
+        document.getElementById('hwScore').textContent = (data.score !== null && data.score !== undefined ? data.score + ' 分' : '-');
+
+        document.getElementById('questionContent').innerHTML = data.problem_content || '(题目内容未加载)';
+
+        displayResult({
+            score: data.score,
+            status: data.status,
+            problem_points: qScore,
+            choose_answer: data.choose_answer,
+            submitted_text: data.submitted_text,
+            standard_answer: data.feedback,
+            justification: data.justification,
+        });
+
+    } catch (err) {
+        document.getElementById('questionContent').textContent = '加载失败：' + err.message;
+        showToast(err.message, 'danger');
+    }
+}
+
+// ============================================================
+// Bootstrap on page load
+// ============================================================
+(function() {
+    if (window.__INITIAL_TOKENS__) {
+        const t = window.__INITIAL_TOKENS__;
+        setTokens(t.access, t.refresh, t.userId, t.username);
+        initApp();
+    } else if (isLoggedIn()) {
+        initApp();
+    } else {
+        showLogin();
+    }
+})();
+
+</script>
+</body>
+</html>

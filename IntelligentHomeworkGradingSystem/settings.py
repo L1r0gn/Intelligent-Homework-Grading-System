@@ -33,7 +33,7 @@ DEBUG = True
 AUTH_USER_MODEL = 'userManageModule.User'  # 格式：app名称.模型类名
 
 # 允许的域名
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost','119.29.152.140']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost','119.29.152.140','43.226.61.34']
 
 import config
 WECHAT_APPID = config.WECHAT_APPID
@@ -79,6 +79,7 @@ MIDDLEWARE = [
 ]
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
 # 确保JSON解析器配置正确
 REST_FRAMEWORK = {
     'DEFAULT_PARSER_CLASSES': [
@@ -189,7 +190,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Shanghai'
 
 USE_I18N = True
 
@@ -216,3 +217,13 @@ OPENROUTER_API_KEY = config.OPENROUTER_API_KEY
 
 # 图片服务器基础地址
 SERVER_BASE_URL = 'http://119.29.152.140:8000'
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.nyat.app',           # 允许所有 nyat.app 子域名（HTTPS）
+    'http://*.nyat.app',            # 如果也允许 HTTP
+    'https://www.r1lfasrq2.nyat.app', # 或者只允许你的具体域名
+    'http://43.226.61.34',          # SakuraFRP 节点 IP（如果通过 IP 访问）
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    'https://43.226.61.34:19398',        # 你当前访问的完整地址
+]

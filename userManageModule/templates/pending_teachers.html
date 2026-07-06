@@ -1,0 +1,74 @@
+{% extends 'page_base.html' %}
+{% load static %}
+
+{% block title %}教师注册审核{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>教师注册审核</h2>
+        <a href="{% url 'user_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>返回用户列表
+        </a>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-clock me-2"></i>待审核教师列表
+            </h5>
+            <span class="badge bg-warning text-dark rounded-pill">待审核: {{ pending_list.count }} 位</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped mb-0 align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>姓名</th>
+                            <th>用户名</th>
+                            <th>手机号</th>
+                            <th>注册时间</th>
+                            <th class="text-center">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in pending_list %}
+                        <tr>
+                            <td>{{ user.id }}</td>
+                            <td><strong>{{ user.wx_nickName|default:"-" }}</strong></td>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.phone|default:"-" }}</td>
+                            <td>{{ user.date_joined|date:"Y-m-d H:i" }}</td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'approve_teacher' user.id %}"
+                                       class="btn btn-success"
+                                       onclick="return confirm('确认审核通过 {{ user.wx_nickName|default:user.username }} 的教师注册申请？')"
+                                       title="审核通过">
+                                        <i class="fas fa-check me-1"></i>通过
+                                    </a>
+                                    <a href="{% url 'reject_teacher' user.id %}"
+                                       class="btn btn-danger"
+                                       onclick="return confirm('确认拒绝 {{ user.wx_nickName|default:user.username }} 的注册申请？此操作将删除该用户。')"
+                                       title="拒绝">
+                                        <i class="fas fa-times me-1"></i>拒绝
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <i class="fas fa-check-circle fa-3x mb-3 text-success"></i>
+                                <p>暂无待审核的教师注册申请。</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

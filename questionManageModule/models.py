@@ -112,6 +112,12 @@ class Subject(models.Model):
     name = models.CharField(max_length=100, unique=True, verbose_name="科目名称")
     code = models.CharField(max_length=50, unique=True, verbose_name="科目代码")
     description = models.TextField(blank=True, verbose_name="描述",null=True)
+    authorized_students = models.ManyToManyField(
+        'userManageModule.User',
+        blank=True,
+        related_name='authorized_subjects',
+        verbose_name='授权学生'
+    )
     def __str__(self):
         return self.name
 class ProblemAttachment(models.Model):

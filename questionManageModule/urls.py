@@ -10,6 +10,7 @@ urlpatterns = [
     path('update/<int:question_id>/', question_views.question_update, name='question_update'),
     path('delete/<int:question_id>/', question_views.question_delete, name='question_delete'),
     path('batch-import-json/', question_views.question_batch_import_json, name='question_batch_import_json'),
+    path('download-import-template/', question_views.download_import_template, name='download_import_template'),
     path('questions/batch-action/', question_views.question_batch_action, name='question_batch_action'),
     path('questions/import/review/',question_views.question_import_review, name='question_import_review'),
     path('subjects/ajax_create/', question_views.ajax_create_subject, name='ajax_create_subject'),

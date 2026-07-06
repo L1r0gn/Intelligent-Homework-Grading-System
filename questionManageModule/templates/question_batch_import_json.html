@@ -25,7 +25,7 @@
                                 <select class="form-select" name="default_subject_id" id="default_subject_id" required>
                                     <option value="" selected disabled>-- 请选择科目 --</option>
                                     {% for subject in subjects %}
-                                        <option value="{{ subject.id }}">{{ subject.name }}</option>
+                                        <option value="{{ subject.id }}">{{ subject.name }} ({% if subject.question_count > 200 %}200+{% else %}{{ subject.question_count }}{% endif %}题)</option>
                                     {% endfor %}
                                 </select>
                                 <button type="button" class="btn btn-outline-secondary js-add-subject-btn" data-bs-toggle="modal" data-bs-target="#addSubjectModal">
@@ -52,6 +52,11 @@
                         <div class="mb-3">
                             <label for="json_file" class="form-label"><strong>第3步：选择JSON文件</strong></label>
                             <input class="form-control" type="file" name="json_file" id="json_file" accept=".json" required>
+                            <div class="mt-2">
+                                <a href="{% url 'download_import_template' %}" class="btn btn-sm btn-outline-info">
+                                    <i class="fas fa-download me-1"></i>下载JSON模板示例
+                                </a>
+                            </div>
                         </div>
 
                         <div class="d-flex justify-content-end mt-4">

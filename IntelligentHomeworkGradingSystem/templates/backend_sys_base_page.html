@@ -160,6 +160,7 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNavDropdown">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    {% if request.user.user_attribute >= 2 %}
                     <!-- === 修改开始：将原来的题目管理改为下拉菜单 === -->
                     <li class="nav-item dropdown">
                         <!-- 判断当前 URL 是否包含 question 或 knowledge，以此来高亮父级菜单 -->
@@ -186,6 +187,7 @@
                         </ul>
                     </li>
                     <!-- === 修改结束 === -->
+                    {% endif %}
 
                     <!-- === 修改开始：将班级管理改为下拉菜单 === -->
                     <li class="nav-item dropdown">
@@ -231,6 +233,7 @@
                     </li>
                     <!-- === 修改结束 === -->
 
+                    {% if request.user.user_attribute >= 2 %}
                     <!-- === 修改开始：将提交管理改为下拉菜单，包含提交记录和作业管理 === -->
                     <li class="nav-item dropdown">
                         <!-- 判断当前 URL 是否包含 submission 或 assignment，以此来高亮父级菜单 -->
@@ -257,7 +260,9 @@
                         </ul>
                     </li>
                     <!-- === 修改结束 === -->
+                    {% endif %}
 
+                    {% if request.user.user_attribute >= 2 %}
                     <!-- BKT知识追踪菜单 -->
 {#                    综合了DKT知识追踪菜单，沿用BKT的命名 #}
                     <li class="nav-item dropdown">
@@ -298,10 +303,37 @@
                             {% endif %}
                         </ul>
                     </li>
+                    {% endif %}
 
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'user_list' %}active{% endif %}" href="{% url 'user_list' %}">
+                    {% if request.user.user_attribute >= 2 %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if 'user_list' in request.resolver_match.url_name or 'pending_teachers' in request.resolver_match.url_name %}active{% endif %}"
+                           href="#"
+                           id="userManagementDropdown"
+                           role="button"
+                           data-bs-toggle="dropdown"
+                           aria-expanded="false">
                            <i class="fas fa-users me-1"></i>用户管理
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="userManagementDropdown">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'user_list' %}">
+                                    <i class="fas fa-list-ul me-2"></i>全部用户
+                                </a>
+                            </li>
+                            {% if request.user.is_authenticated and request.user.user_attribute >= 3 %}
+                            <li>
+                                <a class="dropdown-item" href="{% url 'pending_teachers' %}">
+                                    <i class="fas fa-clock me-2"></i>教师审核
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'student_homework' %}">
+                            <i class="fas fa-pencil-alt me-1"></i>学生端
                         </a>
                     </li>
                 </ul>

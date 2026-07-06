@@ -1,10 +1,15 @@
 from django.urls import path
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 import userManageModule.views
 from userManageModule import views as user_views
 from userManageModule import class_views
 
 urlpatterns = [
+    # JWT Token (for web/SPA login - references WeChat mini-program API pattern)
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+
     # 网页端 - 用户登录
     path('login/', user_views.login_view, name='login'),
     # 网页端 - 用户注销
@@ -19,6 +24,11 @@ urlpatterns = [
     path('delete/<int:user_id>/', user_views.user_delete, name='user_delete'),
     # 网页端 - 添加用户
     path('add/', user_views.user_add, name='user_add'),
+
+    # 网页端 - 教师注册审核（管理员）
+    path('pending-teachers/', user_views.pending_teachers, name='pending_teachers'),
+    path('approve-teacher/<int:user_id>/', user_views.approve_teacher, name='approve_teacher'),
+    path('reject-teacher/<int:user_id>/', user_views.reject_teacher, name='reject_teacher'),
 
     # REST API - 用户个人信息更新
     path('api/profile/update/', user_views.UserProfileUpdateView.as_view(), name='api_user_profile_update'),

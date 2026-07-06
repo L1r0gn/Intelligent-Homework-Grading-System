@@ -80,6 +80,14 @@ def jwt_login_required(view_func):
                 'message': '认证失败'
             }, status=500)
 
+        # 检查用户是否被激活（用于教师审核流程）
+        if not request.user.is_active:
+            return JsonResponse({
+                'code': 40104,
+                'error': 'Account is disabled',
+                'message': '账号尚未通过审核，请等待管理员审核通过后使用。'
+            }, status=401)
+
         return view_func(request, *args, **kwargs)
 
     return _wrapped_view

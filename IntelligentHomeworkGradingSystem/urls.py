@@ -21,6 +21,7 @@ from django.urls import path,include
 from IntelligentHomeworkGradingSystem import settings
 from userManageModule import views as user_views
 from IntelligentHomeworkGradingSystem import views as core_views
+from assignmentAndClassModule.views import student_homework
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -32,6 +33,7 @@ urlpatterns = [
     path('bkt/', include('BKTModule.urls')),  # BKT模块路由
     path('dkt/', include('dkt_app.urls')), # DKT模块路由
     path('', core_views.dashboard, name='dashboard'), # DASHBOARD
+    path('student/homework/', student_homework, name='student_homework'),
     path('register/',user_views.user_register,name='user_register'), # Moved register to /register/
     path('class/create/', user_views.create_class, name='create_class'),
     path('class/<int:class_id>/',user_views.class_detail,name='class_detail'),

@@ -126,7 +126,7 @@
                                 <tr class="align-middle">
                                     <td class="text-center"><input class="form-check-input row-checkbox" type="checkbox" name="selected_ids" value="{{ submission.id }}"></td>
                                     <td>{{ submission.id }}</td>
-                                    <td>{{ submission.student.wx_nickName }}</td>
+                                    <td>{{ submission.student.wx_nickName|default:submission.student.username }}</td>
                                     <td>{{ submission.problem.title }}</td>
                                     <td>{{ submission.submitted_time|date:"Y-m-d H:i" }}</td>
                                     <td>

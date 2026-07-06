@@ -88,7 +88,7 @@
                 <select name="subject" class="form-select">
                     <option value="">-- 所有科目 --</option>
                     {% for subject in all_subjects %}
-                    <option value="{{ subject.id }}" {% if current_subject == subject.id %}selected{% endif %}>{{ subject.name }}</option>
+                    <option value="{{ subject.id }}" {% if current_subject == subject.id %}selected{% endif %}>{{ subject.name }} ({% if subject.question_count > 200 %}200+{% else %}{{ subject.question_count }}{% endif %}题)</option>
                     {% endfor %}
                 </select>
             </div>
@@ -228,10 +228,17 @@
             <div class="card-footer bg-white border-0 py-3">
                 <div class="d-flex justify-content-between align-items-center flex-wrap">
                     <!-- 分页信息 -->
-                    <div class="mb-2 mb-md-0">
+                    <div class="mb-2 mb-md-0 d-flex align-items-center gap-3">
                         <small class="text-muted">
                             显示第 {{ page_obj.start_index }} - {{ page_obj.end_index }} 条，共 {{ page_obj.paginator.count }} 条记录
                         </small>
+                        <select name="per_page" class="form-select form-select-sm" style="width: auto;" onchange="var p=new URLSearchParams(location.search);p.set('per_page',this.value);p.set('page','1');location.search=p.toString()">
+                            <option value="10" {% if per_page == 10 %}selected{% endif %}>10条/页</option>
+                            <option value="20" {% if per_page == 20 %}selected{% endif %}>20条/页</option>
+                            <option value="50" {% if per_page == 50 %}selected{% endif %}>50条/页</option>
+                            <option value="100" {% if per_page == 100 %}selected{% endif %}>100条/页</option>
+                            <option value="200" {% if per_page == 200 %}selected{% endif %}>200条/页</option>
+                        </select>
                     </div>
                     
                     <!-- 分页导航 -->

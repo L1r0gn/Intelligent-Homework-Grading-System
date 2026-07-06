@@ -26,17 +26,29 @@ class UserAddForm(forms.ModelForm):
     #     empty_label="-- 请选择班级 --"
     # )
 
+    # 将姓名设为必填
+    wx_nickName = forms.CharField(
+        label='姓名 / 昵称',
+        required=True,
+        widget=forms.TextInput(attrs={'placeholder': '请输入您的姓名或昵称'})
+    )
+
     class Meta:
         model = User
         # 定义表单包含模型的哪些字段，移除class_in
         fields = ['username', 'wx_nickName', 'phone', 'gender', 'user_attribute']
         labels = {
             'username': '用户名',
-            'wx_nickName': '微信昵称',
+            'wx_nickName': '姓名 / 昵称',
             'phone': '手机号',
             'gender': '性别',
             'user_attribute': '用户属性',
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 将用户属性设为必填
+        self.fields['user_attribute'].required = True
 
     # clean 方法用于自定义全表单的验证逻辑
     def clean(self):
@@ -60,13 +72,28 @@ class UserAddForm(forms.ModelForm):
             wx_nickName=self.cleaned_data['wx_nickName'],
             phone=self.cleaned_data['phone'],
             gender=self.cleaned_data['gender'],
-            user_attribute=self.cleaned_data['user_attribute'],
+            user_attribute=int(self.cleaned_data['user_attribute']),
         )
         # 删除班级处理逻辑
         # if self.cleaned_data.get('class_in'):
         #      user.class_in.add(self.cleaned_data.get('class_in'))
         
         return user
+
+
+class UserRegistrationForm(UserAddForm):
+    """
+    用户注册表单，仅允许选择学生或老师属性。
+    """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 限制注册时可选的用户属性：仅学生(1)和老师(2)
+        self.fields['user_attribute'] = forms.ChoiceField(
+            label='用户属性',
+            required=True,
+            choices=[(1, '学生'), (2, '老师')],
+            widget=forms.Select
+        )
 
 class ClassForm(forms.ModelForm):
     homeroom_teacher = forms.ModelChoiceField(

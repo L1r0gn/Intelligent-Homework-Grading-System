@@ -1,4 +1,3 @@
-import traceback
 from functools import wraps
 from django.http import JsonResponse
 from django.urls import reverse
@@ -10,13 +9,16 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Q, Count
 from questionManageModule.models import  StudentMastery
 from userManageModule.decorators import jwt_login_required
 # 确保导入 KnowledgePoint
 from .models import Problem, ProblemContent, Answer, ProblemType, Subject, ProblemTag, KnowledgePoint
 from dkt_app.recommendation_utils import get_user_mastery_probabilities
+from django.utils.text import slugify
+from django.utils.html import strip_tags
 import numpy as np
+import random
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +32,7 @@ def admin_required(view_func):
             return redirect(f"{reverse('login')}?next={request.path}")
         if request.user.user_attribute < 3:
             messages.error(request, "您没有权限访问该页面。")
-            return redirect('question_list')
+            return redirect('dashboard')
         return view_func(request, *args, **kwargs)
 
     return _wrapped_view
@@ -75,7 +77,7 @@ def knowledge_point_create(request):
         else:
             messages.error(request, '名称和所属科目不能为空')
 
-    subjects = Subject.objects.all()
+    subjects = Subject.objects.annotate(question_count=Count('problem'))
     return render(request, 'knowledge_point_form.html', {'subjects': subjects, 'action': '创建'})
 
 
@@ -91,7 +93,7 @@ def knowledge_point_update(request, kp_id):
         messages.success(request, '知识点更新成功')
         return redirect('knowledge_point_list')
 
-    subjects = Subject.objects.all()
+    subjects = Subject.objects.annotate(question_count=Count('problem'))
     return render(request, 'knowledge_point_form.html', {'kp': kp, 'subjects': subjects, 'action': '编辑'})
 
 
@@ -109,7 +111,7 @@ def knowledge_point_delete(request, kp_id):
 # 2. 现有的问题视图 (已修改以支持知识点)
 # ==========================================
 
-@login_required(login_url="login")
+@admin_required
 def question_list(request):
     """问题列表"""
     # 增加 prefetch_related('knowledge_points') 以优化查询
@@ -118,7 +120,7 @@ def question_list(request):
     ).prefetch_related('tags', 'knowledge_points').order_by('-create_time')
 
     # 获取所有可用的筛选选项
-    all_subjects = Subject.objects.all()
+    all_subjects = Subject.objects.annotate(question_count=Count('problem'))
     all_types = ProblemType.objects.all()
     # 难度选项直接使用模型中的 choices
     difficulty_choices = Problem.DIF_CHOICES
@@ -146,12 +148,21 @@ def question_list(request):
     if difficulty_val:
         question_queryset = question_queryset.filter(difficulty=difficulty_val)
 
-    paginator = Paginator(question_queryset, 10)
+    per_page = request.GET.get('per_page', 10)
+    try:
+        per_page = min(int(per_page), 200)
+    except (ValueError, TypeError):
+        per_page = 10
+    if per_page < 1:
+        per_page = 10
+
+    paginator = Paginator(question_queryset, per_page)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
     context = {
         'page_obj': page_obj,
+        'per_page': per_page,
         'search_query': search_query,
         'all_subjects': all_subjects,
         'all_types': all_types,
@@ -164,7 +175,7 @@ def question_list(request):
     return render(request, 'question_list.html', context)
 
 
-@login_required(login_url="login")
+@admin_required
 def question_detail(request, question_id):
     question = get_object_or_404(Problem, id=question_id)
     return render(request, 'question_detail.html', {'question': question})
@@ -183,7 +194,7 @@ def handle_problem_creation(
         answer_obj = None
         if answer_data and answer_data.get('content'):
             answer_obj = Answer.objects.create(
-                content=answer_data['content'],
+                content=strip_tags(answer_data['content']),
                 explanation=answer_data.get('explanation', '')
             )
 
@@ -214,7 +225,7 @@ def question_create(request):
     # 默认值
     context = {
         'problem_types': ProblemType.objects.all(),
-        'subjects': Subject.objects.all(),
+        'subjects': Subject.objects.annotate(question_count=Count('problem')),
         'knowledge_points': KnowledgePoint.objects.all().order_by('subject'),  # 传递所有知识点
         'existing_questions': Problem.objects.all()
     }
@@ -272,7 +283,7 @@ def question_update(request, question_id):
 
     # 准备上下文
     problem_types = ProblemType.objects.all()
-    subjects = Subject.objects.all()
+    subjects = Subject.objects.annotate(question_count=Count('problem'))
     all_kps = KnowledgePoint.objects.all().order_by('subject')  # 所有知识点
 
     # 获取当前题目已选的知识点ID，用于前端回显
@@ -332,12 +343,12 @@ def question_update(request, question_id):
                 if answer_content or answer_explanation or answer_data:
                     if question.answer:
                         ans = question.answer
-                        ans.content = answer_content
+                        ans.content = strip_tags(answer_content)
                         ans.explanation = answer_explanation
                         ans.content_data = answer_data
                         ans.save()
                     else:
-                        new_ans = Answer.objects.create(content=answer_content, explanation=answer_explanation,
+                        new_ans = Answer.objects.create(content=strip_tags(answer_content), explanation=answer_explanation,
                                                         content_data=answer_data)
                         question.answer = new_ans
                 elif question.answer:
@@ -398,66 +409,113 @@ def wx_question_detail_random(request):
             user = request.user
             logger.info(f"当前用户ID: {user.id}，发起了随机问题请求")
 
-            mastery_probs_raw = get_user_mastery_probabilities(user)
-            # test
-            # logger.info(f"用户 {user.id} 的原始知识点掌握度: {mastery_probs_raw}")
+            # 学生只能看到被授权科目的题目
+            base_filters = {'is_active': True}
+            if user.user_attribute == 1:
+                authorized = user.authorized_subjects.all()
+                if authorized.exists():
+                    base_filters['subject__in'] = authorized
+                else:
+                    return JsonResponse({'error': 'No questions available'}, status=404)
 
-            # 方案三 + 方案二 组合推荐逻辑
-            mastery_threshold_T = 0.7  # 掌握度上限
-            alpha = 0.7  # 平滑因子
+            subject_id = request.GET.get('subject_id')
+            problem_type_id = request.GET.get('problem_type_id')
+            kp_id = request.GET.get('kp_id')
+
+            # 如果指定了知识点，直接在该知识点下随机选题，跳过 DKT
+            if kp_id:
+                filters = {'is_active': True, 'knowledge_points': kp_id}
+                if user.user_attribute == 1:
+                    authorized = user.authorized_subjects.all()
+                    if authorized.exists():
+                        filters['subject__in'] = authorized
+                    else:
+                        return JsonResponse({'error': 'No questions available'}, status=404)
+                if subject_id:
+                    filters['subject_id'] = subject_id
+                if problem_type_id:
+                    filters['problem_type_id'] = problem_type_id
+                question = Problem.objects.filter(**filters).order_by('?').first()
+                if question:
+                    data = {
+                        'id': question.id,
+                        'content': question.content.content,
+                        'problem_type': question.problem_type.name,
+                    }
+                    return JsonResponse({'question': data})
+                else:
+                    return JsonResponse({'error': 'No questions available'}, status=404)
+
+            # 构建公共的额外筛选条件（不含知识点）
+            extra_filters = {}
+            if subject_id:
+                extra_filters['subject_id'] = subject_id
+            if problem_type_id:
+                extra_filters['problem_type_id'] = problem_type_id
+
+            mastery_probs_raw = get_user_mastery_probabilities(user)
+
+            mastery_threshold_T = 0.7
+            alpha = 0.7
 
             eligible_kps_with_mastery = {}
             for kp, mastery in mastery_probs_raw.items():
                 if mastery < mastery_threshold_T:
                     eligible_kps_with_mastery[kp] = mastery
-            
-            # logger.info(f"用户 {user.id} 掌握度低于 {mastery_threshold_T} 的知识点: {[(kp.name, mastery) for kp, mastery in eligible_kps_with_mastery.items()]}")
 
             if not eligible_kps_with_mastery:
                 logger.info(f"用户 {user.id} 没有掌握度低于 {mastery_threshold_T} 的知识点，进行随机推荐。")
-                # Fallback to pure random if no weak知识点
-                question = Problem.objects.filter(is_active=True).order_by('?').first()
+                filters = {'is_active': True, **extra_filters}
+                if user.user_attribute == 1:
+                    authorized = user.authorized_subjects.all()
+                    if authorized.exists():
+                        filters['subject__in'] = authorized
+                    else:
+                        return JsonResponse({'error': 'No questions available'}, status=404)
+                question = Problem.objects.filter(**filters).order_by('?').first()
                 if question:
                     logger.info(f"为用户 {user.id} 随机推荐了题目: {question.id} ({question.problem_type.name})")
                     data = {
                         'id': question.id,
-                        'content': question.content.content if question.content else '',
-                        'problem_type': question.problem_type.name if question.problem_type else '',
+                        'content': question.content.content,
+                        'problem_type': question.problem_type.name,
                     }
                     return JsonResponse({'question': data})
                 else:
                     logger.warning(f"用户 {user.id} 随机推荐失败，没有可用题目。")
                     return JsonResponse({'error': 'No questions available'}, status=404)
 
-            # 计算推荐概率 (方案二)
             knowledge_points = list(eligible_kps_with_mastery.keys())
             weaknesses = np.array([1 - mastery for mastery in eligible_kps_with_mastery.values()])
-            
-            # 避免所有弱点都为0导致除以零，或者所有弱点相同导致概率计算问题
+
             if np.all(weaknesses == 0):
                 selection_probabilities = np.ones(len(weaknesses)) / len(weaknesses)
-                # logger.info(f"所有薄弱点掌握度相同，平均分配推荐概率。")
             else:
                 weighted_weaknesses = weaknesses ** alpha
                 selection_probabilities = weighted_weaknesses / np.sum(weighted_weaknesses)
-            
+
             selected_question = None
-            max_attempts = 5  # 尝试从薄弱知识点中选择问题的次数
+            max_attempts = 5
             attempts = 0
 
             while selected_question is None and attempts < max_attempts:
                 attempts += 1
                 try:
-                    # 随机选择一个知识点
                     chosen_kp = np.random.choice(knowledge_points, p=selection_probabilities)
                     logger.info(f"尝试 {attempts}/{max_attempts}: 选中知识点 '{chosen_kp.name}' (掌握度: {eligible_kps_with_mastery[chosen_kp]:.2f})。")
-                    
-                    # 查找与该知识点关联的题目
-                    # 确保题目是激活的，并且至少有一个知识点与 chosen_kp 匹配
+
                     candidate_questions = Problem.objects.filter(
                         is_active=True,
-                        knowledge_points=chosen_kp
-                    ).order_by('?') # 可以在这些题目中再随机一个
+                        knowledge_points=chosen_kp,
+                        **extra_filters
+                    )
+                    if user.user_attribute == 1:
+                        authorized = user.authorized_subjects.all()
+                        if authorized.exists():
+                            candidate_questions = candidate_questions.filter(subject__in=authorized)
+                        else:
+                            continue
+                    candidate_questions = candidate_questions.order_by('?')
 
                     if candidate_questions.exists():
                         selected_question = candidate_questions.first()
@@ -466,26 +524,32 @@ def wx_question_detail_random(request):
                         logger.warning(f"知识点 '{chosen_kp.name}' 没有找到可用题目，尝试重新选择。")
                 except ValueError as ve:
                     logger.error(f"选择知识点或题目时发生ValueError: {ve}")
-                    break # Break if probabilities are messed up
+                    break
 
             if selected_question:
                 logger.info(f"最终为用户 {user.id} 推荐了题目: {selected_question.id} ({selected_question.problem_type.name})。")
                 data = {
                     'id': selected_question.id,
-                    'content': selected_question.content.content if selected_question.content else '',
-                    'problem_type': selected_question.problem_type.name if selected_question.problem_type else '',
+                    'content': selected_question.content.content,
+                    'problem_type': selected_question.problem_type.name,
                 }
                 return JsonResponse({'question': data})
             else:
                 logger.warning(f"经过 {max_attempts} 次尝试，未能为用户 {user.id} 找到基于薄弱知识点的题目。最终进行随机推荐。")
-                # 最终 fallback 到纯随机推荐
-                question = Problem.objects.filter(is_active=True).order_by('?').first()
+                fallback_filters = {'is_active': True, **extra_filters}
+                if user.user_attribute == 1:
+                    authorized = user.authorized_subjects.all()
+                    if authorized.exists():
+                        fallback_filters['subject__in'] = authorized
+                    else:
+                        return JsonResponse({'error': 'No questions available'}, status=404)
+                question = Problem.objects.filter(**fallback_filters).order_by('?').first()
                 if question:
                     logger.info(f"最终 fallback: 为用户 {user.id} 随机推荐了题目: {question.id} ({question.problem_type.name})")
                     data = {
                         'id': question.id,
-                        'content': question.content.content if question.content else '',
-                        'problem_type': question.problem_type.name if question.problem_type else '',
+                        'content': question.content.content,
+                        'problem_type': question.problem_type.name,
                     }
                     return JsonResponse({'question': data})
                 else:
@@ -493,10 +557,37 @@ def wx_question_detail_random(request):
                     return JsonResponse({'error': 'No questions available'}, status=404)
 
         except Exception as e:
-            # 记录异常到日志，便于调试
-            logger.error(f"Error in random_question view: {e}")
-            logger.error(traceback.format_exc())
+            logger.error(f"Error in random_question view: {str(e)}")
             return JsonResponse({'error': 'Internal server error'}, status=500)
+
+
+@admin_required
+def download_import_template(request):
+    template_data = [
+        {
+            "title": "示例题目1 - 勾股定理",
+            "question": "<p>直角三角形两直角边分别为3和4，求斜边长。</p>",
+            "answer": "5",
+            "analysis": "根据勾股定理 a² + b² = c²，3² + 4² = 9 + 16 = 25，c = √25 = 5。",
+            "category": "勾股定理",
+            "difficulty": 2,
+            "estimated_time": 10,
+            "score": 5
+        },
+        {
+            "title": "示例题目2 - 一元二次方程",
+            "question": "<p>解方程：x² - 5x + 6 = 0</p>",
+            "answer": "x₁=2, x₂=3",
+            "analysis": "因式分解得 (x-2)(x-3)=0，所以 x=2 或 x=3。",
+            "category": "一元二次方程",
+            "difficulty": 3,
+            "estimated_time": 15,
+            "score": 10
+        }
+    ]
+    response = JsonResponse(template_data, safe=False, json_dumps_params={'ensure_ascii': False, 'indent': 2})
+    response['Content-Disposition'] = 'attachment; filename="import_template.json"'
+    return response
 
 
 @admin_required
@@ -529,7 +620,7 @@ def question_batch_import_json(request):
                 if not title:
                     title = f"{item.get('year', '')} {item.get('category', '')} - 题 {item.get('index', idx)}".strip()
 
-                answer_content = item.get('answer', '')
+                answer_content = strip_tags(item.get('answer', '')).strip()
                 answer_explanation = item.get('analysis', '')
                 category_name = item.get('category', '').strip()
 
@@ -564,7 +655,7 @@ def question_batch_import_json(request):
         return redirect('question_batch_import_json')
     else:
         # GET 请求逻辑不变
-        subjects = Subject.objects.all()
+        subjects = Subject.objects.annotate(question_count=Count('problem'))
         problem_types = ProblemType.objects.all()
         return render(request, 'question_batch_import_json.html', {
             'subjects': subjects,
@@ -652,7 +743,7 @@ def question_import_review(request):
 
     # GET请求时，需要传递所有可选的科目和题型到模板，用于生成下拉框
     else:
-        all_subjects = Subject.objects.all()
+        all_subjects = Subject.objects.annotate(question_count=Count('problem'))
         all_problem_types = ProblemType.objects.all()
         return render(request, 'question_import_review.html', {
             'review_items': review_items,
@@ -692,7 +783,23 @@ def _ajax_create_model_instance(request, model_class, model_name_singular):
         if model_class.objects.filter(name=name).exists():
             return JsonResponse({'error': f'{model_name_singular} "{name}" 已存在。'}, status=400)
 
-        new_instance = model_class.objects.create(name=name)
+        kwargs = {'name': name}
+        code = data.get('code', '').strip()
+        if code:
+            kwargs['code'] = code
+        elif hasattr(model_class, 'code'):
+            base_code = slugify(name)[:50]
+            if not base_code:
+                base_code = name[:50]
+            code = base_code
+            counter = 1
+            while model_class.objects.filter(code=code).exists():
+                suffix = f'-{counter}'
+                code = f'{base_code[:50-len(suffix)]}{suffix}'
+                counter += 1
+            kwargs['code'] = code
+
+        new_instance = model_class.objects.create(**kwargs)
         return JsonResponse({'id': new_instance.id, 'name': new_instance.name}, status=201)
 
     except json.JSONDecodeError:
@@ -709,17 +816,37 @@ def wx_search_questions(request):
     支持参数：
     - keyword: 搜索标题、内容
     - kp_id: 知识点ID
+    - subject_id: 科目ID
+    - problem_type_id: 题型ID
     - page: 分页
     """
     keyword = request.GET.get('keyword', '').strip()
     kp_id = request.GET.get('kp_id')
+    subject_id = request.GET.get('subject_id')
+    problem_type_id = request.GET.get('problem_type_id')
 
     # 只查询激活的题目
     questions = Problem.objects.filter(is_active=True).select_related('problem_type', 'subject')
 
+    # 学生只能看到被授权科目的题目
+    if request.user.user_attribute == 1:
+        authorized = request.user.authorized_subjects.all()
+        if authorized.exists():
+            questions = questions.filter(subject__in=authorized)
+        else:
+            questions = questions.none()
+
     # 按知识点筛选
     if kp_id:
         questions = questions.filter(knowledge_points__id=kp_id)
+
+    # 按科目筛选
+    if subject_id:
+        questions = questions.filter(subject_id=subject_id)
+
+    # 按题型筛选
+    if problem_type_id:
+        questions = questions.filter(problem_type_id=problem_type_id)
 
     # 按关键词筛选（同时搜标题、内容、知识点名称）
     if keyword:
@@ -729,27 +856,39 @@ def wx_search_questions(request):
             Q(knowledge_points__name__icontains=keyword)
         ).distinct()
 
-    # 默认按时间倒序，限制返回数量防止数据量过大
     total_count = questions.count()
-    questions = questions.order_by('-create_time')[:50]
+
+    page = int(request.GET.get('page', 1))
+    page_size = 21
+    total_pages = max(1, (total_count + page_size - 1) // page_size)
+    page = max(1, min(page, total_pages))
+
+    questions = questions.order_by('-create_time')
+    start = (page - 1) * page_size
+    end = start + page_size
+    page_questions = questions[start:end]
 
     data = []
-    for q in questions:
-        # 获取该题关联的知识点名称
+    for q in page_questions:
         kp_names = [kp.name for kp in q.knowledge_points.all()[:3]]
 
         data.append({
             'id': q.id,
             'title': q.title if q.title else f'题目 #{q.id}',
             'problem_type': q.problem_type.name,
+            'problem_type_code': q.problem_type.code if q.problem_type else '',
             'difficulty': q.get_difficulty_display(),
             'knowledge_points': kp_names,
-            'subject': q.subject.name,
-            # 截取一部分内容作为预览
-            'content_preview': q.content.content[:40] + '...' if q.content else ''
+            'content_preview': q.content.content[:30] + '...' if q.content else ''
         })
 
-    return JsonResponse({'success': True, 'data': data, 'total': total_count})
+    return JsonResponse({
+        'success': True,
+        'data': data,
+        'total': total_count,
+        'page': page,
+        'total_pages': total_pages,
+    })
 
 
 @jwt_login_required
@@ -760,16 +899,22 @@ def wx_get_question_by_id(request, question_id):
     try:
         question = Problem.objects.get(id=question_id, is_active=True)
 
+        # 学生只能查看被授权科目的题目
+        if request.user.user_attribute == 1:
+            if not request.user.authorized_subjects.filter(id=question.subject_id).exists():
+                return JsonResponse({'success': False, 'error': '您没有权限查看该题目'}, status=403)
+
         # 构造与 random 接口一致的数据结构
         data = {
             'id': question.id,
             'content': question.content.content,
+            'content_data': question.content.content_data if question.content else {},
             'problem_type': question.problem_type.name,
+            'problem_type_code': question.problem_type.code if question.problem_type else '',
             'points': question.points,
             'difficulty': question.get_difficulty_display(),
-            'answer': question.answer.content,
-            'analysis': question.answer.explanation,
-            # 你可以根据需要添加更多字段
+            'answer': question.answer.content if question.answer else '',
+            'analysis': question.answer.explanation if question.answer else '',
         }
         return JsonResponse({'success': True, 'question': data})
     except Problem.DoesNotExist:

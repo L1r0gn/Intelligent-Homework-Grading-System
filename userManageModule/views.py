@@ -7,8 +7,9 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework_simplejwt.tokens import RefreshToken
 from IntelligentHomeworkGradingSystem import settings
 from .decorators import jwt_login_required, student_required
-from .forms import UserAddForm
+from .forms import UserAddForm, UserRegistrationForm
 from .models import User, className
+from questionManageModule.models import Subject
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Q
@@ -153,9 +154,23 @@ def login_view(request):
                 next_url = request.GET.get('next', 'user_list')
                 return redirect(next_url)
             else:
-                messages.error(request, "用户名或密码错误，请重试。")
+                # 检查用户是否存在但被禁用（is_active=False）
+                try:
+                    inactive_user = User.objects.get(username=username)
+                    if not inactive_user.is_active:
+                        messages.error(request, "该账号尚未通过审核，请等待管理员审核通过后登录。")
+                    else:
+                        messages.error(request, "用户名或密码错误，请重试。")
+                except User.DoesNotExist:
+                    messages.error(request, "用户名或密码错误，请重试。")
         else:
-            messages.error(request, "用户名或密码无效。")
+            # 显示表单验证错误（包括账号未激活等）
+            for field, errors in form.errors.items():
+                for error in errors:
+                    if "inactive" in error.lower() or "未激活" in error:
+                        messages.error(request, "该账号尚未通过审核，请等待管理员审核通过后登录。")
+                    else:
+                        messages.error(request, f"{error}")
             logger.info(form.errors)
     else:
         form = AuthenticationForm()
@@ -181,6 +196,7 @@ def user_list(request):
     search_query = request.GET.get('q', '')
     user_attribute = request.GET.get('attribute', '')
     gender = request.GET.get('gender', '')
+    status_filter = request.GET.get('status', '')
     
     # 应用搜索
     if search_query:
@@ -196,6 +212,12 @@ def user_list(request):
             queryset = queryset.filter(user_attribute=int(user_attribute))
         except ValueError:
             pass
+    
+    # 应用状态筛选
+    if status_filter == 'active':
+        queryset = queryset.filter(is_active=True)
+    elif status_filter == 'pending':
+        queryset = queryset.filter(is_active=False)
     
     # 应用性别筛选
     if gender:
@@ -224,6 +246,7 @@ def user_list(request):
         'search_query': search_query,
         'current_attribute': int(user_attribute) if user_attribute else None,
         'current_gender': int(gender) if gender else None,
+        'current_status': status_filter if status_filter else None,
         'attributes': attributes,
         'genders': genders,
     }
@@ -289,9 +312,13 @@ def user_edit(request, user_id):
     if request.method == "GET":
         # 显示预填充的表单
         class_list = className.objects.all()  # 获取所有班级
+        subjects = Subject.objects.all()
+        user_subject_ids = list(user.authorized_subjects.values_list('id', flat=True))
         return render(request, "user_edit.html", {
             'user': user,  # 当前用户数据
-            'class_list': class_list  # 班级列表（用于下拉框）
+            'class_list': class_list,  # 班级列表（用于下拉框）
+            'subjects': subjects,
+            'user_subject_ids': user_subject_ids,
         })
 
     # 处理 POST 请求（表单提交）
@@ -336,6 +363,11 @@ def user_edit(request, user_id):
                 user.class_in.set([selected_class]) # 使用 set 方法更新 M2M
             else:
                 user.class_in.clear() # 如果未选择，清空班级
+
+            # 处理科目权限 (M2M)
+            subject_ids = request.POST.getlist('subjects')
+            subject_ids = [int(sid) for sid in subject_ids if sid.isdigit()]
+            user.authorized_subjects.set(subject_ids)
 
             logger.info(f'用户 {user.username} 信息更新成功')
             messages.success(request, '用户信息更新成功')
@@ -435,60 +467,73 @@ def wx_user_edit(request, user_id):
 def user_register(request):
     """
     处理用户的公开注册请求（网页端）。
+    教师注册后需管理员审核（is_active=False），学生注册后直接激活。
     """
     if request.method == 'GET':
-        form = UserAddForm()
+        form = UserRegistrationForm()
         return render(request, 'user_register.html', {'form': form})
     elif request.method == 'POST':
-        form = UserAddForm(request.POST)
+        form = UserRegistrationForm(request.POST)
         if form.is_valid():
-            username = form.cleaned_data['username']
-            password = form.cleaned_data['password']
-            phone = form.cleaned_data.get('phone')
-            gender = form.cleaned_data.get('gender')
-            user_attribute = form.cleaned_data.get('user_attribute')
-            class_in_id = form.cleaned_data.get('class_in')
-
-            logger.info(username, password, phone, gender, user_attribute, class_in_id)
-
-            if user_attribute >= 3:
-                messages.error(request, "权限不足，不可设置该权限。")
-                return render(request, 'user_register.html', {'form': form})
+            user_attribute = int(form.cleaned_data['user_attribute'])
 
             try:
-                # 1. 先实例化用户对象（不要在这里赋值 class_in）
-                user = User(
-                    username=username,
-                    phone=int(phone) if phone else 13500000000,
-                    gender=int(gender) if gender is not None else None,
-                    # 注意：这里逻辑我也帮你优化了一下，确保安全
-                    user_attribute=user_attribute if user_attribute in (1, 2) else 0,
-                    is_staff=user_attribute in (3, 4),
-                )
+                # 使用 form.save() 创建用户
+                user = form.save()
 
-                # 2. 设置密码
-                user.set_password(password)
+                # 如果是教师注册，设置为待审核状态
+                if user_attribute == 2:
+                    user.is_active = False
+                    user.save()
+                    messages.success(request, '注册成功！教师账号需要管理员审核，审核通过后方可登录。')
+                else:
+                    messages.success(request, '注册成功！')
 
-                # 3. 关键步骤：必须先保存 User，生成 ID！
-                user.save()
-
-                # 4. 现在有 ID 了，再设置多对多关系 (class_in)
-                if class_in_id:
-                    # 注意：class_in_id 这里应该是 QuerySet 或列表
-                    # 如果 class_in_id 是单个对象或 ID，可能需要用 .add(class_in_id)
-                    # 但通常表单返回的是列表，用 .set() 最稳妥
-                    user.class_in.set(class_in_id)
-
-                messages.success(request, '用户创建成功！')
-                return redirect('user_list')
+                return redirect('login')
 
             except Exception as e:
-                # 打印错误到后台方便调试
-                print(f"Error: {e}")
-                messages.error(request, f'创建用户失败：{str(e)}')
+                logger.error(f"用户注册失败: {e}")
+                messages.error(request, f'注册失败：{str(e)}')
                 return render(request, 'user_register.html', {'form': form})
         else:
             return render(request, 'user_register.html', {'form': form})
+
+
+@admin_required
+def pending_teachers(request):
+    """
+    显示所有待审核的教师账号（is_active=False 且 user_attribute=2）。
+    管理员可以在此进行通过/拒绝操作。
+    """
+    pending = User.objects.filter(is_active=False, user_attribute=2)
+    return render(request, 'pending_teachers.html', {'pending_list': pending})
+
+
+@admin_required
+def approve_teacher(request, user_id):
+    """
+    审核通过教师账号，将 is_active 设为 True。
+    """
+    user = get_object_or_404(User, id=user_id, user_attribute=2)
+    if user.is_active:
+        messages.info(request, f'用户 {user.wx_nickName or user.username} 已被审核通过，无需重复操作。')
+    else:
+        user.is_active = True
+        user.save()
+        messages.success(request, f'教师 {user.wx_nickName or user.username} 审核通过！')
+    return redirect('pending_teachers')
+
+
+@admin_required
+def reject_teacher(request, user_id):
+    """
+    拒绝教师注册申请，删除该用户。
+    """
+    user = get_object_or_404(User, id=user_id, user_attribute=2)
+    name = user.wx_nickName or user.username
+    user.delete()
+    messages.success(request, f'已拒绝 {name} 的注册申请。')
+    return redirect('pending_teachers')
 
 def generate_class_code():
     """

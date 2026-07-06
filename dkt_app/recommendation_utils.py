@@ -10,6 +10,7 @@ from questionManageModule.models import KnowledgePoint, Problem
 from gradingModule.models import Submission
 
 from .dkt_utils import Item, get_student_predictions
+from .models import DKT
 
 import logging
 logger = logging.getLogger(__name__)
@@ -17,6 +18,7 @@ logger = logging.getLogger(__name__)
 # 内存中的模型缓存
 _dkt_model_cache = None
 _knowledge_dim_cache = None
+_knowledge_point_id_to_idx_map_cache = None
 _knowledge_point_map_reverse_cache = None
 _knowledge_point_id_to_obj_map_cache = None
 
@@ -27,7 +29,7 @@ def _load_dkt_model_and_mappings():
     """
     global _dkt_model_cache, _knowledge_dim_cache, _knowledge_point_id_to_idx_map_cache, _knowledge_point_map_reverse_cache, _knowledge_point_id_to_obj_map_cache
 
-    if _dkt_model_cache is not None and _knowledge_dim_cache is not None and _knowledge_point_map_reverse_cache is not None and _knowledge_point_id_to_obj_map_cache is not None:
+    if _dkt_model_cache is not None and _knowledge_dim_cache is not None and _knowledge_point_id_to_idx_map_cache is not None and _knowledge_point_id_to_obj_map_cache is not None:
         return _dkt_model_cache, _knowledge_dim_cache, _knowledge_point_id_to_idx_map_cache, _knowledge_point_id_to_obj_map_cache
 
     # 1. 获取所有知识点，确定知识点维度和映射
@@ -43,7 +45,6 @@ def _load_dkt_model_and_mappings():
     knowledge_dim = len(all_knowledge_points)
 
     # 2. 初始化 DKT 模型
-    from dkt_app.models import DKTModel,DKT
     dkt_model = DKT(knowledge_dim)
 
     # 3. 加载训练好的权重
@@ -62,7 +63,7 @@ def _load_dkt_model_and_mappings():
     _knowledge_point_map_reverse_cache = knowledge_point_idx_to_name_map
     _knowledge_point_id_to_obj_map_cache = knowledge_point_id_to_obj_map
     
-    return _dkt_model_cache, _knowledge_dim_cache, knowledge_point_id_to_idx_map, _knowledge_point_id_to_obj_map_cache
+    return _dkt_model_cache, _knowledge_dim_cache, _knowledge_point_id_to_idx_map_cache, _knowledge_point_id_to_obj_map_cache
 
 
 def get_user_mastery_probabilities(user: User) -> dict:
@@ -87,7 +88,7 @@ def get_user_mastery_probabilities(user: User) -> dict:
         problem_knowledge_codes = []
         for kp in sub.problem.knowledge_points.all():
             if kp.id in knowledge_point_id_to_idx_map:
-                problem_knowledge_codes.append(int(knowledge_point_id_to_idx_map[kp.id]) + 1) # +1 for 1-indexed
+                problem_knowledge_codes.append(knowledge_point_id_to_idx_map[kp.id] + 1) # +1 for 1-indexed
 
         # 假设及格线是0.6，与训练时保持一致
         binary_score = 0.0

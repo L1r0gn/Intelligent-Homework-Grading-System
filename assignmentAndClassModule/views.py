@@ -13,6 +13,8 @@ from rest_framework import status
 from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator
 from django.db.models import Avg, Count, Q
+from django.contrib.auth.decorators import login_required
+from rest_framework_simplejwt.tokens import RefreshToken
 from userManageModule.decorators import jwt_login_required, admin_required
 
 from .models import Assignment, className, AssignmentStatus
@@ -496,6 +498,7 @@ def get_student_homework_detail(request, assignment_id):
             'problem_type': problem.problem_type.name,
             'problem_type_code': problem.problem_type.code if problem.problem_type else '',
             'problem_content': problem_content_text,
+            'content_data': problem.content.content_data if problem.content else {},
             'standard_answer': problem.answer.content if problem.answer else '',  # 在这里返回标准答案可能需要根据业务决定是否在学生提交前隐藏
             'explanation': problem.answer.explanation if problem.answer else '',
         })
@@ -809,3 +812,14 @@ def batch_push_assignments(request):
     except Exception as e:
         logger.error(f"批量发布失败: {str(e)}")
         return Response({'success': False, 'error': f'发布失败: {str(e)}'}, status=500)
+
+
+def student_homework(request):
+    context = {}
+    if request.user.is_authenticated:
+        refresh = RefreshToken.for_user(request.user)
+        context['initial_access_token'] = str(refresh.access_token)
+        context['initial_refresh_token'] = str(refresh)
+        context['initial_user_id'] = request.user.id
+        context['initial_username'] = request.user.wx_nickName or request.user.username
+    return render(request, 'student_homework.html', context)

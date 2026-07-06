@@ -33,7 +33,7 @@
                         <hr class="my-4">
                         <div class="mb-4">
                             <label class="form-label fw-bold">答案</label>
-                            <textarea class="form-control editor" name="item_{{ forloop.counter0 }}_answer_content" id="editor-answer-{{ forloop.counter0 }}" rows="3">{{ item.answer_content }}</textarea>
+                            <textarea class="form-control" name="item_{{ forloop.counter0 }}_answer_content" id="editor-answer-{{ forloop.counter0 }}" rows="3">{{ item.answer_content }}</textarea>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-bold">解析</label>
@@ -48,7 +48,7 @@
                             <div class="input-group">
                                 <select class="form-select" name="item_{{ forloop.counter0 }}_subject">
                                     {% for subject in all_subjects %}
-                                    <option value="{{ subject.id }}" {% if subject.id == item.subject_id|add:0 %}selected{% endif %}>{{ subject.name }}</option>
+                                    <option value="{{ subject.id }}" {% if subject.id == item.subject_id|add:0 %}selected{% endif %}>{{ subject.name }} ({% if subject.question_count > 200 %}200+{% else %}{{ subject.question_count }}{% endif %}题)</option>
                                     {% endfor %}
                                 </select>
                                 <button type="button" class="btn btn-outline-secondary js-add-subject-btn" data-bs-toggle="modal" data-bs-target="#addSubjectModal">

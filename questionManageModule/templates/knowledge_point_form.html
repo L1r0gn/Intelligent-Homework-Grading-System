@@ -25,7 +25,7 @@
                                 <option value="" disabled {% if not kp %}selected{% endif %}>请选择科目...</option>
                                 {% for subject in subjects %}
                                     <option value="{{ subject.id }}" {% if kp.subject_id == subject.id %}selected{% endif %}>
-                                        {{ subject.name }}
+                                        {{ subject.name }} ({% if subject.question_count > 200 %}200+{% else %}{{ subject.question_count }}{% endif %}题)
                                     </option>
                                 {% endfor %}
                             </select>

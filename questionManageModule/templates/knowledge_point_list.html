@@ -44,7 +44,7 @@
                         {% for kp in page_obj %}
                         <tr>
                             <td>{{ kp.id }}</td>
-                            <td><span class="badge bg-info text-dark">{{ kp.subject.name }}</span></td>
+                            <td><span class="badge bg-info text-dark">{{ kp.subject.name }} ({% if kp.subject.question_count > 200 %}200+{% else %}{{ kp.subject.question_count }}{% endif %}题)</span></td>
                             <td class="fw-bold">{{ kp.name }}</td>
                             <td class="text-muted">{{ kp.description|truncatechars:50 }}</td>
                             <td class="text-center">
