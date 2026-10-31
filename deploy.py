@@ -106,8 +106,11 @@ def check_dependencies():
         except ImportError:
             missing.append(package)
     if missing:
-        fail('缺少依赖：' + ' '.join(missing))
+        fail('当前解释器缺少依赖：' + ' '.join(missing))
+        print(f'       当前解释器：{PY}', flush=True)
         print(f'       安装命令：{PY} -m pip install ' + ' '.join(f'"{p}"' for p in missing), flush=True)
+        print('       若这不是你想要的环境：conda activate IntelligentHomeworkGradingSystem', flush=True)
+        print('       或改用 start.bat（会自动探测已装依赖的解释器）', flush=True)
         return False
     ok(f'依赖齐全（{len(REQUIRED_MODULES)} 个核心包）')
     return True

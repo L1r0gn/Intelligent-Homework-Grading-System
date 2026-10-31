@@ -26,13 +26,23 @@
 
 ### 一键启动（推荐）
 
-环境准备好之后，一条命令即可拉起 Redis、Celery 和 Django：
+**Windows：双击 `start.bat`，或在命令行执行**
 
-```bash
-python deploy.py dev
+```bat
+start.bat check      :: 只做环境自检
+start.bat dev        :: 启动（Redis + Celery + Django）
+start.bat dev --no-celery
 ```
 
-Windows 下也可以直接双击 `start.bat`，Linux/macOS 用 `./start.sh`。
+**Linux / macOS**
+
+```bash
+./start.sh           # 等价于 python deploy.py dev
+python deploy.py check
+```
+
+`start.bat` 会自动寻找一个**已安装项目依赖**的 Python（依次尝试 `IHGS_PYTHON` 环境变量、`.venv`、已激活的 conda 环境、conda 具名环境、`py -3.10`、PATH 上的 python）。
+所以即使 Windows 把 `python` 指向了应用商店存根（提示 `Python was not found`），也能正常启动。
 
 脚本会自动完成：环境自检 → 检查/拉起 Redis(6380) → 数据库迁移 → 启动 Celery → 启动 Django。
 按 `Ctrl+C` 会连同子进程一起退出。
@@ -40,8 +50,6 @@ Windows 下也可以直接双击 `start.bat`，Linux/macOS 用 `./start.sh`。
 其他常用命令：
 
 ```bash
-python deploy.py check                      # 只做环境自检，不启动任何服务
-python deploy.py dev --no-celery            # 不起 Celery（只调页面/接口时够用）
 python deploy.py dev --port 8080            # 换端口
 python deploy.py migrate                    # 只执行数据库迁移
 python deploy.py prod --workers 4           # 生产模式：collectstatic + Celery + gunicorn
