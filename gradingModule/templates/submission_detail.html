@@ -3,6 +3,18 @@
 {% block title %}提交详情 - 智能作业批改系统{% endblock %}
 
 {% block content %}
+<div class="page-header">
+    <div>
+        <h2>提交详情</h2>
+        <p class="page-sub">提交编号 #{{ submission.id }} · 查看批改结果与反馈</p>
+    </div>
+    <div class="page-actions">
+        <a href="{% url 'grading:submission_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>返回列表
+        </a>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-lg-8">
         <div class="card mb-4">

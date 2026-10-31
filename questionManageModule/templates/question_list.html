@@ -60,19 +60,22 @@
 
 {% block content %}
 <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>问题管理</h2>
+    <div class="page-header">
         <div>
+            <h2>题目列表管理</h2>
+            <p class="page-sub">统一维护题库中的题目、知识点关联与上下架状态。</p>
+        </div>
+        <div class="page-actions">
             <a href="{% url 'question:problem_create' %}" class="btn btn-primary">
                 <i class="fas fa-plus me-2"></i>创建新问题
             </a>
-            <a href="{% url 'question:problem_import' %}" class="btn btn-info">
+            <a href="{% url 'question:problem_import' %}" class="btn btn-info text-white">
                 <i class="fas fa-file-import me-2"></i>批量导入
             </a>
         </div>
     </div>
 
-    <div class="mb-4">
+    <div class="toolbar mb-3">
         <form method="GET" action="{% url 'question:problem_list' %}" class="row g-2 align-items-center">
             <!-- 搜索框 -->
             <div class="col-md-4">
@@ -114,8 +117,9 @@
             </div>
 
             <!-- 按钮 -->
-            <div class="col-md-2">
-                <button class="btn btn-primary w-100" type="submit">筛选</button>
+            <div class="col-md-2 d-flex gap-2">
+                <button class="btn btn-primary flex-fill" type="submit">筛选</button>
+                <a class="btn btn-outline-secondary flex-fill" href="{% url 'question:problem_list' %}">重置</a>
             </div>
         </form>
     </div>

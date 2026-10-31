@@ -7,11 +7,14 @@
 <div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-md-8 col-lg-7">
-            <div class="card shadow-sm">
-                <div class="card-header">
-                    <h4 class="mb-0"><i class="fas fa-user-plus me-2"></i>用户注册</h4>
+            <div class="page-header">
+                <div>
+                    <h2>用户注册</h2>
+                    <p class="page-sub">创建账号后即可加入班级、提交作业并查看学习分析。</p>
                 </div>
-                <div class="card-body">
+            </div>
+            <div class="card">
+                <div class="card-body p-4">
                     <form method="post" novalidate>
                         {% csrf_token %}
 
@@ -87,8 +90,8 @@
                             {% for error in form.class_in.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
                         </div> -->
 
-                        <div class="d-flex justify-content-end mt-4">
-                            <a href="{% url 'user:login' %}" class="btn btn-secondary me-2">返回登录</a>
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a href="{% url 'user:login' %}" class="btn btn-outline-secondary">返回登录</a>
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-user-check me-2"></i>注册账号
                             </button>
@@ -105,16 +108,22 @@
     select, input[type='text'], input[type='tel'], input[type='password'] {
         display: block;
         width: 100%;
-        padding: .375rem .75rem;
-        font-size: 1rem;
+        padding: .5rem .75rem;
+        font-size: .95rem;
         font-weight: 400;
         line-height: 1.5;
-        color: #212529;
+        color: #0f172a;
         background-color: #fff;
         background-clip: padding-box;
-        border: 1px solid #ced4da;
-        border-radius: .25rem;
+        border: 1px solid #dfe5ee;
+        border-radius: 9px;
         transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+    }
+
+    select:focus, input[type='text']:focus, input[type='tel']:focus, input[type='password']:focus {
+        border-color: #9cc3ff;
+        outline: 0;
+        box-shadow: 0 0 0 3px rgba(13, 110, 253, .12);
     }
 </style>
 

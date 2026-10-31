@@ -7,11 +7,14 @@
 <div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-md-8 col-lg-7">
-            <div class="card shadow-sm">
-                <div class="card-header">
-                    <h4 class="mb-0"><i class="fas fa-user-plus me-2"></i>添加新用户</h4>
+            <div class="page-header">
+                <div>
+                    <h2>添加新用户</h2>
+                    <p class="page-sub">由管理员直接创建账号，可指定用户属性与初始状态。</p>
                 </div>
-                <div class="card-body">
+            </div>
+            <div class="card">
+                <div class="card-body p-4">
                     <form method="post" novalidate>
                         {% csrf_token %}
 

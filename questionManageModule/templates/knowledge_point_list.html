@@ -4,10 +4,13 @@
 
 {% block content %}
 <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>知识点管理</h2>
+    <div class="page-header">
         <div>
-            <a href="{% url 'question:problem_list' %}" class="btn btn-outline-secondary me-2">
+            <h2>知识点管理</h2>
+            <p class="page-sub">维护学科知识点体系，用于组卷与知识追踪建模。</p>
+        </div>
+        <div class="page-actions">
+            <a href="{% url 'question:problem_list' %}" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left"></i> 返回题目列表
             </a>
             <a href="{% url 'question:kp_create' %}" class="btn btn-success">
@@ -17,7 +20,7 @@
     </div>
 
     <!-- 搜索栏 -->
-    <div class="mb-4">
+    <div class="toolbar mb-3">
         <form method="GET" action="{% url 'question:kp_list' %}" class="d-flex">
             <input class="form-control me-2" type="search" placeholder="搜索知识点名称、所属科目..." name="q" value="{{ search_query|default_if_none:'' }}">
             <button class="btn btn-outline-secondary" type="submit">
@@ -27,10 +30,10 @@
     </div>
 
     <!-- 列表表格 -->
-    <div class="card shadow-sm">
+    <div class="card">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover table-striped mb-0">
+                <table class="table table-hover mb-0">
                     <thead class="table-light">
                         <tr>
                             <th>ID</th>

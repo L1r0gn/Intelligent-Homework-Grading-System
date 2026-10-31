@@ -7,11 +7,14 @@
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-6">
-            <div class="card shadow border-0">
-                <div class="card-header bg-danger text-white">
-                    <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>确认删除班级</h5>
+            <div class="page-header">
+                <div>
+                    <h2 class="text-danger"><i class="fas fa-exclamation-triangle me-2"></i>确认删除班级</h2>
+                    <p class="page-sub">删除后该班级的成员关系与作业关联将不可恢复。</p>
                 </div>
-                <div class="card-body">
+            </div>
+            <div class="card">
+                <div class="card-body p-4">
                     <h4 class="card-title text-center mb-4">您确定要删除班级 "{{ class_obj.name }}" 吗？</h4>
                     
                     <div class="alert alert-warning">

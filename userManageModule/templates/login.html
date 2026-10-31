@@ -5,12 +5,15 @@
 {% block content %}
 <div class="container mt-5">
     <div class="row justify-content-center">
-        <div class="col-md-6 col-lg-5">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">智能作业评分系统 - 登录</h4>
-                </div>
-                <div class="card-body">
+        <div class="col-md-6 col-lg-4">
+            <div class="card auth-card">
+                <div class="card-body p-4 p-md-5">
+                    <div class="text-center mb-4">
+                        <div class="auth-mark mx-auto mb-3"><i class="fas fa-robot"></i></div>
+                        <h4 class="mb-1">智能作业评分系统</h4>
+                        <p class="text-muted small mb-0">登录以继续使用批改与知识追踪功能</p>
+                    </div>
+
                     {# --- 在这里添加消息显示代码 --- #}
                     {% if messages %}
                         {% for message in messages %}
@@ -29,30 +32,33 @@
                     {# --- 添加结束 --- #}
                     <form method="post" action="{% url 'user:login' %}">
                         {% csrf_token %}
-                        
+
                         <input type="hidden" name="next" value="{{ request.GET.next }}">
-                        
+
                         <div class="mb-3">
                             <label for="{{ form.username.id_for_label }}" class="form-label">用户名</label>
                             {{ form.username }}
                         </div>
-                        
-                        <div class="mb-3">
+
+                        <div class="mb-4">
                             <label for="{{ form.password.id_for_label }}" class="form-label">密码</label>
                             {{ form.password }}
                         </div>
 
-                            <div class="d-grid">
-                               <button type="submit" class="btn btn-primary">登 录</button>
-                            </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary py-2">登 录</button>
+                        </div>
 
-                            <div class="d-grid mt-3">
-                               <a  class="btn btn-outline-primary" href="{% url 'user:register' %}" >注 册</a>
-                            </div>
-
+                        <div class="d-grid mt-3">
+                            <a class="btn btn-outline-secondary" href="{% url 'user:register' %}">注 册</a>
+                        </div>
                     </form>
                 </div>
             </div>
+
+            <p class="text-center text-muted small mt-3 mb-0">
+                登录即表示你同意遵守平台使用规范
+            </p>
         </div>
     </div>
 </div>
@@ -62,24 +68,24 @@
 input[type="text"], input[type="password"] {
     display: block;
     width: 100%;
-    padding: .375rem .75rem;
-    font-size: 1rem;
+    padding: .5rem .75rem;
+    font-size: .95rem;
     font-weight: 400;
     line-height: 1.5;
-    color: #212529;
+    color: #0f172a;
     background-color: #fff;
     background-clip: padding-box;
-    border: 1px solid #ced4da;
-    border-radius: .25rem;
-    transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+    border: 1px solid #dfe5ee;
+    border-radius: 9px;
+    transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
 }
 
 input[type="text"]:focus, input[type="password"]:focus {
-    color: #212529;
+    color: #0f172a;
     background-color: #fff;
-    border-color: #86b7fe;
+    border-color: #9cc3ff;
     outline: 0;
-    box-shadow: 0 0 0 0.25rem rgba(13,110,253,.25);
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, .12);
 }
 </style>
 {% endblock %}
