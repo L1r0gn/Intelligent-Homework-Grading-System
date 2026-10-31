@@ -23,7 +23,7 @@ class Command(BaseCommand):
 
         # 2. Simulate a request to the API endpoint
         factory = RequestFactory()
-        request = factory.get(f'/dkt/mastery/{student_id}/')
+        request = factory.get(f'/api/v1/students/{student_id}/mastery/')
 
         # 3. Call the view function directly
         response = get_student_mastery_view(request, student_id)

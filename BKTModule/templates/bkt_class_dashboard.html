@@ -411,7 +411,7 @@ async function loadClassList() {
         // 访问我的班级列表-返回json
         // headers带有json 头信息
         console.log('访问我的班级列表中...');
-        const response = await fetch('/user/class/my/', {
+        const response = await fetch('/user/classes/mine/', {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',

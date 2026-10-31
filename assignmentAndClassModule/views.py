@@ -823,3 +823,32 @@ def student_homework(request):
         context['initial_user_id'] = request.user.id
         context['initial_username'] = request.user.wx_nickName or request.user.username
     return render(request, 'student_homework.html', context)
+
+# --------------------------------------------------------------------------
+# 小程序：删除作业
+# --------------------------------------------------------------------------
+@csrf_exempt
+@jwt_login_required
+def delete_assignment(request, assignment_id):
+    """
+    删除作业。仅布置该作业的教师本人或管理员可操作。
+
+    DELETE /api/v1/assignments/<id>/delete/（小程序用 DELETE，这里也兼容 POST）
+    删除会级联清除 AssignmentStatus（学生作业状态），但学生已提交的 Submission 记录保留。
+    """
+    if request.method not in ('DELETE', 'POST'):
+        return JsonResponse({'code': 405, 'error': '仅支持 DELETE'}, status=405)
+
+    assignment = Assignment.objects.filter(id=assignment_id).first()
+    if not assignment:
+        return JsonResponse({'code': 404, 'error': '作业不存在'}, status=404)
+
+    user = request.user
+    if user.user_attribute < 2:
+        return JsonResponse({'code': 403, 'error': '仅教师及以上可删除作业'}, status=403)
+    if user.user_attribute == 2 and assignment.teacher_id != user.id:
+        return JsonResponse({'code': 403, 'error': '只能删除自己布置的作业'}, status=403)
+
+    title = assignment.title
+    assignment.delete()
+    return JsonResponse({'code': 200, 'success': True, 'message': f'作业《{title}》已删除'}, status=200)

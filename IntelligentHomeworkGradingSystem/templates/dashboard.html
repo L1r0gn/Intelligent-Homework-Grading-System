@@ -23,7 +23,7 @@
                     <i class="fas fa-users fa-3x opacity-50"></i>
                 </div>
                 <div class="card-footer bg-transparent border-0">
-                    <a href="{% url 'user_list' %}" class="text-white text-decoration-none small">查看详情 <i class="fas fa-arrow-right ms-1"></i></a>
+                    <a href="{% url 'user:user_list' %}" class="text-white text-decoration-none small">查看详情 <i class="fas fa-arrow-right ms-1"></i></a>
                 </div>
             </div>
         </div>
@@ -37,7 +37,7 @@
                     <i class="fas fa-book fa-3x opacity-50"></i>
                 </div>
                 <div class="card-footer bg-transparent border-0">
-                    <a href="{% url 'question_list' %}" class="text-white text-decoration-none small">查看详情 <i class="fas fa-arrow-right ms-1"></i></a>
+                    <a href="{% url 'question:problem_list' %}" class="text-white text-decoration-none small">查看详情 <i class="fas fa-arrow-right ms-1"></i></a>
                 </div>
             </div>
         </div>
@@ -51,7 +51,7 @@
                     <i class="fas fa-file-alt fa-3x opacity-50"></i>
                 </div>
                 <div class="card-footer bg-transparent border-0">
-                    <a href="{% url 'submission_list' %}" class="text-white text-decoration-none small">查看详情 <i class="fas fa-arrow-right ms-1"></i></a>
+                    <a href="{% url 'grading:submission_list' %}" class="text-white text-decoration-none small">查看详情 <i class="fas fa-arrow-right ms-1"></i></a>
                 </div>
             </div>
         </div>
@@ -110,7 +110,7 @@
                     </div>
                 </div>
                 <div class="card-footer bg-white border-0 text-center py-3">
-                    <a href="{% url 'submission_list' %}" class="btn btn-outline-primary btn-sm">查看所有记录</a>
+                    <a href="{% url 'grading:submission_list' %}" class="btn btn-outline-primary btn-sm">查看所有记录</a>
                 </div>
             </div>
         </div>

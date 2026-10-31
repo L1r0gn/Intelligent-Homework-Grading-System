@@ -14,7 +14,7 @@
         </div>
     </div>
 
-    <form method="post" action="{% url 'question_import_review' %}">
+    <form method="post" action="{% url 'question:problem_import_review' %}">
         {% csrf_token %}
 
         {% for item in review_items %}
@@ -90,7 +90,7 @@
         <div class="card shadow-sm mt-4">
             <div class="card-body text-center sticky-bottom bg-light py-3">
                 <p class="mb-2">共 <strong>{{ review_items|length }}</strong> 条题目待导入。 </p>
-                <a href="{% url 'question_batch_import_json' %}" class="btn btn-danger"><i class="fas fa-times me-2"></i>取消并重新上传</a>
+                <a href="{% url 'question:problem_import' %}" class="btn btn-danger"><i class="fas fa-times me-2"></i>取消并重新上传</a>
                 <button type="submit" class="btn btn-success btn-lg"><i class="fas fa-check-circle me-2"></i>确认并全部导入</button>
             </div>
         </div>
@@ -163,7 +163,7 @@ document.addEventListener('DOMContentLoaded', function() {
         handleAjaxCreate({
             nameInputId: 'new_subject_name',
             errorDivId: 'subject-error',
-            url: "{% url 'ajax_create_subject' %}",
+            url: "{% url 'question_api:subject_create' %}",
             modalInstance: addSubjectModal,
             selectsQuery: 'select[name^="item_"][name$="_subject"]'
         });
@@ -181,7 +181,7 @@ document.addEventListener('DOMContentLoaded', function() {
         handleAjaxCreate({
             nameInputId: 'new_problem_type_name',
             errorDivId: 'problem-type-error',
-            url: "{% url 'ajax_create_problem_type' %}",
+            url: "{% url 'question_api:problem_type_create' %}",
             modalInstance: addProblemTypeModal,
             selectsQuery: 'select[name^="item_"][name$="_problem_type"]'
         });

@@ -69,7 +69,7 @@ def teacher_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return redirect('login')
+            return redirect('user:login')
         if request.user.user_attribute < 2:
             messages.error(request, "您没有权限访问该页面。")
             return redirect('dashboard')  # Redirect to dashboard or appropriate page
@@ -83,7 +83,7 @@ def admin_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return redirect('login')
+            return redirect('user:login')
         if request.user.user_attribute < 3:
             messages.error(request, "您没有权限访问该页面。")
             return redirect('dashboard') # Redirect to dashboard or appropriate page
@@ -98,7 +98,7 @@ def student_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return redirect('login')
+            return redirect('user:login')
         if request.user.user_attribute != 1:
             messages.error(request, "只有学生可以执行此操作。")
             return redirect('dashboard')  # Redirect to dashboard or appropriate page
@@ -194,7 +194,7 @@ def class_create_view(request):
             new_class.created_by = request.user
             new_class.save()
             messages.success(request, f'班级 "{new_class.name}" 创建成功。')
-            return redirect('class_list_web')
+            return redirect('user:class_list')
     else:
         form = ClassForm()
     
@@ -211,7 +211,7 @@ def class_edit_view(request, class_id):
         if form.is_valid():
             form.save()
             messages.success(request, f'班级 "{class_obj.name}" 更新成功。')
-            return redirect('class_list_web')
+            return redirect('user:class_list')
     else:
         form = ClassForm(instance=class_obj)
     
@@ -242,13 +242,13 @@ def class_delete_view(request, class_id):
                     # But students are M2M.
                     class_obj.delete()
                     messages.success(request, '班级已删除，相关关联已解除。')
-                    return redirect('class_list_web')
+                    return redirect('user:class_list')
                 else:
                     messages.error(request, '该班级仍有成员，请确认解除关联后再删除。')
             else:
                 class_obj.delete()
                 messages.success(request, '班级已删除。')
-                return redirect('class_list_web')
+                return redirect('user:class_list')
     
     return render(request, 'class_confirm_delete.html', {
         'class_obj': class_obj,
@@ -290,7 +290,7 @@ def class_add_student_view(request, class_id):
                 messages.success(request, f'成功将学生 {student.username} 添加到班级。')
         else:
             messages.error(request, '添加学生失败，请检查输入。')
-    return redirect('class_detail_web', class_id=class_id)
+    return redirect('user:class_detail', class_id=class_id)
 
 @admin_required
 def class_remove_student_view(request, class_id, student_id):
@@ -299,7 +299,7 @@ def class_remove_student_view(request, class_id, student_id):
     if request.method == 'POST':
         class_obj.members.remove(student)
         messages.success(request, f'已将学生 {student.username} 从班级移除。')
-    return redirect('class_detail_web', class_id=class_id)
+    return redirect('user:class_detail', class_id=class_id)
 
 @admin_required
 def class_add_teacher_view(request, class_id):
@@ -317,7 +317,7 @@ def class_add_teacher_view(request, class_id):
                 messages.success(request, f'成功添加任课教师 {teacher.username}。')
         else:
              messages.error(request, '添加教师失败，请检查输入。')
-    return redirect('class_detail_web', class_id=class_id)
+    return redirect('user:class_detail', class_id=class_id)
 
 @admin_required
 def class_remove_teacher_view(request, class_id, teacher_id):
@@ -334,7 +334,7 @@ def class_remove_teacher_view(request, class_id, teacher_id):
     if request.method == 'POST':
         relation.delete()
         messages.success(request, f'已移除任课教师。')
-    return redirect('class_detail_web', class_id=class_id)
+    return redirect('user:class_detail', class_id=class_id)
 
 
 @student_required
@@ -359,13 +359,13 @@ def class_join_by_code_view(request):
         # 检查是否已经加入该班级
         if target_class in request.user.class_in.all():
             messages.warning(request, f'您已经加入了班级 "{target_class.name}"。')
-            return redirect('my_class_list_web')
+            return redirect('user:class_mine')
         
         # 加入班级
         request.user.class_in.add(target_class)
         request.user.save()
         
         messages.success(request, f'成功加入班级 "{target_class.name}"！')
-        return redirect('my_class_list_web')
+        return redirect('user:class_mine')
     
     return render(request, 'class_join_by_code.html')

@@ -12,7 +12,7 @@
                     <h4 class="mb-0"><i class="fas fa-plus-circle me-2"></i>创建新问题</h4>
                 </div>
                 <div class="card-body">
-                    <form method="post" action="{% url 'question_create' %}">
+                    <form method="post" action="{% url 'question:problem_create' %}">
                         {% csrf_token %}
 
                         <div class="mb-3">
@@ -81,7 +81,7 @@
                         </div>
 
                         <div class="d-flex justify-content-end mt-4">
-                            <a href="{% url 'question_list' %}" class="btn btn-secondary me-2">返回列表</a>
+                            <a href="{% url 'question:problem_list' %}" class="btn btn-secondary me-2">返回列表</a>
                             <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>保存题目</button>
                         </div>
                     </form>
@@ -152,7 +152,7 @@ document.addEventListener('DOMContentLoaded', function() {
         handleAjaxCreate({
             nameInputId: 'new_subject_name',
             errorDivId: 'subject-error',
-            url: "{% url 'ajax_create_subject' %}",
+            url: "{% url 'question_api:subject_create' %}",
             modalInstance: addSubjectModal,
             selectsQuery: 'select[name="subject"]' // Target the subject select
         });
@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', function() {
         handleAjaxCreate({
             nameInputId: 'new_problem_type_name',
             errorDivId: 'problem-type-error',
-            url: "{% url 'ajax_create_problem_type' %}",
+            url: "{% url 'question_api:problem_type_create' %}",
             modalInstance: addProblemTypeModal,
             selectsQuery: 'select[name="problem_type"]' // Target the problem_type select
         });

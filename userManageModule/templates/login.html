@@ -27,7 +27,7 @@
                         {% endfor %}
                     {% endif %}
                     {# --- 添加结束 --- #}
-                    <form method="post" action="{% url 'login' %}">
+                    <form method="post" action="{% url 'user:login' %}">
                         {% csrf_token %}
                         
                         <input type="hidden" name="next" value="{{ request.GET.next }}">
@@ -47,7 +47,7 @@
                             </div>
 
                             <div class="d-grid mt-3">
-                               <a  class="btn btn-outline-primary" href="{% url 'user_register' %}" >注 册</a>
+                               <a  class="btn btn-outline-primary" href="{% url 'user:register' %}" >注 册</a>
                             </div>
 
                     </form>

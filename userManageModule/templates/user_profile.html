@@ -204,7 +204,7 @@
             spinner.classList.remove('d-none');
 
             // Send API request
-            fetch("{% url 'api_user_profile_update' %}", {
+            fetch("{% url 'user_api:user_me' %}", {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',

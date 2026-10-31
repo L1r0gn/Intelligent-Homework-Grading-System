@@ -16,6 +16,9 @@ from userManageModule.decorators import jwt_login_required
 from .models import Problem, ProblemContent, Answer, ProblemType, Subject, ProblemTag, KnowledgePoint
 from dkt_app.recommendation_utils import get_user_mastery_probabilities
 from questionManageModule.cache_utils import get_cached, question_may_exist, delete_question_detail_cache, rebuild_question_bloom
+from django.conf import settings
+from django.utils import timezone
+from file_uploads import save_image
 from django.utils.text import slugify
 from django.utils.html import strip_tags
 import numpy as np
@@ -30,7 +33,7 @@ def admin_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return redirect(f"{reverse('login')}?next={request.path}")
+            return redirect(f"{reverse('user:login')}?next={request.path}")
         if request.user.user_attribute < 3:
             messages.error(request, "您没有权限访问该页面。")
             return redirect('dashboard')
@@ -74,7 +77,7 @@ def knowledge_point_create(request):
         if name and subject_id:
             KnowledgePoint.objects.create(name=name, subject_id=subject_id, description=description)
             messages.success(request, '知识点创建成功')
-            return redirect('knowledge_point_list')
+            return redirect('question:kp_list')
         else:
             messages.error(request, '名称和所属科目不能为空')
 
@@ -92,7 +95,7 @@ def knowledge_point_update(request, kp_id):
         kp.description = request.POST.get('description', '')
         kp.save()
         messages.success(request, '知识点更新成功')
-        return redirect('knowledge_point_list')
+        return redirect('question:kp_list')
 
     subjects = Subject.objects.annotate(question_count=Count('problem'))
     return render(request, 'knowledge_point_form.html', {'kp': kp, 'subjects': subjects, 'action': '编辑'})
@@ -105,7 +108,7 @@ def knowledge_point_delete(request, kp_id):
     if request.method == 'POST':
         kp.delete()
         messages.success(request, '知识点已删除')
-    return redirect('knowledge_point_list')
+    return redirect('question:kp_list')
 
 
 # ==========================================
@@ -270,7 +273,7 @@ def question_create(request):
             rebuild_question_bloom()
 
             messages.success(request, '问题创建成功')
-            return redirect('question_list')
+            return redirect('question:problem_list')
 
         except Exception as e:
             logger.error('问题创建失败:%s', str(e), exc_info=True)
@@ -365,7 +368,7 @@ def question_update(request, question_id):
                 delete_question_detail_cache(question.id)
 
             messages.success(request, f'问题 #{question.id} 更新成功')
-            return redirect('question_detail', question_id=question.id)
+            return redirect('question:problem_detail', question_id=question.id)
 
         except Exception as e:
             logger.error(f"更新错误: {e}")
@@ -386,7 +389,7 @@ def question_delete(request, question_id):
         delete_question_detail_cache(question_id)
         rebuild_question_bloom()
         messages.success(request, '问题删除成功')
-        return redirect('question_list')
+        return redirect('question:problem_list')
     return render(request, 'question_confirm_delete.html', {'question': question})
 
 
@@ -396,7 +399,7 @@ def question_batch_action(request):
         action = request.POST.get('action')
         selected_ids = request.POST.getlist('selected_ids')
         if not action or not selected_ids:
-            return redirect('question_list')
+            return redirect('question:problem_list')
 
         queryset = Problem.objects.filter(pk__in=selected_ids)
         if action == 'delete':
@@ -411,7 +414,7 @@ def question_batch_action(request):
             delete_question_detail_cache(pid)
         rebuild_question_bloom()
 
-    return redirect('question_list')
+    return redirect('question:problem_list')
 
 
 # 剩下的 AJAX 和 Import 函数请直接保留原样，无需修改
@@ -659,7 +662,7 @@ def question_batch_import_json(request):
             # request.session['import_defaults'] = { ... }
 
             messages.info(request, f'JSON文件已解析。请审核并修改以下 {len(review_items)} 条待导入题目。')
-            return redirect('question_import_review')
+            return redirect('question:problem_import_review')
 
         except (json.JSONDecodeError, TypeError) as e:
             messages.error(request, f'JSON格式错误: {e}')
@@ -667,7 +670,7 @@ def question_batch_import_json(request):
             logger.error(f'批量导入预处理失败：{str(e)}', exc_info=True)
             messages.error(request, f'处理文件时发生严重错误：{str(e)}')
 
-        return redirect('question_batch_import_json')
+        return redirect('question:problem_import')
     else:
         # GET 请求逻辑不变
         subjects = Subject.objects.annotate(question_count=Count('problem'))
@@ -687,7 +690,7 @@ def question_import_review(request):
 
     if not review_items:
         messages.warning(request, '没有待审核的题目数据，请先上传文件。')
-        return redirect('question_batch_import_json')
+        return redirect('question:problem_import')
 
     if request.method == 'POST':
         success_count = 0
@@ -754,7 +757,7 @@ def question_import_review(request):
             error_html = '<ul>' + ''.join(f'<li>{error}</li>' for error in error_items) + '</ul>'
             messages.error(request, f'导入失败 {len(error_items)} 条，详情如下：{error_html}', extra_tags='safe')
 
-        return redirect('question_list')
+        return redirect('question:problem_list')
 
     # GET请求时，需要传递所有可选的科目和题型到模板，用于生成下拉框
     else:
@@ -998,3 +1001,33 @@ def wx_get_student_stats(request):
             'stats_list': stats_list
         }
     })
+
+# --------------------------------------------------------------------------
+# 小程序：通用图片上传（作业内容配图等）
+# --------------------------------------------------------------------------
+@csrf_exempt
+@jwt_login_required
+def wx_upload_image(request):
+    """
+    通用图片上传。教师/管理员可用于作业内容配图、题目附件预览等。
+
+    POST multipart/form-data，文件字段名 file（兼容 image）。
+    成功返回 {"success": true, "url": "<绝对地址>"}。
+    """
+    if request.method != 'POST':
+        return JsonResponse({'code': 405, 'error': '仅支持 POST'}, status=405)
+
+    if request.user.user_attribute < 2:
+        return JsonResponse({'code': 403, 'error': '仅教师及以上可上传'}, status=403)
+
+    upload = request.FILES.get('file') or request.FILES.get('image')
+    if not upload:
+        return JsonResponse({'code': 400, 'error': '缺少文件字段 file'}, status=400)
+
+    try:
+        rel_path = save_image(upload, f'uploads/{timezone.now():%Y/%m}')
+    except ValueError as e:
+        return JsonResponse({'code': 400, 'error': str(e)}, status=400)
+
+    url = request.build_absolute_uri(settings.MEDIA_URL + rel_path)
+    return JsonResponse({'success': True, 'url': url}, status=200)

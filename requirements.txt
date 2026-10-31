@@ -58,3 +58,5 @@ urllib3==2.2.3
 vine==5.1.0
 wcwidth==0.2.13
 pybloom-live==4.0.0
+numpy==2.2.6
+torch==2.14.1

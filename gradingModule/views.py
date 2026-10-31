@@ -21,12 +21,12 @@ def admin_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return redirect('login')
+            return redirect('user:login')
         if request.user.user_attribute < 3:
             logger.info("%s 的权限等级为 %s",request.user.username, request.user.user_attribute)
             logger.info("%s 没有权限访问该页面", request.user.username)
             messages.error(request, "您没有权限访问该页面。")
-            return redirect('question_list')  # 或重定向到首页
+            return redirect('question:problem_list')  # 或重定向到首页
         return view_func(request, *args, **kwargs)
     return _wrapped_view
 @csrf_exempt
@@ -198,9 +198,9 @@ def regrade_submission_view(request, submission_id):
         # --- 这里是核心：调用您已有的Celery异步任务 ---
         process_and_grade_submission.delay(submission_id=submission.id)
         # 将用户重定向回作业详情页
-        return redirect('submission_list')
+        return redirect('grading:submission_list')
     # 如果是GET或其他方法的请求，直接重定向走，不处理
-    return redirect('submission_list')
+    return redirect('grading:submission_list')
 
 def serve_submission_image(request, submission_id):
     try:
@@ -463,7 +463,7 @@ def submission_batch_action(request):
         
         if not action or not selected_ids:
             messages.error(request, "请选择要操作的记录和操作类型")
-            return redirect('submission_list')
+            return redirect('grading:submission_list')
 
         try:
             # 获取选中的提交记录
@@ -498,7 +498,7 @@ def submission_batch_action(request):
             logger.error(f"批量操作失败: {str(e)}")
             messages.error(request, f"批量操作失败: {str(e)}")
     
-    return redirect('submission_list')
+    return redirect('grading:submission_list')
 
 def getSubmissionsByAssignmentId(request, assignment_id):
     try:
@@ -544,3 +544,69 @@ def getSubmissionsByAssignmentId(request, assignment_id):
     except Exception as e:
         logger.error(f"Error in getSubmissionsByAssignmentId: {str(e)}")
         return JsonResponse({"error": "Internal Server Error"}, status=500)
+
+
+@csrf_exempt
+def submission_collection(request):
+    """
+    提交资源的统一入口（/api/v1/submissions/）：
+    - POST：提交作业，交给 submissionprocess 处理
+    - GET ：查询当前学生的提交列表，交给 showMySubmissions 处理
+    """
+    if request.method == 'POST':
+        return submissionprocess(request)
+    return showMySubmissions(request)
+
+
+
+# --------------------------------------------------------------------------
+# 小程序：重做题目
+# --------------------------------------------------------------------------
+@csrf_exempt
+@jwt_login_required
+def wx_redo_problem(request):
+    """
+    申请重做某道题。
+
+    语义说明（重要）：本接口**只做资格校验，不修改任何历史数据**。
+    提交接口本身允许同一学生对同一题多次提交，每次都会生成新的 Submission，
+    所以「重做」在服务端等价于「允许再次提交」，历史作答记录保留可追溯。
+
+    请求：POST JSON {"problem_id": <id>}（兼容 questionId）
+    响应：{"code": 200, "success": true, "can_redo": true, "previous_submission_id": <id|null>}
+          小程序端以 data.code === 200 判定成功。
+    """
+    if request.method != 'POST':
+        return JsonResponse({'code': 405, 'error': '仅支持 POST'}, status=405)
+
+    if request.content_type == 'application/json':
+        try:
+            data = json.loads(request.body or '{}')
+        except json.JSONDecodeError:
+            return JsonResponse({'code': 400, 'error': 'JSON 解析错误'}, status=400)
+    else:
+        data = request.POST
+
+    problem_id = data.get('problem_id') or data.get('questionId')
+    if not problem_id:
+        return JsonResponse({'code': 400, 'error': '缺少 problem_id'}, status=400)
+
+    problem = Problem.objects.filter(id=problem_id, is_active=True).first()
+    if not problem:
+        return JsonResponse({'code': 404, 'error': '题目不存在或已下架'}, status=404)
+
+    user = request.user
+    # 学生（user_attribute == 1）只能重做被授权科目的题目
+    if user.user_attribute == 1 and not user.authorized_subjects.filter(id=problem.subject_id).exists():
+        return JsonResponse({'code': 403, 'error': '您没有权限作答该题目'}, status=403)
+
+    last = Submission.objects.filter(student=user, problem=problem).order_by('-submitted_time').first()
+
+    return JsonResponse({
+        'code': 200,
+        'success': True,
+        'can_redo': True,
+        'problem_id': problem.id,
+        'previous_submission_id': last.id if last else None,
+        'message': '可以重新作答，本次作答将生成新的提交记录',
+    }, status=200)

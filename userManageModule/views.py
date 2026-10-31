@@ -18,6 +18,7 @@ import string
 import random
 from userManageModule.serializers import serializeUserInfo
 import json
+from file_uploads import save_image
 from django.http import JsonResponse, HttpResponseForbidden
 from rest_framework import status, generics
 from rest_framework.response import Response
@@ -26,7 +27,7 @@ from .serializers import UserProfileUpdateSerializer
 
 logger = logging.getLogger(__name__)
 
-@login_required(login_url='login')
+@login_required(login_url='user:login')
 def user_profile(request):
     """
     用户个人中心视图
@@ -50,7 +51,7 @@ def user_profile(request):
                 
         user.save()
         messages.success(request, '个人信息更新成功')
-        return redirect('user_profile')
+        return redirect('user:profile')
     
     return render(request, 'user_profile.html', {'user': user})
 
@@ -68,7 +69,7 @@ def admin_required(view_func):
         # 逻辑1: 检查用户是否已登录
         if not request.user.is_authenticated:
             # 如果未登录，重定向到登录页面
-            return redirect('login')
+            return redirect('user:login')
         
         # 逻辑2: 检查用户权限级别
         # 规定 user_attribute >= 3 的用户为管理员
@@ -76,7 +77,7 @@ def admin_required(view_func):
             logger.info(f'{request.user.username} 没有权限访问该页面')
             messages.error(request, "您没有权限访问该页面。")
             # 权限不足，重定向到非管理员区域，例如问题列表
-            return redirect('question_list')
+            return redirect('question:problem_list')
             
         # 逻辑3: 如果权限验证通过，则执行原始视图函数
         return view_func(request, *args, **kwargs)
@@ -151,8 +152,9 @@ def login_view(request):
             user = authenticate(request, username=username, password=password)
             if user is not None:
                 login(request, user)
-                next_url = request.GET.get('next', 'user_list')
-                return redirect(next_url)
+                next_url = request.GET.get('next')
+                # 默认跳到用户列表；next 为空时不能直接 redirect(None)
+                return redirect(next_url or 'user:user_list')
             else:
                 # 检查用户是否存在但被禁用（is_active=False）
                 try:
@@ -182,7 +184,7 @@ def logout_view(request):
     处理用户的注销请求。
     """
     logout(request)
-    return redirect('login')
+    return redirect('user:login')
 
 @admin_required
 def user_list(request):
@@ -272,7 +274,7 @@ def user_add(request):
         if form.is_valid(): 
             form.save() 
             messages.success(request, '用户添加成功！')
-            return redirect('/user/list/')
+            return redirect('/user/users/')
     else:
         form = UserAddForm()
 
@@ -299,7 +301,7 @@ def user_delete(request, user_id):
     user = get_object_or_404(User, id=user_id)
     user.delete()
     messages.success(request, '用户删除成功')
-    return redirect('user_list')
+    return redirect('user:user_list')
 
 @admin_required
 def user_edit(request, user_id):
@@ -349,7 +351,7 @@ def user_edit(request, user_id):
                 # 权限检查：防止非超管提权为超管
                 if new_attribute == 4 and request.user.user_attribute != 4:
                     messages.error(request, "只有超级管理员可以设置超级管理员权限。")
-                    return redirect('user_list')
+                    return redirect('user:user_list')
                 
                 user.user_attribute = new_attribute
                 user.is_staff = new_attribute in (3, 4)
@@ -371,7 +373,7 @@ def user_edit(request, user_id):
 
             logger.info(f'用户 {user.username} 信息更新成功')
             messages.success(request, '用户信息更新成功')
-            return redirect('user_list')  # 重定向到列表页
+            return redirect('user:user_list')  # 重定向到列表页
 
         except ValueError as e:
             logger.error(f"输入数据格式错误：{str(e)}")
@@ -489,7 +491,7 @@ def user_register(request):
                 else:
                     messages.success(request, '注册成功！')
 
-                return redirect('login')
+                return redirect('user:login')
 
             except Exception as e:
                 logger.error(f"用户注册失败: {e}")
@@ -521,7 +523,7 @@ def approve_teacher(request, user_id):
         user.is_active = True
         user.save()
         messages.success(request, f'教师 {user.wx_nickName or user.username} 审核通过！')
-    return redirect('pending_teachers')
+    return redirect('user:teacher_pending')
 
 
 @admin_required
@@ -533,7 +535,7 @@ def reject_teacher(request, user_id):
     name = user.wx_nickName or user.username
     user.delete()
     messages.success(request, f'已拒绝 {name} 的注册申请。')
-    return redirect('pending_teachers')
+    return redirect('user:teacher_pending')
 
 def generate_class_code():
     """
@@ -758,3 +760,72 @@ def quit_class(request, class_id):
         # 处理异常
         return JsonResponse({'error': f'退出班级失败：{str(e)}'}, status=500)
 
+
+
+# --------------------------------------------------------------------------
+# 小程序：头像上传
+# --------------------------------------------------------------------------
+@csrf_exempt
+@jwt_login_required
+def wx_upload_avatar(request):
+    """
+    小程序：上传并更新当前用户头像。
+
+    POST multipart/form-data，文件字段名 avatar（兼容 file）。
+    成功返回 {"success": true, "url": "<绝对地址>"}，同时写入 User.wx_avatar。
+    """
+    if request.method != 'POST':
+        return JsonResponse({'code': 405, 'error': '仅支持 POST'}, status=405)
+
+    upload = request.FILES.get('avatar') or request.FILES.get('file')
+    if not upload:
+        return JsonResponse({'code': 400, 'error': '缺少文件字段 avatar'}, status=400)
+
+    try:
+        rel_path = save_image(upload, f'avatars/{request.user.id}')
+    except ValueError as e:
+        return JsonResponse({'code': 400, 'error': str(e)}, status=400)
+
+    url = request.build_absolute_uri(settings.MEDIA_URL + rel_path)
+    user = request.user
+    user.wx_avatar = url
+    user.save(update_fields=['wx_avatar'])
+
+    return JsonResponse({'success': True, 'url': url}, status=200)
+
+
+# --------------------------------------------------------------------------
+# 小程序：移除班级成员
+# --------------------------------------------------------------------------
+@csrf_exempt
+@jwt_login_required
+def wx_remove_class_member(request, class_id, user_id):
+    """
+    将某个学生移出班级。
+
+    DELETE /api/v1/classes/<class_id>/members/<user_id>/
+    权限：管理员，或该班级的创建者/班主任。
+    """
+    if request.method != 'DELETE':
+        return JsonResponse({'code': 405, 'error': '仅支持 DELETE'}, status=405)
+
+    cls = className.objects.filter(id=class_id).first()
+    if not cls:
+        return JsonResponse({'code': 404, 'error': '班级不存在'}, status=404)
+
+    operator = request.user
+    allowed = (
+        operator.user_attribute >= 3
+        or cls.created_by_id == operator.id
+        or cls.homeroom_teacher_id == operator.id
+    )
+    if not allowed:
+        return JsonResponse({'code': 403, 'error': '无权管理该班级成员'}, status=403)
+
+    member = User.objects.filter(id=user_id, class_in=cls).first()
+    if not member:
+        return JsonResponse({'code': 404, 'error': '该用户不在此班级中'}, status=404)
+
+    member.class_in.remove(cls)
+    return JsonResponse({'success': True, 'message': f'已将 {member.wx_nickName or member.username} 移出班级'},
+                        status=200)

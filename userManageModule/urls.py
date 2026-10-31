@@ -1,62 +1,40 @@
 from django.urls import path
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-import userManageModule.views
-from userManageModule import views as user_views
 from userManageModule import class_views
+from userManageModule import views as user_views
+
+app_name = 'user'
 
 urlpatterns = [
-    # JWT Token (for web/SPA login - references WeChat mini-program API pattern)
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-
-    # 网页端 - 用户登录
+    # ---------- 认证与个人中心 ----------
     path('login/', user_views.login_view, name='login'),
-    # 网页端 - 用户注销
     path('logout/', user_views.logout_view, name='logout'),
-    # 网页端 - 个人中心
-    path('profile/', user_views.user_profile, name='user_profile'),
-    # 网页端 - 用户列表（管理员）
-    path('list/', user_views.user_list, name='user_list'),
-    # 网页端 - 编辑用户信息
-    path('edit/<int:user_id>/', user_views.user_edit, name='user_edit'),
-    # 网页端 - 删除用户
-    path('delete/<int:user_id>/', user_views.user_delete, name='user_delete'),
-    # 网页端 - 添加用户
-    path('add/', user_views.user_add, name='user_add'),
+    path('register/', user_views.user_register, name='register'),
+    path('profile/', user_views.user_profile, name='profile'),
 
-    # 网页端 - 教师注册审核（管理员）
-    path('pending-teachers/', user_views.pending_teachers, name='pending_teachers'),
-    path('approve-teacher/<int:user_id>/', user_views.approve_teacher, name='approve_teacher'),
-    path('reject-teacher/<int:user_id>/', user_views.reject_teacher, name='reject_teacher'),
+    # ---------- 用户管理（管理员） ----------
+    path('users/', user_views.user_list, name='user_list'),
+    path('users/new/', user_views.user_add, name='user_create'),
+    path('users/<int:user_id>/edit/', user_views.user_edit, name='user_update'),
+    path('users/<int:user_id>/delete/', user_views.user_delete, name='user_delete'),
 
-    # REST API - 用户个人信息更新
-    path('api/profile/update/', user_views.UserProfileUpdateView.as_view(), name='api_user_profile_update'),
+    # ---------- 教师注册审核 ----------
+    path('teachers/pending/', user_views.pending_teachers, name='teacher_pending'),
+    path('teachers/<int:user_id>/approve/', user_views.approve_teacher, name='teacher_approve'),
+    path('teachers/<int:user_id>/reject/', user_views.reject_teacher, name='teacher_reject'),
 
-    # 网页端 - 班级管理
-    path('class/list/', class_views.class_list_view, name='class_list_web'),
-    path('class/my/', class_views.my_class_list_view, name='my_class_list_web'),
-    path('class/create/', class_views.class_create_view, name='class_create_web'),
-    path('class/edit/<int:class_id>/', class_views.class_edit_view, name='class_edit_web'),
-    path('class/delete/<int:class_id>/', class_views.class_delete_view, name='class_delete_web'),
-    path('class/detail/<int:class_id>/', class_views.class_detail_view, name='class_detail_web'),
-    path('class/student/add/<int:class_id>/', class_views.class_add_student_view, name='class_add_student_web'),
-    path('class/student/remove/<int:class_id>/<int:student_id>/', class_views.class_remove_student_view, name='class_remove_student_web'),
-    path('class/teacher/add/<int:class_id>/', class_views.class_add_teacher_view, name='class_add_teacher_web'),
-    path('class/teacher/remove/<int:class_id>/<int:teacher_id>/', class_views.class_remove_teacher_view, name='class_remove_teacher_web'),
-    path('class/join/', class_views.class_join_by_code_view, name='class_join_web'),
-    path('api/student/search/', class_views.search_students_api, name='search_students_api'),
-
-    # 微信小程序端 - 添加用户 (复用了网页端视图)
-    path('wx/add/', user_views.user_add, name='wx_user_add'),
-    # 微信小程序端 - 编辑用户信息
-    path('wx/edit/<int:user_id>', user_views.wx_user_edit, name='wx_user_edit'),
-    # 微信小程序端 - 获取用户详情
-    path('wx/list/<int:user_id>/', user_views.wx_user_list, name='wx_user_list'),
-    # 微信小程序端 - 登录
-    path('wx/login/',userManageModule.views.wx_login,name='wx_login'),
-    # 微信小程序端 - 用户注册 (当前已禁用)
-    # path('register',userManageModule.views.user_register,name='user_register'),
-    # 微信小程序端 - 学生加入班级
-    path('wx/userJoinClass/',userManageModule.views.userAddClass,name='wx_userJoinClass'),
+    # ---------- 班级管理 ----------
+    path('classes/', class_views.class_list_view, name='class_list'),
+    path('classes/mine/', class_views.my_class_list_view, name='class_mine'),
+    path('classes/new/', class_views.class_create_view, name='class_create'),
+    path('classes/join/', class_views.class_join_by_code_view, name='class_join'),
+    path('classes/<int:class_id>/', class_views.class_detail_view, name='class_detail'),
+    path('classes/<int:class_id>/edit/', class_views.class_edit_view, name='class_update'),
+    path('classes/<int:class_id>/delete/', class_views.class_delete_view, name='class_delete'),
+    path('classes/<int:class_id>/students/add/', class_views.class_add_student_view, name='class_student_add'),
+    path('classes/<int:class_id>/students/<int:student_id>/remove/', class_views.class_remove_student_view,
+         name='class_student_remove'),
+    path('classes/<int:class_id>/teachers/add/', class_views.class_add_teacher_view, name='class_teacher_add'),
+    path('classes/<int:class_id>/teachers/<int:teacher_id>/remove/', class_views.class_remove_teacher_view,
+         name='class_teacher_remove'),
 ]

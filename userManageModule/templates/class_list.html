@@ -9,18 +9,18 @@
         <h2><i class="fas fa-chalkboard me-2"></i>全部班级管理</h2>
         <div>
 {#            {% if request.user.is_authenticated %}#}
-{#            <a href="{% url 'my_class_list_web' %}" class="btn btn-outline-primary me-2">#}
+{#            <a href="{% url 'user:class_mine' %}" class="btn btn-outline-primary me-2">#}
 {#                <i class="fas fa-user-graduate me-2"></i>我的班级#}
 {#            </a>#}
 {#            {% endif %}#}
-            <a href="{% url 'class_create_web' %}" class="btn btn-primary">
+            <a href="{% url 'user:class_create' %}" class="btn btn-primary">
                 <i class="fas fa-plus me-2"></i>创建新班级
             </a>
         </div>
     </div>
 
     <div class="mb-4">
-        <form method="GET" action="{% url 'class_list_web' %}" class="row g-2 align-items-center">
+        <form method="GET" action="{% url 'user:class_list' %}" class="row g-2 align-items-center">
             <!-- 搜索框 -->
             <div class="col-md-4">
                 <div class="input-group">
@@ -78,7 +78,7 @@
                         {% for cls in page_obj %}
                         <tr>
                             <td>
-                                <a href="{% url 'class_detail_web' cls.id %}" class="fw-bold text-decoration-none">
+                                <a href="{% url 'user:class_detail' cls.id %}" class="fw-bold text-decoration-none">
                                     {{ cls.name }}
                                 </a>
                             </td>
@@ -100,14 +100,14 @@
                             </td>
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm">
-                                    <a href="{% url 'class_detail_web' cls.id %}" class="btn btn-info" title="查看详情">
+                                    <a href="{% url 'user:class_detail' cls.id %}" class="btn btn-info" title="查看详情">
                                         <i class="fas fa-eye"></i>
                                     </a>
                                     {% if request.user.user_attribute >= 3 %}
-                                    <a href="{% url 'class_edit_web' cls.id %}" class="btn btn-primary" title="编辑">
+                                    <a href="{% url 'user:class_update' cls.id %}" class="btn btn-primary" title="编辑">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <a href="{% url 'class_delete_web' cls.id %}" class="btn btn-danger" title="删除">
+                                    <a href="{% url 'user:class_delete' cls.id %}" class="btn btn-danger" title="删除">
                                         <i class="fas fa-trash-alt"></i>
                                     </a>
                                     {% endif %}
@@ -120,7 +120,7 @@
                                 <p>
                                     {% if search_query or current_grade %}
                                     没有找到与当前搜索条件相关的班级。
-                                    <a href="{% url 'class_list_web' %}" class="btn btn-sm btn-outline-secondary">清除筛选条件</a>
+                                    <a href="{% url 'user:class_list' %}" class="btn btn-sm btn-outline-secondary">清除筛选条件</a>
                                     {% else %}
                                     暂无班级数据
                                     {% endif %}

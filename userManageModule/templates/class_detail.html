@@ -13,10 +13,10 @@
             <span class="badge bg-info text-dark">年级: {{ class_obj.grade|default:"未设置" }}</span>
         </div>
         <div>
-            <a href="{% url 'class_edit_web' class_obj.id %}" class="btn btn-primary btn-sm">
+            <a href="{% url 'user:class_update' class_obj.id %}" class="btn btn-primary btn-sm">
                 <i class="fas fa-edit me-1"></i>编辑
             </a>
-            <a href="{% url 'class_list_web' %}" class="btn btn-outline-secondary btn-sm ms-2">
+            <a href="{% url 'user:class_list' %}" class="btn btn-outline-secondary btn-sm ms-2">
                 <i class="fas fa-arrow-left me-1"></i>返回列表
             </a>
         </div>
@@ -74,7 +74,7 @@
                                     <td>{{ student.wx_nickName|default:"-" }}</td>
                                     <td>{{ student.username }}</td>
                                     <td class="text-end">
-                                        <form method="POST" action="{% url 'class_remove_student_web' class_obj.id student.id %}" onsubmit="return confirm('确定要将学生 {{ student.username }} 从班级移除吗？');" style="display:inline;">
+                                        <form method="POST" action="{% url 'user:class_student_remove' class_obj.id student.id %}" onsubmit="return confirm('确定要将学生 {{ student.username }} 从班级移除吗？');" style="display:inline;">
                                             {% csrf_token %}
                                             <button type="submit" class="btn btn-outline-danger btn-sm border-0" title="移除">
                                                 <i class="fas fa-times"></i>
@@ -119,7 +119,7 @@
                                     <td>{{ item.teacher.wx_nickName|default:item.teacher.username }}</td>
                                     <td><span class="badge bg-light text-dark border">{{ item.subject }}</span></td>
                                     <td class="text-end">
-                                        <form method="POST" action="{% url 'class_remove_teacher_web' class_obj.id item.id %}" onsubmit="return confirm('确定要移除该任课教师吗？');" style="display:inline;">
+                                        <form method="POST" action="{% url 'user:class_teacher_remove' class_obj.id item.id %}" onsubmit="return confirm('确定要移除该任课教师吗？');" style="display:inline;">
                                             {% csrf_token %}
                                             <button type="submit" class="btn btn-outline-danger btn-sm border-0" title="移除">
                                                 <i class="fas fa-times"></i>
@@ -149,7 +149,7 @@
                 <h5 class="modal-title">添加学生到班级</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="POST" action="{% url 'class_add_student_web' class_obj.id %}">
+            <form method="POST" action="{% url 'user:class_student_add' class_obj.id %}">
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="mb-3 position-relative">
@@ -185,7 +185,7 @@
                 <h5 class="modal-title">添加任课教师</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="POST" action="{% url 'class_add_teacher_web' class_obj.id %}">
+            <form method="POST" action="{% url 'user:class_teacher_add' class_obj.id %}">
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="mb-3">
@@ -228,7 +228,7 @@
             }
 
             debounceTimer = setTimeout(() => {
-                fetch(`{% url 'search_students_api' %}?q=${encodeURIComponent(query)}`)
+                fetch(`{% url 'user_api:student_search' %}?q=${encodeURIComponent(query)}`)
                     .then(response => response.json())
                     .then(data => {
                         resultsContainer.innerHTML = '';
