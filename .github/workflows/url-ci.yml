@@ -95,7 +95,7 @@ jobs:
             "requests==2.32.4" \
             "Pillow==10.4.0" \
             "numpy==2.2.6" \
-            "pybloom-live==4.0.0" \
+            "redis==6.1.1" \
             "django-jsonfield-backport==1.0.5" \
             "cryptography==43.0.3"
           # torch 用 CPU 版，避免拉 NVIDIA CUDA 依赖（体积差一个数量级）

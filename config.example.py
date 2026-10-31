@@ -22,3 +22,7 @@ WECHAT_SECRET = 'your-wechat-secret'
 # 服务器地址
 DOMAIN_ID = '127.0.0.1'
 DOMAIN_NAME = 'localhost'
+
+# Django SECRET_KEY：用下面的命令生成后填入
+# python -c "from django.core.management.utils import get_random_secret_key as g; print(g())"
+SECRET_KEY = 'replace-with-a-random-50-char-secret'

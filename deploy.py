@@ -149,6 +149,26 @@ def wait_port(host, port, seconds=10):
     return False
 
 
+def check_security_settings():
+    """提示当前安全配置状态：DEBUG 是否关闭、SECRET_KEY 是否已自定义。"""
+    from django.conf import settings
+
+    problems = []
+    if settings.DEBUG:
+        problems.append('DEBUG=True（仅适合开发环境）')
+    if str(settings.SECRET_KEY).startswith('django-insecure'):
+        problems.append('SECRET_KEY 仍是兜底值（未设置 DJANGO_SECRET_KEY，config.py 里也没有）')
+
+    if not problems:
+        ok(f'安全配置：DEBUG=False，SECRET_KEY 已自定义，ALLOWED_HOSTS={len(settings.ALLOWED_HOSTS)} 项')
+        return True
+
+    for p in problems:
+        warn(p)
+    print('       上线前请设置 DJANGO_DEBUG=false，并提供 DJANGO_SECRET_KEY（或写入 config.py）', flush=True)
+    return True
+
+
 def check_mysql():
     """通过 Django 的连接层探测，能同时验证 config 与库名。"""
     try:
@@ -300,6 +320,7 @@ def cmd_check(args):
         fail('自检未通过，请先解决上面的问题')
         return 1
     results.append(check_mysql())
+    results.append(check_security_settings())
     results.append(check_redis())
     results.append(check_migrations())
 

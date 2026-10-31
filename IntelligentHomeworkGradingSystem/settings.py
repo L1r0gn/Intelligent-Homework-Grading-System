@@ -25,17 +25,30 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-41xk46xx!z4lq&xjl*r-@7@c3yot*y$=$-*&8)$d@=abvoeye)'
+# 不再硬编码：本仓库是公开的，写死在代码里等于直接泄露。
+# 读取顺序：环境变量 DJANGO_SECRET_KEY → config.py（已被 .gitignore 排除）→ 仅开发用的兜底值。
+SECRET_KEY = (
+    os.environ.get('DJANGO_SECRET_KEY')
+    or getattr(config, 'SECRET_KEY', '')
+    or 'django-insecure-dev-only-do-not-use-in-production'
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# 生产环境务必设置环境变量 DJANGO_DEBUG=false
+DEBUG = os.environ.get('DJANGO_DEBUG', 'true').strip().lower() in ('1', 'true', 'yes', 'on')
 
 AUTH_USER_MODEL = 'userManageModule.User'  # 格式：app名称.模型类名
 
-# 允许的域名
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost','119.29.152.140','43.226.61.34']
+# 允许的域名：可用 DJANGO_ALLOWED_HOSTS 覆盖（逗号分隔）
+ALLOWED_HOSTS = [
+    h.strip()
+    for h in os.environ.get(
+        'DJANGO_ALLOWED_HOSTS',
+        '127.0.0.1,localhost,119.29.152.140,43.226.61.34',
+    ).split(',')
+    if h.strip()
+]
 
-import config
 WECHAT_APPID = config.WECHAT_APPID
 WECHAT_SECRET = config.WECHAT_SECRET
 
@@ -151,16 +164,35 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'IntelligentHomeworkGradingSystem.wsgi.application'
 
+# 日志：控制台 + 滚动文件。线上出问题不能只靠终端输出。
+LOGS_DIR = BASE_DIR / 'logs'
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{asctime}] {levelname} {name}: {message}',
+            'style': '{',
+        },
+    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': str(LOGS_DIR / 'app.log'),
+            'maxBytes': 10 * 1024 * 1024,   # 10MB 滚动
+            'backupCount': 5,
+            'encoding': 'utf-8',
+            'formatter': 'verbose',
         },
     },
     'root': {
-        'handlers': ['console'],
+        'handlers': ['console', 'file'],
         'level': 'INFO',
     },
 }

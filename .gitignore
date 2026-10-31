@@ -9,3 +9,4 @@ venv/
 .claude/
 .workbuddy/
 todo.md
+logs/
