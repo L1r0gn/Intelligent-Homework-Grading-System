@@ -19,7 +19,7 @@ source venv/bin/activate
 gunicorn --bind 0.0.0.0:8000 IntelligentHomeworkGradingSystem.wsgi:application
 
 # 从服务器克隆项目
-git clone https://L1r0gn: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@github.com/L1r0gn/Intelligent-Homework-Grading-System.git
+git clone https://<YOUR_GITHUB_USERNAME>:<YOUR_PERSONAL_ACCESS_TOKEN>@github.com/L1r0gn/Intelligent-Homework-Grading-System.git
 
 # 查看gunicorn进程
 pstree -ap|grep gunicorn
