@@ -69,7 +69,8 @@ jobs:
             "requests==2.32.4" \
             "Pillow==10.4.0" \
             "numpy==2.2.6" \
-            "pybloom-live==4.0.0"
+            "pybloom-live==4.0.0" \
+            "django-jsonfield-backport==1.0.5"
           # torch 用 CPU 版，避免拉 NVIDIA CUDA 依赖（体积差一个数量级）
           pip install "torch==2.4.1" --index-url https://download.pytorch.org/whl/cpu
 
