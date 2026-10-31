@@ -1,9 +1,8 @@
-from audioop import reverse
 from functools import wraps
-from http.client import responses
 
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db.models import Q
 from django.http import JsonResponse, HttpResponseBadRequest, Http404, HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.csrf import csrf_exempt
@@ -50,7 +49,11 @@ def submissionprocess(request):
                 'problem_id': sub.problem.id,
                 'problem_type': sub.problem.problem_type,
                 'student_username': sub.student.username,
-                'status': sub.get_status_display(), # 使用 get_xxx_display() 获取更友好的状态名
+                # 一律返回状态码，另附中文名——同项目其他接口都返回状态码，
+                # 这里过去只返回中文名，前端拿去做 code 比较必然失败。
+                'status': sub.status,
+                'status_text': sub.get_status_display(),
+                'is_correct': sub.is_correct,
                 'score': sub.score,
                 'justification': sub.justification, # 返回评分理由
                 'submitted_time': sub.submitted_time.strftime('%Y-%m-%d %H:%M:%S'),
@@ -94,37 +97,57 @@ def submissionprocess(request):
         logger.info(f"用户 {user.wx_nickName}创建了新提交")
 
         from django.utils import timezone
-        # 创建新的 submission 实例，保存图片
-        submission = Submission.objects.create(
-            problem=problem,
-            student=user,
-            submitted_text=submitted_text,
-            submitted_time=timezone.now(),
-            submitted_image=submitted_image,
-            choose_answer=choose_answer,
-            status='PENDING', # 初始状态为判题中
-            score=0,
-            feedback='',
-            justification='',
-        )
+        from django.db import transaction
+
+        # 参数与作业存在性先校验、后写库：避免"提交已落库才发现作业不存在"
+        assignment = None
         if source == 'assignment':
             assignment_id = data.get('assignment_id')
             if not assignment_id:
                 return HttpResponseBadRequest("请求必须包含 'assignment_id'")
-            from assignmentAndClassModule.models import AssignmentStatus,Assignment
-            assignment=Assignment.objects.get(id=assignment_id)
-            assignment_status,created = AssignmentStatus.objects.get_or_create(
-                assignment=assignment,
-                submission=submission,
+            from assignmentAndClassModule.models import Assignment
+            try:
+                assignment = Assignment.objects.get(id=assignment_id)
+            except Assignment.DoesNotExist:
+                return JsonResponse({'error': '指定的作业不存在'}, status=404)
+
+        # 提交记录与作业状态的写入放进同一事务：
+        # 要么都落库，要么都不落，避免出现"有提交但没有作业状态"的孤儿数据
+        with transaction.atomic():
+            # 创建新的 submission 实例，保存图片
+            submission = Submission.objects.create(
+                problem=problem,
                 student=user,
-                defaults={
-                    'submitted_at': timezone.now(),
-                    # 其他需要的默认字段
-                }
+                submitted_text=submitted_text,
+                submitted_time=timezone.now(),
+                submitted_image=submitted_image,
+                choose_answer=choose_answer,
+                # 刚提交 = 待批改（不是"批改中"）；批改任务接手后才会推进到 GRADING
+                status=Submission.STATUS_PENDING,
+                # 未批改不应有分数，否则会被统计进平均分、也会让"0 分"误导学生
+                score=None,
+                feedback='',
+                justification='',
             )
-            assignment_status.save()
-        elif source == 'question':
-            submission.save()
+            if assignment is not None:
+                from assignmentAndClassModule.models import AssignmentStatus
+                # 同一作业允许反复提交：状态记录指向【最新一次】提交。
+                # 查找键必须是 (assignment, student)——与唯一约束一致；
+                # 旧代码把 submission 放进查找键，学生第二次提交时会绕过
+                # get() 直接 create，撞上唯一约束直接 500（且此时提交已落库）。
+                assignment_status, created = AssignmentStatus.objects.get_or_create(
+                    assignment=assignment,
+                    student=user,
+                    defaults={
+                        'submission': submission,
+                        'submitted_at': timezone.now(),
+                    },
+                )
+                if not created:
+                    assignment_status.submission = submission
+                    assignment_status.submitted_at = timezone.now()
+                    assignment_status.save()
+            # source == 'question'：单独刷题，只有 Submission，没有作业状态
         ### test
         submissions = Submission.objects.filter(student=user).order_by('-submitted_time')
         logger.info("用户 %s 当前共有 %d 条提交记录", user.wx_nickName, submissions.count())
@@ -145,22 +168,32 @@ def submissionprocess(request):
         return JsonResponse({'error': '不支持的请求方法'}, status=405)
 @admin_required
 def submission_list(request):
-    # 获取所有提交记录，按时间倒序排列
-    submissions = Submission.objects.all().order_by('-submitted_time')
+    # 列表要展示题目名与学生名，一次 join 掉，避免逐行查库
+    submissions = (
+        Submission.objects
+        .select_related('problem', 'student')
+        .order_by('-submitted_time')
+    )
     # 初始化筛选表单
     form = SubmissionFilterForm(request.GET or None)
     # 应用筛选
     if form.is_valid():
         status = form.cleaned_data.get('status')
-        assignment = form.cleaned_data.get('assignment')
+        problem_keyword = form.cleaned_data.get('problem')
         student = form.cleaned_data.get('student')
 
         if status:
-            submissions = submissions.filter(status=status)
-        if assignment:
-            submissions = submissions.filter(assignment__title__icontains=assignment)
+            # 兼容迁移前遗留的旧取值（ACCEPTED/WRONG_ANSWER/SUBMITTED）
+            submissions = submissions.filter(
+                status__in=Submission.status_filter_values(status)
+            )
+        if problem_keyword:
+            submissions = submissions.filter(problem__title__icontains=problem_keyword)
         if student:
-            submissions = submissions.filter(student__username__icontains=student)
+            submissions = submissions.filter(
+                Q(student__username__icontains=student)
+                | Q(student__wx_nickName__icontains=student)
+            )
 
     # 分页
     paginator = Paginator(submissions, 25)  # 每页25条记录
@@ -190,10 +223,12 @@ def regrade_submission_view(request, submission_id):
         # 安全地获取指定的提交对象，如果不存在则会返回404错误
         submission = get_object_or_404(Submission, pk=submission_id)
         # (推荐) 在重新提交任务前，可以先重置一下状态
-        submission.status = 'PENDING'  # 例如，重置为“待处理”
+        submission.status = Submission.STATUS_PENDING  # 重新排队，等批改任务接手
         submission.score = None  # 清空之前的分数
-        submission.grading_result = "正在重新加入批改队列..."
-        submission.save()
+        # 该模型没有 grading_result 字段，过去这行赋值只落在内存里、从不入库；
+        # 想给老师看到"正在重新批改"的提示，必须写进真实存在的 justification。
+        submission.justification = "正在重新加入批改队列..."
+        submission.save(update_fields=['status', 'score', 'justification'])
         logger.info("%s is regrading", submission)
         logger.info("Regrading submission ID: %s", submission.id)
         # --- 这里是核心：调用您已有的Celery异步任务 ---
@@ -207,6 +242,10 @@ def serve_submission_image(request, submission_id):
     try:
         submission = Submission.objects.get(id=submission_id)
     except Submission.DoesNotExist:
+        raise Http404("Image not found")
+
+    # submitted_image 现在允许为空（没有占位默认值了），空值直接 404
+    if not submission.submitted_image:
         raise Http404("Image not found")
 
     response = HttpResponse(
@@ -238,7 +277,7 @@ def showMySubmissions(request):
                                    例如: "submitted_time:desc"。
         - filter_by (str, optional): 筛选条件，格式为 "字段:值"。
                                     支持字段: 'status', 'question_type', 'problem_id'。
-                                    例如: "status:ACCEPTED"。
+                                    例如: "status:GRADED"。
         - user_id (int, optional): 用于管理员查询其他用户的提交记录。非管理员用户尝试查询他人记录将返回权限错误。
 
     返回:
@@ -253,7 +292,7 @@ def showMySubmissions(request):
                                   "user_answer": "...",
                                   "is_correct": true,
                                   "score": 100,
-                                  "status": "ACCEPTED",
+                                  "status": "GRADED",
                                   "created_at": "2023-01-01 10:00:00"
                               }
                           ],
@@ -303,7 +342,7 @@ def showMySubmissions(request):
 
         # 2. 获取筛选和排序参数
         sort_by = request.GET.get('sort_by', 'submitted_time:desc')
-        filter_by = request.GET.get('filter_by') # 格式例如 "status:ACCEPTED"
+        filter_by = request.GET.get('filter_by') # 格式例如 "status:GRADED"
         user_id = request.GET.get('user_id')
 
         # 3. 构建基础查询集
@@ -317,7 +356,9 @@ def showMySubmissions(request):
             else:
                  return JsonResponse({'error': 'Permission denied'}, status=403)
 
-        queryset = Submission.objects.filter(student=target_user)
+        queryset = Submission.objects.filter(student=target_user).select_related(
+            'problem', 'problem__problem_type'
+        )
 
         # 4. 应用过滤 (支持多个 filter_by 参数)
         filter_by_list = request.GET.getlist('filter_by')
@@ -333,7 +374,14 @@ def showMySubmissions(request):
                 }
                 if filter_key in allowed_filters:
                     db_field = allowed_filters[filter_key]
-                    queryset = queryset.filter(**{db_field: filter_value})
+                    if filter_key == 'status':
+                        # 前端可能仍传 ACCEPTED / WRONG_ANSWER / SUBMITTED，
+                        # 统一归一到现行枚举，再带上旧别名一起查
+                        queryset = queryset.filter(
+                            status__in=Submission.status_filter_values(filter_value)
+                        )
+                    else:
+                        queryset = queryset.filter(**{db_field: filter_value})
             except ValueError:
                 pass
 
@@ -393,14 +441,15 @@ def showMySubmissions(request):
                 'question_id': sub.problem.id,
                 'question_title': sub.problem.title,
                 'user_answer': sub.submitted_text or sub.choose_answer or (sub.submitted_image.url if sub.submitted_image else ""),
-                'is_correct': sub.status == 'ACCEPTED',
+                'is_correct': sub.is_correct,
                 'student_score': sub.score,
                 'question_score': sub.problem.points,
                 'score': sub.score,
                 'problem_type_name': sub.problem.problem_type.name if sub.problem.problem_type else '',
                 'problem_type_code': sub.problem.problem_type.code if sub.problem.problem_type else '',
                 'knowledge_points': list(sub.problem.knowledge_points.values_list('name', flat=True)),
-                'status': sub.status, # 补充返回具体状态
+                'status': sub.status, # 状态码，与其余接口保持一致
+                'status_text': sub.get_status_display(),
                 'created_at': sub.submitted_time.strftime('%Y-%m-%d %H:%M:%S')
             })
 
@@ -446,6 +495,8 @@ def getASubmission(request, submission_id):
             "submitted_time": submission.submitted_time.strftime("%Y-%m-%d %H:%M:%S"),
             "submitted_image": image_url,
             "status": submission.status,
+            "status_text": submission.get_status_display(),
+            "is_correct": submission.is_correct,
             "score": submission.score,
             "feedback": submission.feedback,
             "justification": submission.justification,
@@ -480,11 +531,11 @@ def submission_batch_action(request):
             if action == 'regrade':
                 # 批量重新批改
                 for submission in queryset:
-                    # 重置状态为待处理
-                    submission.status = 'PENDING'
+                    # 重置状态为待批改，清空旧分数与旧评语
+                    submission.status = Submission.STATUS_PENDING
                     submission.score = None
-                    submission.grading_result = "正在重新加入批改队列..."
-                    submission.save()
+                    submission.justification = "正在重新加入批改队列..."
+                    submission.save(update_fields=['status', 'score', 'justification'])
                     # 调用异步任务重新批改
                     process_and_grade_submission.delay(submission_id=submission.id)
                 
@@ -521,7 +572,9 @@ def getSubmissionsByAssignmentId(request, assignment_id):
         from assignmentAndClassModule.models import AssignmentStatus, Assignment
         
         # 获取所有与该作业相关的AssignmentStatus记录
-        assignment_statuses = AssignmentStatus.objects.filter(assignment_id=assignment_id).select_related('submission')
+        assignment_statuses = AssignmentStatus.objects.filter(
+            assignment_id=assignment_id
+        ).select_related('submission', 'submission__problem', 'submission__student')
         
         # 提取相关的提交记录
         data = []
@@ -538,6 +591,8 @@ def getSubmissionsByAssignmentId(request, assignment_id):
                     "submitted_time": submission.submitted_time.strftime("%Y-%m-%d %H:%M:%S"),
                     "submitted_image": image_url,
                     "status": submission.status,
+                    "status_text": submission.get_status_display(),
+                    "is_correct": submission.is_correct,
                     "score": submission.score,
                     "feedback": submission.feedback,
                     "justification": submission.justification,

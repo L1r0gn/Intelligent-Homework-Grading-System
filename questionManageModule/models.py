@@ -93,7 +93,11 @@ class ScoringPoint(models.Model):
     class Meta:
         verbose_name = "得分点"
         verbose_name_plural = "得分点"
-        ordering = ['problem', 'order']
+        # 注意：不要写 ['problem', 'order']。
+        # ScoringPoint 上没有 problem 字段（它与 Problem 的关系是 Problem.scoringPoint 反向），
+        # Django 会把 'problem' 解析成反向关系并强制 LEFT JOIN Problem 表，
+        # 导致一个得分点被 N 个题目引用时查询结果就重复 N 行。
+        ordering = ['order']
     def __str__(self):
         return f"{self.id}-{self.point}"
 class ProblemTag(models.Model):

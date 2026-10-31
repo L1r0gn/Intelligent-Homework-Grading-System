@@ -223,12 +223,13 @@ def grade_submission_with_ai(standard_answer, total_score, submission_id=None, a
         return None
 
 
-@shared_task
-def process_and_grade_submission(submission_id=None):
+def _run_grading(submission_id=None):
     """
-    【合并后的 Celery 任务】
-    既可以处理作业状态流程 (AssignmentStatus)，也可以处理单纯的提交 (Submission)。
-    如果调用时只传一个参数，默认视为 assignment_status_id (兼容旧代码逻辑)。
+    【批改主流程】（同步执行体，由 Celery 任务包装）
+
+    状态流转（唯一约定，见 gradingModule.models.Submission）：
+        PENDING --任务接手--> GRADING --出结果--> GRADED
+                                           \\--异常--> RUNTIME_ERROR
     """
     #============初始化==============
     assignment = None
@@ -263,9 +264,14 @@ def process_and_grade_submission(submission_id=None):
     if not submission or not problem:
         logger.error("❌ 数据不完整，无法评分")
         if submission:
-            submission.status = 'RUNTIME_ERROR'
-            submission.save()
+            submission.status = Submission.STATUS_RUNTIME_ERROR
+            submission.save(update_fields=['status'])
         return
+
+    # 状态推进：任务已经接手，标记为「批改中」。
+    # 过去从不写 GRADING，前端轮询永远看不到这一步，只能一直显示"待批改"直到跳变。
+    submission.status = Submission.STATUS_GRADING
+    submission.save(update_fields=['status'])
 
     # 2. 路由评分逻辑
     # A. 选择题 (文本匹配)
@@ -274,39 +280,39 @@ def process_and_grade_submission(submission_id=None):
 
         # 检查是否有选择答案
         if not submission.choose_answer:
-            submission.status = 'WRONG_ANSWER'
+            # 未作答也是一次有效的判定结果：已批改、0 分
+            submission.status = Submission.STATUS_GRADED
             submission.score = 0
-            submission.justification = f'错误：未选择答案'
+            submission.justification = '错误：未选择答案'
             logger.info("❌ 选择题未选择答案")
-            submission.save()
+            submission.save(update_fields=['status', 'score', 'justification'])
             return
 
         student_choose = submission.choose_answer
 
-        # 检查是否有标准答案
+        # 检查是否有标准答案（题目配置问题，不是学生的错，标为运行错误待人工处理）
         if not problem.answer or not problem.answer.content:
-            submission.status = 'RUNTIME_ERROR'
+            submission.status = Submission.STATUS_RUNTIME_ERROR
             submission.justification = '错误：该题未设置标准答案'
             logger.error("❌ 选择题未设置标准答案")
-            submission.save()
+            submission.save(update_fields=['status', 'justification'])
             return
 
         # 比较答案
         logger.info(f'标准答案: {problem.answer.content} | 学生答案: {student_choose}')
+        # 对错不再单独占状态位：两种情况都是「已批改」，由分数派生 is_correct
+        submission.status = Submission.STATUS_GRADED
         if student_choose.upper() == problem.answer.content.upper():
-            submission.status = 'GRADED'
             submission.score = problem.points
+            submission.justification = '答案正确'
             logger.info("✅ 选择题 - 答案正确")
         else:
-            submission.status = 'WRONG_ANSWER'
             submission.score = 0
             submission.justification = f'正确答案是 {problem.answer.content}'
             logger.info("❌ 选择题 - 答案错误")
 
         # 保存
-        submission.save()
-        if assignment_status:
-            assignment_status.save()
+        submission.save(update_fields=['status', 'score', 'justification'])
 
         # === 核心：更新知识点掌握度 ===
         if MasteryService:
@@ -314,7 +320,7 @@ def process_and_grade_submission(submission_id=None):
         
         # === BKT：更新贝叶斯知识追踪 ===
         if BKTService and problem.knowledge_points.exists():
-            is_correct = (submission.status == 'GRADED')
+            is_correct = submission.is_correct
             for kp in problem.knowledge_points.all():
                 try:
                     BKTService.process_learning_event(
@@ -333,9 +339,9 @@ def process_and_grade_submission(submission_id=None):
 
     # 检查图片
     if not submission.submitted_image:
-        submission.status = 'RUNTIME_ERROR'
+        submission.status = Submission.STATUS_RUNTIME_ERROR
         submission.justification = '错误：未找到提交的图片'
-        submission.save()
+        submission.save(update_fields=['status', 'justification'])
         return
 
     # 调用上面合并后的 AI 函数，传入自定义提示词
@@ -347,18 +353,17 @@ def process_and_grade_submission(submission_id=None):
     )
 
     if ai_response_str is None:
-        submission.status = 'RUNTIME_ERROR'
+        submission.status = Submission.STATUS_RUNTIME_ERROR
         submission.justification = 'AI 评分服务暂时不可用'
-        submission.save()
+        submission.save(update_fields=['status', 'justification'])
         return
 
     try:
         ai_result = json.loads(ai_response_str)
         submission.score = ai_result.get('score')
         submission.justification = ai_result.get('justification')
-        submission.status = 'GRADED'
-        submission.save()
-        if assignment_status: assignment_status.save()
+        submission.status = Submission.STATUS_GRADED
+        submission.save(update_fields=['status', 'score', 'justification'])
 
         logger.info(f"✅ AI 批改完成，分数: {submission.score}")
 
@@ -368,8 +373,9 @@ def process_and_grade_submission(submission_id=None):
         
         # === BKT：更新贝叶斯知识追踪 ===
         if BKTService and problem.knowledge_points.exists():
-            # AI评分的题目，根据得分率判断是否正确（得分率60%以上视为正确）
-            is_correct = (submission.score / problem.points) >= 0.6 if problem.points > 0 else False
+            # 判定阈值由 Submission.CORRECT_RATIO_THRESHOLD 统一提供，
+            # 不再在此处硬编码 0.6，避免和掌握度分析的口径分叉
+            is_correct = submission.is_correct
             for kp in problem.knowledge_points.all():
                 try:
                     BKTService.process_learning_event(
@@ -383,7 +389,26 @@ def process_and_grade_submission(submission_id=None):
                     logger.error(f"❌ BKT处理失败: {e}")
 
     except (json.JSONDecodeError, KeyError) as e:
-        submission.status = 'RUNTIME_ERROR'
+        submission.status = Submission.STATUS_RUNTIME_ERROR
         submission.justification = f'解析 AI 结果失败: {e}'
-        submission.save()
+        submission.save(update_fields=['status', 'justification'])
         logger.error(f"❌ 解析失败: {e}")
+
+
+@shared_task
+def process_and_grade_submission(submission_id=None):
+    """Celery 任务入口：调用时只传 submission_id。
+
+    用一层包装而不是把 try/except 塞进主流程，是为了兜住"未预料的异常"：
+    一旦异常把状态卡在 GRADING，前端轮询永远等不到结果。
+    """
+    try:
+        _run_grading(submission_id=submission_id)
+    except Exception as exc:
+        logger.exception("❌ 批改任务异常终止（submission=%s）: %s", submission_id, exc)
+        if submission_id:
+            # 只有还没进终态的才标记失败，避免覆盖已经写好的批改结果
+            Submission.objects.filter(id=submission_id).exclude(
+                status__in=Submission.STATUS_TERMINAL
+            ).update(status=Submission.STATUS_RUNTIME_ERROR)
+        raise

@@ -72,8 +72,10 @@ class BKTDataMigrationService:
         
         try:
             # 获取所有有效的提交记录
+            # 只迁移"已批改"的记录：对错由分数派生（Submission.is_correct），
+            # 旧代码把 ACCEPTED / WRONG_ANSWER 当独立状态，迁移后这两个取值已不存在。
             submissions = Submission.objects.filter(
-                status__in=['ACCEPTED', 'WRONG_ANSWER'],
+                status=Submission.STATUS_GRADED,
                 problem__knowledge_points__isnull=False
             ).select_related('student', 'problem').prefetch_related('problem__knowledge_points')
             
@@ -83,7 +85,7 @@ class BKTDataMigrationService:
                 for submission in submissions:
                     # 为每个关联的知识点创建学习轨迹
                     for kp in submission.problem.knowledge_points.all():
-                        outcome = 'CORRECT' if submission.status == 'ACCEPTED' else 'INCORRECT'
+                        outcome = 'CORRECT' if submission.is_correct else 'INCORRECT'
                         
                         LearningTrace.objects.create(
                             student=submission.student,

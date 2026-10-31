@@ -14,12 +14,13 @@ class MasteryService:
         """
         核心算法：根据 Submission 计算特定知识点的掌握度
         """
-        # 1. 查询该学生、在该知识点下、所有状态为'已批改'或'答案正确'的提交记录
+        # 1. 查询该学生、在该知识点下、所有「已批改」的提交记录
+        # 对错不再是独立状态：GRADED 里既有满分也有部分分，统一按分数折算
         # 我们查找关联了该知识点的题目(problem__knowledge_points__id=knowledge_point_id)
         submissions = Submission.objects.filter(
             student_id=student_id,
             problem__knowledge_points__id=knowledge_point_id,
-            status__in=['GRADED', 'ACCEPTED', 'WRONG_ANSWER']  # 包含错题，否则分母不准
+            status=Submission.STATUS_GRADED
         ).distinct()
 
         if not submissions.exists():

@@ -966,7 +966,7 @@ def wx_get_student_stats(request):
     from gradingModule.models import Submission
     total_submissions = Submission.objects.filter(
         student=student,
-        status__in=['GRADED', 'ACCEPTED', 'WRONG_ANSWER']
+        status=Submission.STATUS_GRADED  # 只有已批改的才算"做过题"
     ).count()
 
     # 2. 获取知识点掌握度列表

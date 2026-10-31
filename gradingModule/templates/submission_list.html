@@ -63,39 +63,41 @@
 {% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="card-header bg-light d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">
-            <i class="fas fa-list-ul me-2"></i>提交记录管理
-        </h5>
-        <span class="badge bg-primary rounded-pill">总计: {{ total_count|default:0 }} 条记录</span>
+<div class="page-header">
+    <div>
+        <h2><i class="fas fa-list-ul me-2 text-primary"></i>提交记录管理</h2>
+        <p class="page-sub">查看学生提交、批改状态与得分明细。</p>
     </div>
-    <div class="card-body">
-        <div class="p-3 mb-4 bg-light rounded border">
-            <form method="get" class="row g-3 align-items-end">
-                <div class="col-md-3">
-                    <label for="{{ form.status.id_for_label }}" class="form-label">状态</label>
-                    {{ form.status }} {# 假设在forms.py中已添加 'class': 'form-select' #}
-                </div>
-                <div class="col-md-3">
-                    <label for="{{ form.assignment.id_for_label }}" class="form-label">作业</label>
-                    {{ form.assignment }} {# 假设在forms.py中已添加 'class': 'form-select' #}
-                </div>
-                <div class="col-md-4">
-                    <label for="{{ form.student.id_for_label }}" class="form-label">学生</label>
-                    {{ form.student }} {# 假设在forms.py中已添加 'class': 'form-control' #}
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter me-1"></i> 筛选</button>
-                    <a href="{% url 'grading:submission_list' %}" class="btn btn-secondary w-100 mt-2"><i class="fas fa-undo me-1"></i> 重置</a>
-                </div>
-            </form>
-        </div>
+    <div class="page-actions">
+        <span class="badge bg-primary rounded-pill px-3 py-2">总计: {{ total_count|default:0 }} 条记录</span>
+    </div>
+</div>
 
-        <form method="POST" action="{% url 'grading:submission_batch' %}" id="batch-action-form">
-            {% csrf_token %}
-            <div class="card shadow-sm">
-                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+<div class="toolbar mb-3">
+    <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label for="{{ form.status.id_for_label }}" class="form-label">状态</label>
+            {{ form.status }} {# 假设在forms.py中已添加 'class': 'form-select' #}
+        </div>
+        <div class="col-md-3">
+            <label for="{{ form.problem.id_for_label }}" class="form-label">{{ form.problem.label }}</label>
+            {{ form.problem }}
+        </div>
+        <div class="col-md-4">
+            <label for="{{ form.student.id_for_label }}" class="form-label">学生</label>
+            {{ form.student }} {# 假设在forms.py中已添加 'class': 'form-control' #}
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter me-1"></i> 筛选</button>
+            <a href="{% url 'grading:submission_list' %}" class="btn btn-outline-secondary w-100 mt-2"><i class="fas fa-undo me-1"></i> 重置</a>
+        </div>
+    </form>
+</div>
+
+<form method="POST" action="{% url 'grading:submission_batch' %}" id="batch-action-form">
+    {% csrf_token %}
+    <div class="card">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">提交记录列表</h5>
                     <div class="d-flex align-items-center">
                         <select name="action" class="form-select form-select-sm me-2" style="width: auto;" required>
@@ -114,7 +116,7 @@
                                     <th style="width: 1%;" class="text-center"><input class="form-check-input" type="checkbox" id="select-all-checkbox"></th>
                                     <th>ID</th>
                                     <th>学生</th>
-                                    <th>作业</th>
+                                    <th>题目</th>
                                     <th>提交时间</th>
                                     <th>状态</th>
                                     <th>分数</th>
@@ -131,9 +133,11 @@
                                     <td>{{ submission.submitted_time|date:"Y-m-d H:i" }}</td>
                                     <td>
                                         <span class="badge rounded-pill
-                                            {% if submission.status == 'graded' %}bg-success
-                                            {% elif submission.status == 'processing' %}bg-warning text-dark
-                                            {% elif submission.status == 'error' %}bg-danger
+                                            {% if submission.status == 'GRADED' %}bg-success
+                                            {% elif submission.status == 'GRADING' %}bg-info text-dark
+                                            {% elif submission.status == 'PENDING' %}bg-warning text-dark
+                                            {% elif submission.status == 'COMPILE_ERROR' %}bg-danger
+                                            {% elif submission.status == 'RUNTIME_ERROR' %}bg-danger
                                             {% else %}bg-secondary{% endif %}">
                                             {{ submission.get_status_display }}
                                         </span>
@@ -142,7 +146,7 @@
                                         {% if submission.score is not None %}
                                             <span class="fw-bold text-primary">{{ submission.score }}</span>
                                         {% else %}
-                                            {% if submission.status == 'RUNTIME_ERROR' %}
+                                            {% if submission.is_failed %}
                                             <span class="text-muted">批改过程出错</span>
                                             {% else %}
                                             <span class="text-muted">-</span>
@@ -171,7 +175,7 @@
         </form>
 
         {% if page_obj.has_other_pages %}
-        <div class="card-footer bg-white border-0 py-3">
+        <div class="pagination-bar">
             <div class="d-flex justify-content-between align-items-center flex-wrap">
                 <!-- 分页信息 -->
                 <div class="mb-2 mb-md-0">
@@ -267,8 +271,6 @@
             </div>
         </div>
         {% endif %}
-    </div>
-</div>
 
 <style>
 /* 可以在这里添加一些针对此页面的微调样式 */

@@ -6,15 +6,19 @@
 {% block content %}
 <div class="container-fluid">
     <!-- 顶部导航与操作 -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item"><a href="{% url 'assignment:list' %}">作业管理</a></li>
-                <li class="breadcrumb-item active" aria-current="page">作业详情</li>
-            </ol>
-        </nav>
+    <div class="page-header">
         <div>
-            <a href="{% url 'assignment:list' %}" class="btn btn-secondary">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2 small">
+                    <li class="breadcrumb-item"><a href="{% url 'assignment:list' %}" class="text-decoration-none">作业管理</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">作业详情</li>
+                </ol>
+            </nav>
+            <h2>作业详情</h2>
+            <p class="page-sub">{{ assignment.title }}</p>
+        </div>
+        <div class="page-actions">
+            <a href="{% url 'assignment:list' %}" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left me-1"></i>返回列表
             </a>
         </div>
@@ -143,14 +147,15 @@
                                         <span class="badge bg-secondary">待批改</span>
                                         {% elif status.submission.status == 'GRADING' %}
                                         <span class="badge bg-info">批改中</span>
-                                        {% elif status.submission.status == 'SUBMITTED' %}
-                                        <span class="badge bg-primary">已提交</span>
                                         {% elif status.submission.status == 'GRADED' %}
-                                        <span class="badge bg-success">已批改</span>
-                                        {% elif status.submission.status == 'ACCEPTED' %}
-                                        <span class="badge bg-success">答案正确</span>
-                                        {% elif status.submission.status == 'WRONG_ANSWER' %}
-                                        <span class="badge bg-danger">答案错误</span>
+                                        <span class="badge bg-success">{{ status.submission.get_status_display }}</span>
+                                        {% if status.submission.is_correct %}
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">正确</span>
+                                        {% else %}
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle">错误</span>
+                                        {% endif %}
+                                        {% elif status.submission.is_failed %}
+                                        <span class="badge bg-danger">{{ status.submission.get_status_display }}</span>
                                         {% else %}
                                         <span class="badge bg-secondary">{{ status.submission.status }}</span>
                                         {% endif %}

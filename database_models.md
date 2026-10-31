@@ -484,25 +484,27 @@ verbose_name = "学生掌握度"
 | `student` | ForeignKey | to=User, on_delete=CASCADE, related_name='submissions' | 学生 |
 | `submitted_text` | TextField | nullable, blank, default='' | 提交的文本 |
 | `submitted_time` | DateTimeField | auto_now_add=True | 提交时间 |
-| `submitted_image` | ImageField | upload_to='submissions/', nullable, blank, default="default_submissionImage.png" | 提交的图片 |
+| `submitted_image` | ImageField | upload_to='submissions/', nullable, blank, default=None（2026-10 移除占位默认值） | 提交的图片；为空表示未上传，判空才可靠 |
 | `choose_answer` | TextField | nullable, blank | 选择题答案 |
 | `status` | CharField | max_length=20, choices=STATUS_CHOICES, default='PENDING' | 状态 |
 | `score` | FloatField | nullable, blank | 得分 |
 | `feedback` | TextField | blank, nullable | 批改反馈 |
 | `justification` | TextField | blank, nullable | AI评分理由 |
 
-**状态选项 (STATUS_CHOICES)**:
+**状态选项 (STATUS_CHOICES)** —— 只描述批改流程，不描述答案对错：
 
 | 状态值 | 描述 |
 |--------|------|
 | `PENDING` | 待批改 |
 | `GRADING` | 批改中 |
-| `SUBMITTED` | 已提交 |
-| `GRADED` | 已批改 |
-| `ACCEPTED` | 答案正确 |
-| `WRONG_ANSWER` | 答案错误 |
-| `COMPILE_ERROR` | 编译错误 |
-| `RUNTIME_ERROR` | 运行错误 |
+| `GRADED` | 已批改（终态，`score` 已写入） |
+| `COMPILE_ERROR` | 编译错误（终态） |
+| `RUNTIME_ERROR` | 运行错误（终态） |
+
+> **答案对错不是状态位**：由 `Submission.is_correct` 从 `score / problem.points`
+> 派生（得分率 ≥ `CORRECT_RATIO_THRESHOLD`，默认 0.6 视为正确）。
+> 历史取值 `SUBMITTED` / `ACCEPTED` / `WRONG_ANSWER` 已由迁移
+> `gradingModule.0004_normalize_submission_status` 归一化，新代码不得再写入。
 
 ---
 
@@ -544,16 +546,13 @@ verbose_name = "学生掌握度"
 | `assignment` | ForeignKey | to=Assignment, on_delete=CASCADE | 作业 |
 | `submission` | ForeignKey | to=Submission, on_delete=CASCADE, nullable, blank | 提交记录 |
 | `student` | ForeignKey | to=User, on_delete=CASCADE | 学生 |
-| `status` | CharField | max_length=20, choices=STATUS_CHOICES, default='pending' | 状态 |
 | `submitted_at` | DateTimeField | nullable, blank | 提交时间 |
 
-**状态选项 (STATUS_CHOICES)**:
-
-| 状态值 | 描述 |
-|--------|------|
-| `pending` | 待完成 |
-| `submitted` | 已提交 |
-| `graded` | 已批改 |
+> **本模型没有 status 字段**（迁移 0007 已移除）：作业的批改进度完全由关联的
+> `Submission.status` 决定；「还没提交」用常量 `AssignmentStatus.NOT_SUBMITTED` 表达。
+>
+> **唯一约束** `(assignment, student)`（2026-10 新增）：并发 `get_or_create` 曾会产生
+> 重复行导致读取随机跳变；约束由迁移 0009 在清理历史重复行之后建立。
 
 ---
 
@@ -1002,7 +1001,7 @@ class DKT(nn.Module):
 | ClassTeacher | (class_obj, teacher, subject) | UNIQUE_TOGETHER |
 | StudentMastery | (student, knowledge_point) | UNIQUE_TOGETHER |
 | BKTStudentState | (student, knowledge_point) | UNIQUE_TOGETHER |
-| BKTClassAnalytics | (class_identifier, knowledge_point) | UNIQUE_TOGETHER |
+| BKTClassAnalytics | (class_identifier, class_type, knowledge_point) | UNIQUE_TOGETHER（2026-10 补 class_type，避免年级/班级同标识互相覆盖） |
 | ProblemType | name, code | UNIQUE |
 | Subject | name, code | UNIQUE |
 | ProblemTag | name | UNIQUE |

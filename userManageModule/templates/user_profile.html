@@ -21,11 +21,14 @@
 
     <div class="row justify-content-center">
         <div class="col-md-8">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-user-circle me-2"></i>个人中心</h5>
+            <div class="page-header">
+                <div>
+                    <h2>个人中心</h2>
+                    <p class="page-sub">维护你的账号资料、联系方式与安全设置。</p>
                 </div>
-                <div class="card-body">
+            </div>
+            <div class="card">
+                <div class="card-body p-4">
                     <form id="profileForm" novalidate>
                         {% csrf_token %}
 

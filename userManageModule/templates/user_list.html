@@ -5,16 +5,19 @@
 
 {% block content %}
 <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>用户管理</h2>
+    <div class="page-header">
         <div>
+            <h2>用户管理</h2>
+            <p class="page-sub">管理平台账号、用户属性与教师审核状态。</p>
+        </div>
+        <div class="page-actions">
             <a href="{% url 'user:user_create' %}" class="btn btn-primary">
                 <i class="fas fa-plus me-2"></i>新建用户
             </a>
         </div>
     </div>
 
-    <div class="mb-4">
+    <div class="toolbar mb-3">
         <form method="GET" action="{% url 'user:user_list' %}" class="row g-2 align-items-center">
             <!-- 搜索框 -->
             <div class="col-md-3">
@@ -61,17 +64,17 @@
         </form>
     </div>
 
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="mb-0">
-                <i class="fas fa-users me-2"></i>用户列表
+                <i class="fas fa-users me-2 text-muted"></i>用户列表
             </h5>
             <span class="badge bg-primary rounded-pill">总计: {{ queryset.count }} 位用户</span>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                    <table class="table table-hover table-striped mb-0 align-middle">
-                        <thead class="table-dark">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead>
                             <tr>
                                 <th>ID</th>
                                 <th>微信昵称/姓名</th>

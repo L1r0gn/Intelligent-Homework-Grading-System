@@ -1,119 +1,436 @@
 {% extends 'backend_sys_base_page.html' %}
 {% load static %}
 
-{% block title %}仪表盘 - 智能作业评分系统{% endblock %}
+{% block title %}工作台 - 智能作业评分系统{% endblock %}
 
 {% block content %}
+{{ trend|json_script:"trend-data" }}
+{{ status_dist|json_script:"status-data" }}
+
 <div class="container mt-4">
-    <div class="row mb-4">
-        <div class="col-12">
-            <h2 class="mb-3">欢迎回来, {{ request.user.wx_nickName|default:request.user.username }}!</h2>
-            <p class="text-muted">这是系统的概览数据。</p>
+    <div class="page-header">
+        <div>
+            <h2>欢迎回来，{{ request.user.wx_nickName|default:request.user.username }}</h2>
+            <p class="page-sub">
+                当前视图：<span class="badge bg-light text-dark border">{{ scope_label }}</span>
+                {% if not is_admin %}仅统计你带的班级以及你创建的题目{% endif %}
+            </p>
+        </div>
+        <div class="page-actions">
+            <a href="{% url 'question:problem_create' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-plus me-1"></i>新建题目
+            </a>
+            <a href="{% url 'question:problem_import' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-file-import me-1"></i>批量导入
+            </a>
+            <a href="{% url 'grading:submission_list' %}" class="btn btn-primary">
+                <i class="fas fa-file-alt me-1"></i>提交记录
+            </a>
         </div>
     </div>
 
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card shadow-sm border-0 bg-primary text-white h-100">
-                <div class="card-body d-flex align-items-center justify-content-between">
+    <!-- ===================== 第一层：关键指标 ===================== -->
+    <div class="row g-3 mb-3">
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card bg-warning text-dark h-100">
+                <div class="card-body d-flex align-items-center justify-content-between pb-2">
                     <div>
-                        <h6 class="card-title mb-1">总用户数</h6>
-                        <h2 class="mb-0">{{ user_count }}</h2>
+                        <div class="stat-ico mb-2"><i class="fas fa-hourglass-half"></i></div>
+                        <h6 class="card-title mb-1 opacity-75 fw-normal">待批改提交</h6>
+                        <h2 class="mb-0 fw-bold" style="font-size: 1.9rem;">{{ kpi.pending }}</h2>
                     </div>
-                    <i class="fas fa-users fa-3x opacity-50"></i>
+                    <i class="fas fa-hourglass-half fa-3x opacity-25"></i>
                 </div>
-                <div class="card-footer bg-transparent border-0">
-                    <a href="{% url 'user:user_list' %}" class="text-white text-decoration-none small">查看详情 <i class="fas fa-arrow-right ms-1"></i></a>
+                <div class="card-footer bg-transparent border-0 pt-0">
+                    <span class="small">
+                        {% if kpi.overdue %}
+                        <i class="fas fa-exclamation-circle me-1"></i>{{ kpi.overdue }} 份已超 24 小时
+                        {% else %}
+                        积压处于健康区间
+                        {% endif %}
+                    </span>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card shadow-sm border-0 bg-success text-white h-100">
-                <div class="card-body d-flex align-items-center justify-content-between">
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card bg-primary text-white h-100">
+                <div class="card-body d-flex align-items-center justify-content-between pb-2">
                     <div>
-                        <h6 class="card-title mb-1">题目总数</h6>
-                        <h2 class="mb-0">{{ question_count }}</h2>
+                        <div class="stat-ico mb-2"><i class="fas fa-paper-plane"></i></div>
+                        <h6 class="card-title mb-1 opacity-75 fw-normal">近 7 天提交</h6>
+                        <h2 class="mb-0 fw-bold" style="font-size: 1.9rem;">{{ kpi.week_count }}</h2>
                     </div>
-                    <i class="fas fa-book fa-3x opacity-50"></i>
+                    <i class="fas fa-paper-plane fa-3x opacity-25"></i>
                 </div>
-                <div class="card-footer bg-transparent border-0">
-                    <a href="{% url 'question:problem_list' %}" class="text-white text-decoration-none small">查看详情 <i class="fas fa-arrow-right ms-1"></i></a>
+                <div class="card-footer bg-transparent border-0 pt-0">
+                    {% if kpi.week_delta_dir == 'up' %}
+                    <span class="badge bg-white text-success"><i class="fas fa-arrow-up me-1"></i>{{ kpi.week_delta_text }} 环比上周</span>
+                    {% elif kpi.week_delta_dir == 'down' %}
+                    <span class="badge bg-white text-danger"><i class="fas fa-arrow-down me-1"></i>{{ kpi.week_delta_text }} 环比上周</span>
+                    {% else %}
+                    <span class="badge bg-white text-dark">上周无数据</span>
+                    {% endif %}
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card shadow-sm border-0 bg-info text-white h-100">
-                <div class="card-body d-flex align-items-center justify-content-between">
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card bg-success text-white h-100">
+                <div class="card-body d-flex align-items-center justify-content-between pb-2">
                     <div>
-                        <h6 class="card-title mb-1">提交记录</h6>
-                        <h2 class="mb-0">{{ submission_count }}</h2>
+                        <div class="stat-ico mb-2"><i class="fas fa-percent"></i></div>
+                        <h6 class="card-title mb-1 opacity-75 fw-normal">平均得分率</h6>
+                        <h2 class="mb-0 fw-bold" style="font-size: 1.9rem;">{{ kpi.score_rate_text }}</h2>
                     </div>
-                    <i class="fas fa-file-alt fa-3x opacity-50"></i>
+                    <i class="fas fa-percent fa-3x opacity-25"></i>
                 </div>
-                <div class="card-footer bg-transparent border-0">
-                    <a href="{% url 'grading:submission_list' %}" class="text-white text-decoration-none small">查看详情 <i class="fas fa-arrow-right ms-1"></i></a>
+                <div class="card-footer bg-transparent border-0 pt-0">
+                    <span class="small opacity-75">按题目总分加权，非简单平均</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card stat-card bg-info text-white h-100">
+                <div class="card-body d-flex align-items-center justify-content-between pb-2">
+                    <div>
+                        <div class="stat-ico mb-2"><i class="fas fa-user-check"></i></div>
+                        <h6 class="card-title mb-1 opacity-75 fw-normal">活跃学生（7 天）</h6>
+                        <h2 class="mb-0 fw-bold" style="font-size: 1.9rem;">
+                            {{ kpi.active_students }}<span class="fs-6 fw-normal opacity-75"> / {{ kpi.student_total }}</span>
+                        </h2>
+                    </div>
+                    <i class="fas fa-user-check fa-3x opacity-25"></i>
+                </div>
+                <div class="card-footer bg-transparent border-0 pt-0">
+                    <span class="small opacity-75">题目 {{ kpi.question_total }} 道 · 班级 {{ kpi.class_total }} 个</span>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- ===================== 第二层：趋势 + 待办 ===================== -->
+    <div class="row g-3 mb-3">
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <h5 class="mb-0"><i class="fas fa-chart-area me-2 text-muted"></i>提交趋势 · 近 14 天</h5>
+                    <span class="small text-muted">柱：提交量　线：得分率</span>
+                </div>
+                <div class="card-body">
+                    <div id="trend-chart" style="width: 100%; height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <h5 class="mb-0"><i class="fas fa-list-check me-2 text-muted"></i>待办事项</h5>
+                    {% if todos %}
+                    <span class="badge bg-danger rounded-pill">{{ todos|length }} 项</span>
+                    {% endif %}
+                </div>
+                <div class="card-body p-0">
+                    {% if todos %}
+                    <div class="list-group list-group-flush">
+                        {% for todo in todos %}
+                        <a href="{% url todo.url %}{{ todo.query }}" class="list-group-item list-group-item-action d-flex align-items-start gap-3 py-3">
+                            <span class="todo-ico text-{{ todo.tone }}"><i class="fas {{ todo.icon }}"></i></span>
+                            <span class="flex-grow-1">
+                                <span class="d-flex justify-content-between align-items-center">
+                                    <strong class="text-dark">{{ todo.label }}</strong>
+                                    <span class="badge bg-{{ todo.tone }} rounded-pill">{{ todo.count }}</span>
+                                </span>
+                                {% if todo.hint %}
+                                <small class="text-muted d-block mt-1">{{ todo.hint }}</small>
+                                {% endif %}
+                            </span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-circle-check text-success"></i>
+                        <p class="mb-0">当前没有待处理事项</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== 第三层：薄弱知识点 / 状态分布 / 即将截止 ===================== -->
+    <div class="row g-3 mb-3">
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <h5 class="mb-0"><i class="fas fa-brain me-2 text-muted"></i>最薄弱知识点</h5>
+                    <span class="badge bg-light text-dark border">BKT</span>
+                </div>
+                <div class="card-body">
+                    {% if weak_kps %}
+                    {% for kp in weak_kps %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="text-truncate" style="max-width: 70%;" title="{{ kp.name }}">{{ kp.name }}</span>
+                            <small class="text-muted">{{ kp.percent }}%</small>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar {% if kp.percent < 40 %}bg-danger{% elif kp.percent < 60 %}bg-warning{% else %}bg-success{% endif %}"
+                                 role="progressbar" style="width: {{ kp.percent }}%;"
+                                 aria-valuenow="{{ kp.percent }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <small class="text-muted">{{ kp.samples }} 名学生的掌握度均值</small>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-brain"></i>
+                        <p class="mb-0">暂无知识追踪数据<br><small>学生答题后会自动生成掌握度</small></p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2 text-muted"></i>批改状态分布</h5>
+                    <span class="small text-muted">共 {{ kpi.submission_total }} 条</span>
+                </div>
+                <div class="card-body">
+                    {% if status_dist %}
+                    <div id="status-chart" style="width: 100%; height: 250px;"></div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-chart-pie"></i>
+                        <p class="mb-0">还没有提交记录</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <h5 class="mb-0"><i class="fas fa-clock me-2 text-muted"></i>72 小时内截止</h5>
+                    <a href="{% url 'assignment:list' %}" class="small text-decoration-none">全部</a>
+                </div>
+                <div class="card-body p-0">
+                    {% if due_soon %}
+                    <div class="list-group list-group-flush">
+                        {% for assignment in due_soon %}
+                        <a href="{% url 'assignment:detail' assignment.id %}" class="list-group-item list-group-item-action py-3">
+                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                <strong class="text-dark">{{ assignment.title|truncatechars:18 }}</strong>
+                                <span class="badge bg-light text-dark border text-nowrap">{{ assignment.deadline|date:"m-d H:i" }}</span>
+                            </div>
+                            <small class="text-muted">{{ assignment.target_class.name }}</small>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-mug-hot"></i>
+                        <p class="mb-0">近期没有作业截止</p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% if unsubmitted_count %}
+                <div class="card-footer bg-transparent">
+                    <small class="text-muted"><i class="fas fa-circle-exclamation me-1"></i>共 {{ unsubmitted_count }} 条作业记录尚未提交</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== 第四层：最近提交 ===================== -->
     <div class="row">
-        <div class="col-md-12">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white border-0 py-3">
-                    <h5 class="mb-0"><i class="fas fa-clock me-2 text-muted"></i>最近提交</h5>
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <h5 class="mb-0"><i class="fas fa-clock-rotate-left me-2 text-muted"></i>最近提交</h5>
+                    <a href="{% url 'grading:submission_list' %}" class="btn btn-outline-primary btn-sm">查看全部</a>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover mb-0 align-middle">
-                            <thead class="table-light">
+                            <thead>
                                 <tr>
                                     <th>ID</th>
                                     <th>学生</th>
                                     <th>题目</th>
                                     <th>提交时间</th>
                                     <th>状态</th>
-                                    <th>分数</th>
+                                    <th>得分</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for sub in recent_submissions %}
+                                {% for item in recent_submissions %}
                                 <tr>
-                                    <td>{{ sub.id }}</td>
-                                    <td>{{ sub.student.wx_nickName|default:sub.student.username }}</td>
-                                    <td>{{ sub.problem.title|truncatechars:30 }}</td>
-                                    <td>{{ sub.submitted_time|date:"Y-m-d H:i" }}</td>
+                                    <td class="text-muted">#{{ item.obj.id }}</td>
+                                    <td>{{ item.obj.student.wx_nickName|default:item.obj.student.username }}</td>
+                                    <td>
+                                        <a href="{% url 'grading:submission_detail' item.obj.id %}" class="text-decoration-none">
+                                            {{ item.obj.problem.title|default:"（无标题）"|truncatechars:26 }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span title="{{ item.obj.submitted_time|date:'Y-m-d H:i' }}">{{ item.rel_time }}</span>
+                                    </td>
                                     <td>
                                         <span class="badge rounded-pill 
-                                            {% if sub.status == 'ACCEPTED' %}bg-success
-                                            {% elif sub.status == 'PENDING' %}bg-warning text-dark
-                                            {% elif sub.status == 'WRONG_ANSWER' %}bg-danger
+                                            {% if item.obj.status == 'GRADED' %}bg-success
+                                            {% elif item.obj.status == 'PENDING' %}bg-warning text-dark
+                                            {% elif item.obj.status == 'GRADING' %}bg-info
+                                            {% elif item.obj.status == 'COMPILE_ERROR' %}bg-danger
+                                            {% elif item.obj.status == 'RUNTIME_ERROR' %}bg-danger
                                             {% else %}bg-secondary{% endif %}">
-                                            {{ sub.get_status_display }}
+                                            {{ item.obj.get_status_display }}
                                         </span>
                                     </td>
                                     <td>
-                                        {% if sub.score is not None %}
-                                            <span class="fw-bold">{{ sub.score }}</span>
+                                        {% if item.obj.score is not None %}
+                                        <span class="fw-bold">{{ item.obj.score }}</span>
+                                        {% if item.obj.problem.points %}<small class="text-muted">/ {{ item.obj.problem.points }}</small>{% endif %}
                                         {% else %}
-                                            <span class="text-muted">-</span>
+                                        <span class="text-muted">—</span>
                                         {% endif %}
                                     </td>
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="6" class="text-center py-4 text-muted">暂无提交记录</td>
+                                    <td colspan="6">
+                                        <div class="empty-state">
+                                            <i class="fas fa-inbox"></i>
+                                            <p class="mb-0">暂无提交记录</p>
+                                        </div>
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
                 </div>
-                <div class="card-footer bg-white border-0 text-center py-3">
-                    <a href="{% url 'grading:submission_list' %}" class="btn btn-outline-primary btn-sm">查看所有记录</a>
-                </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    .todo-ico {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        background: #f6f8fb;
+        flex: 0 0 auto;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (typeof echarts === 'undefined') return;
+
+        const trend = JSON.parse(document.getElementById('trend-data').textContent);
+
+        // ---------- 提交趋势 ----------
+        const trendDom = document.getElementById('trend-chart');
+        if (trendDom) {
+            const trendChart = echarts.init(trendDom);
+            trendChart.setOption({
+                grid: { left: 8, right: 12, top: 36, bottom: 6, containLabel: true },
+                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                legend: { right: 0, top: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: '#94a3b8', fontSize: 11 } },
+                xAxis: {
+                    type: 'category',
+                    data: trend.labels,
+                    axisLine: { lineStyle: { color: '#e6ebf2' } },
+                    axisTick: { show: false },
+                    axisLabel: { color: '#94a3b8', fontSize: 11 }
+                },
+                yAxis: [
+                    {
+                        type: 'value',
+                        name: '提交量',
+                        nameTextStyle: { color: '#94a3b8', fontSize: 11 },
+                        splitLine: { lineStyle: { color: '#f1f4f9' } },
+                        axisLabel: { color: '#94a3b8', fontSize: 11 }
+                    },
+                    {
+                        type: 'value',
+                        name: '得分率 %',
+                        min: 0,
+                        max: 100,
+                        nameTextStyle: { color: '#94a3b8', fontSize: 11 },
+                        splitLine: { show: false },
+                        axisLabel: { color: '#94a3b8', fontSize: 11, formatter: '{value}' }
+                    }
+                ],
+                series: [
+                    {
+                        name: '提交量',
+                        type: 'bar',
+                        barMaxWidth: 18,
+                        itemStyle: { color: '#0d6efd', borderRadius: [4, 4, 0, 0], opacity: .85 },
+                        data: trend.counts
+                    },
+                    {
+                        name: '得分率',
+                        type: 'line',
+                        yAxisIndex: 1,
+                        smooth: true,
+                        symbol: 'circle',
+                        symbolSize: 5,
+                        itemStyle: { color: '#198754' },
+                        lineStyle: { width: 2 },
+                        areaStyle: { color: 'rgba(25, 135, 84, .06)' },
+                        data: trend.rates
+                    }
+                ]
+            });
+            window.addEventListener('resize', function () { trendChart.resize(); });
+        }
+
+        // ---------- 状态分布 ----------
+        const statusDom = document.getElementById('status-chart');
+        const statusData = JSON.parse(document.getElementById('status-data').textContent);
+        if (statusDom && statusData.length) {
+            const toneColor = {
+                success: '#198754', warning: '#ffc107', danger: '#dc3545',
+                info: '#0dcaf0', primary: '#0d6efd', secondary: '#94a3b8'
+            };
+            const statusChart = echarts.init(statusDom);
+            statusChart.setOption({
+                tooltip: { trigger: 'item', formatter: '{b}: {c} 条 ({d}%)' },
+                legend: {
+                    type: 'scroll',
+                    bottom: 0,
+                    itemWidth: 9,
+                    itemHeight: 9,
+                    textStyle: { color: '#94a3b8', fontSize: 11 }
+                },
+                series: [{
+                    type: 'pie',
+                    radius: ['46%', '68%'],
+                    center: ['50%', '44%'],
+                    avoidLabelOverlap: true,
+                    itemStyle: { borderColor: '#fff', borderWidth: 2 },
+                    label: { show: false },
+                    data: statusData.map(function (item) {
+                        return {
+                            name: item.label,
+                            value: item.count,
+                            itemStyle: { color: toneColor[item.tone] || '#94a3b8' }
+                        };
+                    })
+                }]
+            });
+            window.addEventListener('resize', function () { statusChart.resize(); });
+        }
+    });
+</script>
 {% endblock %}
