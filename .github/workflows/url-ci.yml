@@ -63,6 +63,17 @@ jobs:
       - name: 检出代码
         uses: actions/checkout@v4
 
+      - name: 检查硬编码密钥
+        run: |
+          # 放在最前面：不装依赖就能判定，失败得快。
+          # 历史背景：__init__.py 的部署注释里曾提交过 GitHub PAT，触发 secret scanning 告警。
+          PATTERN='ghp_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|sk-[A-Za-z0-9]{20,}|AKID[A-Za-z0-9]{10,}|-----BEGIN [A-Z ]*PRIVATE KEY-----'
+          if git grep -nE "$PATTERN" -- . ':!*.lock' ':!package-lock.json'; then
+            echo "::error::发现疑似硬编码密钥，请改为从 config.py 或环境变量读取"
+            exit 1
+          fi
+          echo "未发现硬编码密钥"
+
       - name: 配置 Python
         uses: actions/setup-python@v5
         with:
