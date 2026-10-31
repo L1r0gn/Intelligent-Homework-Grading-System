@@ -21,12 +21,12 @@ def admin_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return redirect('login')
+            return redirect('user:login')
         if request.user.user_attribute < 3:
             logger.info("%s 的权限等级为 %s",request.user.username, request.user.user_attribute)
             logger.info("%s 没有权限访问该页面", request.user.username)
             messages.error(request, "您没有权限访问该页面。")
-            return redirect('question_list')  # 或重定向到首页
+            return redirect('question:problem_list')  # 或重定向到首页
         return view_func(request, *args, **kwargs)
     return _wrapped_view
 @csrf_exempt
@@ -198,9 +198,9 @@ def regrade_submission_view(request, submission_id):
         # --- 这里是核心：调用您已有的Celery异步任务 ---
         process_and_grade_submission.delay(submission_id=submission.id)
         # 将用户重定向回作业详情页
-        return redirect('submission_list')
+        return redirect('grading:submission_list')
     # 如果是GET或其他方法的请求，直接重定向走，不处理
-    return redirect('submission_list')
+    return redirect('grading:submission_list')
 
 def serve_submission_image(request, submission_id):
     try:
@@ -463,7 +463,7 @@ def submission_batch_action(request):
         
         if not action or not selected_ids:
             messages.error(request, "请选择要操作的记录和操作类型")
-            return redirect('submission_list')
+            return redirect('grading:submission_list')
 
         try:
             # 获取选中的提交记录
@@ -498,7 +498,7 @@ def submission_batch_action(request):
             logger.error(f"批量操作失败: {str(e)}")
             messages.error(request, f"批量操作失败: {str(e)}")
     
-    return redirect('submission_list')
+    return redirect('grading:submission_list')
 
 def getSubmissionsByAssignmentId(request, assignment_id):
     try:
@@ -544,3 +544,16 @@ def getSubmissionsByAssignmentId(request, assignment_id):
     except Exception as e:
         logger.error(f"Error in getSubmissionsByAssignmentId: {str(e)}")
         return JsonResponse({"error": "Internal Server Error"}, status=500)
+
+
+@csrf_exempt
+def submission_collection(request):
+    """
+    提交资源的统一入口（/api/v1/submissions/）：
+    - POST：提交作业，交给 submissionprocess 处理
+    - GET ：查询当前学生的提交列表，交给 showMySubmissions 处理
+    """
+    if request.method == 'POST':
+        return submissionprocess(request)
+    return showMySubmissions(request)
+

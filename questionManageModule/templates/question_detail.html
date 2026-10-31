@@ -81,13 +81,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     <button type="button" class="btn btn-info text-white" data-bs-toggle="modal" data-bs-target="#latexPreviewModal">
                         <i class="fas fa-calculator me-2"></i>LaTeX预览
                     </button>
-                    <a href="{% url 'question_update' question.id %}" class="btn btn-warning">
+                    <a href="{% url 'question:problem_update' question.id %}" class="btn btn-warning">
                         <i class="fas fa-pencil-alt me-2"></i>编辑
                     </a>
-                    <a href="{% url 'question_delete' question.id %}" class="btn btn-danger" onclick="return confirm('确定要删除这个问题吗？')">
+                    <a href="{% url 'question:problem_delete' question.id %}" class="btn btn-danger" onclick="return confirm('确定要删除这个问题吗？')">
                         <i class="fas fa-trash-alt me-2"></i>删除
                     </a>
-                    <a href="{% url 'question_list' %}" class="btn btn-secondary">返回列表</a>
+                    <a href="{% url 'question:problem_list' %}" class="btn btn-secondary">返回列表</a>
                 </div>
             </div>
         </div>

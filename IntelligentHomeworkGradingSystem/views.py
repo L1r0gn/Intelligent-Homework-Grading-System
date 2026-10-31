@@ -17,14 +17,14 @@ logger = logging.getLogger(__name__)
 def helloWorld(request):
     return HttpResponse("Hello World!")
 
-@login_required(login_url='login')
+@login_required(login_url='user:login')
 def dashboard(request):
     """
     系统首页仪表盘
     """
     # 学生直接重定向到学生端
     if request.user.user_attribute == 1:
-        return redirect('student_homework')
+        return redirect('student_assignments')
 
     context = {
         'user_count': User.objects.count(),

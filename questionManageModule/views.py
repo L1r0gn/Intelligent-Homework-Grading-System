@@ -29,7 +29,7 @@ def admin_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return redirect(f"{reverse('login')}?next={request.path}")
+            return redirect(f"{reverse('user:login')}?next={request.path}")
         if request.user.user_attribute < 3:
             messages.error(request, "您没有权限访问该页面。")
             return redirect('dashboard')
@@ -73,7 +73,7 @@ def knowledge_point_create(request):
         if name and subject_id:
             KnowledgePoint.objects.create(name=name, subject_id=subject_id, description=description)
             messages.success(request, '知识点创建成功')
-            return redirect('knowledge_point_list')
+            return redirect('question:kp_list')
         else:
             messages.error(request, '名称和所属科目不能为空')
 
@@ -91,7 +91,7 @@ def knowledge_point_update(request, kp_id):
         kp.description = request.POST.get('description', '')
         kp.save()
         messages.success(request, '知识点更新成功')
-        return redirect('knowledge_point_list')
+        return redirect('question:kp_list')
 
     subjects = Subject.objects.annotate(question_count=Count('problem'))
     return render(request, 'knowledge_point_form.html', {'kp': kp, 'subjects': subjects, 'action': '编辑'})
@@ -104,7 +104,7 @@ def knowledge_point_delete(request, kp_id):
     if request.method == 'POST':
         kp.delete()
         messages.success(request, '知识点已删除')
-    return redirect('knowledge_point_list')
+    return redirect('question:kp_list')
 
 
 # ==========================================
@@ -266,7 +266,7 @@ def question_create(request):
             )
 
             messages.success(request, '问题创建成功')
-            return redirect('question_list')
+            return redirect('question:problem_list')
 
         except Exception as e:
             logger.error('问题创建失败:%s', str(e), exc_info=True)
@@ -358,7 +358,7 @@ def question_update(request, question_id):
                 question.save()
 
             messages.success(request, f'问题 #{question.id} 更新成功')
-            return redirect('question_detail', question_id=question.id)
+            return redirect('question:problem_detail', question_id=question.id)
 
         except Exception as e:
             logger.error(f"更新错误: {e}")
@@ -376,7 +376,7 @@ def question_delete(request, question_id):
     if request.method == 'POST':
         question.delete()
         messages.success(request, '问题删除成功')
-        return redirect('question_list')
+        return redirect('question:problem_list')
     return render(request, 'question_confirm_delete.html', {'question': question})
 
 
@@ -386,7 +386,7 @@ def question_batch_action(request):
         action = request.POST.get('action')
         selected_ids = request.POST.getlist('selected_ids')
         if not action or not selected_ids:
-            return redirect('question_list')
+            return redirect('question:problem_list')
 
         queryset = Problem.objects.filter(pk__in=selected_ids)
         if action == 'delete':
@@ -396,7 +396,7 @@ def question_batch_action(request):
         elif action == 'enable':
             queryset.update(is_active=True)
 
-    return redirect('question_list')
+    return redirect('question:problem_list')
 
 
 # 剩下的 AJAX 和 Import 函数请直接保留原样，无需修改
@@ -644,7 +644,7 @@ def question_batch_import_json(request):
             # request.session['import_defaults'] = { ... }
 
             messages.info(request, f'JSON文件已解析。请审核并修改以下 {len(review_items)} 条待导入题目。')
-            return redirect('question_import_review')
+            return redirect('question:problem_import_review')
 
         except (json.JSONDecodeError, TypeError) as e:
             messages.error(request, f'JSON格式错误: {e}')
@@ -652,7 +652,7 @@ def question_batch_import_json(request):
             logger.error(f'批量导入预处理失败：{str(e)}', exc_info=True)
             messages.error(request, f'处理文件时发生严重错误：{str(e)}')
 
-        return redirect('question_batch_import_json')
+        return redirect('question:problem_import')
     else:
         # GET 请求逻辑不变
         subjects = Subject.objects.annotate(question_count=Count('problem'))
@@ -672,7 +672,7 @@ def question_import_review(request):
 
     if not review_items:
         messages.warning(request, '没有待审核的题目数据，请先上传文件。')
-        return redirect('question_batch_import_json')
+        return redirect('question:problem_import')
 
     if request.method == 'POST':
         success_count = 0
@@ -739,7 +739,7 @@ def question_import_review(request):
             error_html = '<ul>' + ''.join(f'<li>{error}</li>' for error in error_items) + '</ul>'
             messages.error(request, f'导入失败 {len(error_items)} 条，详情如下：{error_html}', extra_tags='safe')
 
-        return redirect('question_list')
+        return redirect('question:problem_list')
 
     # GET请求时，需要传递所有可选的科目和题型到模板，用于生成下拉框
     else:

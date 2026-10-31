@@ -9,12 +9,12 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item"><a href="{% url 'assignment_list' %}">作业管理</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'assignment:list' %}">作业管理</a></li>
                 <li class="breadcrumb-item active" aria-current="page">作业详情</li>
             </ol>
         </nav>
         <div>
-            <a href="{% url 'assignment_list' %}" class="btn btn-secondary">
+            <a href="{% url 'assignment:list' %}" class="btn btn-secondary">
                 <i class="fas fa-arrow-left me-1"></i>返回列表
             </a>
         </div>
@@ -174,7 +174,7 @@
                                     </td>
                                     <td class="text-center">
                                         {% if status.submission %}
-                                        <a href="{% url 'submission_detail' status.submission.id %}"
+                                        <a href="{% url 'grading:submission_detail' status.submission.id %}"
                                             class="btn btn-sm btn-outline-primary">
                                             查看提交
                                         </a>

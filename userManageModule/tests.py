@@ -82,19 +82,19 @@ class AdminViewTest(TestCase):
 
     def test_admin_access_user_list(self):
         self.client.login(username='admin', password='password')
-        response = self.client.get(reverse('user_list'))
+        response = self.client.get(reverse('user:user_list'))
         self.assertEqual(response.status_code, 200)
 
     def test_non_admin_access_denied(self):
         self.client.login(username='student', password='password')
-        response = self.client.get(reverse('user_list'))
+        response = self.client.get(reverse('user:user_list'))
         # Should redirect to question_list or dashboard depending on implementation, or show error
         # Based on admin_required decorator logic: redirect to question_list or dashboard
         self.assertEqual(response.status_code, 302) 
 
     def test_user_add_view(self):
         self.client.login(username='admin', password='password')
-        response = self.client.post(reverse('user_add'), {
+        response = self.client.post(reverse('user:user_create'), {
             'username': 'createduser',
             'password': 'password123',
             'password_confirm': 'password123',
@@ -114,12 +114,12 @@ class ClassViewTest(TestCase):
         self.cls = className.objects.create(name='Test Class', created_by=self.admin_user)
 
     def test_class_list_view(self):
-        response = self.client.get(reverse('class_list_web'))
+        response = self.client.get(reverse('user:class_list'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Test Class')
 
     def test_class_create_view(self):
-        response = self.client.post(reverse('class_create_web'), {
+        response = self.client.post(reverse('user:class_create'), {
             'name': 'New Web Class',
             'grade': '2025'
         })
@@ -127,19 +127,19 @@ class ClassViewTest(TestCase):
         self.assertTrue(className.objects.filter(name='New Web Class').exists())
 
     def test_class_detail_view(self):
-        response = self.client.get(reverse('class_detail_web', args=[self.cls.id]))
+        response = self.client.get(reverse('user:class_detail', args=[self.cls.id]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.cls.name)
 
     def test_add_student_to_class(self):
-        response = self.client.post(reverse('class_add_student_web', args=[self.cls.id]), {
+        response = self.client.post(reverse('user:class_student_add', args=[self.cls.id]), {
             'student': self.student_user.id
         })
         self.assertEqual(response.status_code, 302)
         self.assertIn(self.student_user, self.cls.members.all())
 
     def test_add_teacher_to_class(self):
-        response = self.client.post(reverse('class_add_teacher_web', args=[self.cls.id]), {
+        response = self.client.post(reverse('user:class_teacher_add', args=[self.cls.id]), {
             'teacher': self.teacher_user.id,
             'subject': 'Math'
         })
@@ -147,7 +147,7 @@ class ClassViewTest(TestCase):
         self.assertTrue(ClassTeacher.objects.filter(class_obj=self.cls, teacher=self.teacher_user, subject='Math').exists())
 
     def test_search_student_api(self):
-        response = self.client.get(reverse('search_students_api'), {'q': 'student'})
+        response = self.client.get(reverse('user_api:student_search'), {'q': 'student'})
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertTrue(len(data['results']) > 0)

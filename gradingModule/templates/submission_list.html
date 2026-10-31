@@ -87,12 +87,12 @@
                 </div>
                 <div class="col-md-2">
                     <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter me-1"></i> 筛选</button>
-                    <a href="{% url 'submission_list' %}" class="btn btn-secondary w-100 mt-2"><i class="fas fa-undo me-1"></i> 重置</a>
+                    <a href="{% url 'grading:submission_list' %}" class="btn btn-secondary w-100 mt-2"><i class="fas fa-undo me-1"></i> 重置</a>
                 </div>
             </form>
         </div>
 
-        <form method="POST" action="{% url 'submission_batch_action' %}" id="batch-action-form">
+        <form method="POST" action="{% url 'grading:submission_batch' %}" id="batch-action-form">
             {% csrf_token %}
             <div class="card shadow-sm">
                 <div class="card-header bg-light d-flex justify-content-between align-items-center">
@@ -150,7 +150,7 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <a href="{% url 'submission_detail' submission.id %}" class="btn btn-sm btn-info">
+                                        <a href="{% url 'grading:submission_detail' submission.id %}" class="btn btn-sm btn-info">
                                             <i class="fas fa-search me-1"></i> 查看详情
                                         </a>
                                     </td>

@@ -303,7 +303,7 @@ function getEmptyLineOption() {
 async function loadStudentList() {
     try {
         // 使用用户管理模块的API来获取学生列表
-        const response = await fetchWithCSRF('/user/api/student/search/?q=');
+        const response = await fetchWithCSRF('/api/v1/students/search/?q=');
         const data = await response.json();
         
         const select = document.getElementById('studentSelect');

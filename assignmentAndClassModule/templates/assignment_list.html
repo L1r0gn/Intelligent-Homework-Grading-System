@@ -34,7 +34,7 @@
                     <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-1"></i> 搜索</button>
                 </div>
                 <div class="col-md-2">
-                    <a href="{% url 'assignment_list' %}" class="btn btn-secondary w-100"><i
+                    <a href="{% url 'assignment:list' %}" class="btn btn-secondary w-100"><i
                             class="fas fa-undo me-1"></i> 重置</a>
                 </div>
             </form>
@@ -60,7 +60,7 @@
                     <tr>
                         <td>{{ assignment.id }}</td>
                         <td>
-                            <a href="{% url 'assignment_detail' assignment.id %}" class="fw-bold text-decoration-none">
+                            <a href="{% url 'assignment:detail' assignment.id %}" class="fw-bold text-decoration-none">
                                 {{ assignment.title }}
                             </a>
                         </td>
@@ -85,7 +85,7 @@
                         <td>{{ assignment.created_at|date:"Y-m-d H:i" }}</td>
                         <td class="text-center">
                             <div class="btn-group btn-group-sm">
-                                <a href="{% url 'assignment_detail' assignment.id %}" class="btn btn-info" title="查看详情">
+                                <a href="{% url 'assignment:detail' assignment.id %}" class="btn btn-info" title="查看详情">
                                     <i class="fas fa-eye"></i>
                                 </a>
                                 <!-- 预留编辑和删除按钮位置 -->

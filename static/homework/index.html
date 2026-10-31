@@ -645,7 +645,7 @@ async function apiRequest(url, options = {}) {
         const refresh = getRefreshToken();
         if (refresh) {
             try {
-                const refreshResp = await fetch(API_BASE + '/user/api/token/refresh/', {
+                const refreshResp = await fetch(API_BASE + '/api/v1/auth/token/refresh/', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ refresh })
@@ -771,7 +771,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
     document.getElementById('loginBtnSpinner').classList.remove('d-none');
 
     try {
-        const resp = await fetch(API_BASE + '/user/api/token/', {
+        const resp = await fetch(API_BASE + '/api/v1/auth/token/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
@@ -828,7 +828,7 @@ async function loadAssignments() {
     listEl.innerHTML = `<div class="loading-spinner"><div class="text-center"><div class="spinner-border mb-2"></div><div>加载作业列表...</div></div></div>`;
 
     try {
-        const result = await apiJson('/assignment/wx/show_assignment/');
+        const result = await apiJson('/api/v1/students/me/assignments/');
         if (result.success === false) {
             throw new Error(result.error || '加载失败');
         }
@@ -926,7 +926,7 @@ let metaData = { subjects: [], problemTypes: [], knowledgePoints: [] };
 
 async function loadMetaData() {
     try {
-        const result = await apiJson('/assignment/wx/get_problem_meta_data/');
+        const result = await apiJson('/api/v1/questions/meta/');
         if (result.success && result.data) {
             metaData = result.data;
             populateFilters();
@@ -1018,7 +1018,7 @@ async function openRandomQuestion() {
     listEl.innerHTML = `<div class="loading-spinner"><div class="text-center"><div class="spinner-border mb-2"></div><div>正在智能推荐题目...</div></div></div>`;
 
     try {
-        const result = await apiJson('/question/wx/detail/random/');
+        const result = await apiJson('/api/v1/questions/random/');
         if (result.error) throw new Error(result.error);
         const q = result.question;
         if (q && q.id) {
@@ -1345,7 +1345,7 @@ async function submitAnswer() {
             body.submitted_text = submittedText;
         }
 
-        const resp = await apiRequest('/grading/wx/submit/', {
+        const resp = await apiRequest('/api/v1/submissions/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body)

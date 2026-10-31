@@ -86,7 +86,7 @@ def grade_submission_with_ai(standard_answer, total_score, submission_id=None, a
     logger.info(f'开始 AI 评分，标准答案: {standard_answer}')
 
     # 优先使用 URL，如果需要也可以切换为 Base64
-    image_url = f"{settings.SERVER_BASE_URL}/grading/submission-image/{submission_id}"
+    image_url = f"{settings.SERVER_BASE_URL}/api/v1/submissions/{submission_id}/image/"
     logger.info(f"图片 URL: {image_url}")
 
     # 构建自定义提示词部分

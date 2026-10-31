@@ -7,10 +7,10 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2>知识点管理</h2>
         <div>
-            <a href="{% url 'question_list' %}" class="btn btn-outline-secondary me-2">
+            <a href="{% url 'question:problem_list' %}" class="btn btn-outline-secondary me-2">
                 <i class="fas fa-arrow-left"></i> 返回题目列表
             </a>
-            <a href="{% url 'knowledge_point_create' %}" class="btn btn-success">
+            <a href="{% url 'question:kp_create' %}" class="btn btn-success">
                 <i class="fas fa-plus me-2"></i>新建知识点
             </a>
         </div>
@@ -18,7 +18,7 @@
 
     <!-- 搜索栏 -->
     <div class="mb-4">
-        <form method="GET" action="{% url 'knowledge_point_list' %}" class="d-flex">
+        <form method="GET" action="{% url 'question:kp_list' %}" class="d-flex">
             <input class="form-control me-2" type="search" placeholder="搜索知识点名称、所属科目..." name="q" value="{{ search_query|default_if_none:'' }}">
             <button class="btn btn-outline-secondary" type="submit">
                 <i class="fas fa-search"></i> 搜索
@@ -48,7 +48,7 @@
                             <td class="fw-bold">{{ kp.name }}</td>
                             <td class="text-muted">{{ kp.description|truncatechars:50 }}</td>
                             <td class="text-center">
-                                <a href="{% url 'knowledge_point_update' kp.id %}" class="btn btn-sm btn-warning" title="编辑">
+                                <a href="{% url 'question:kp_update' kp.id %}" class="btn btn-sm btn-warning" title="编辑">
                                     <i class="fas fa-pencil-alt"></i>
                                 </a>
                                 <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteKpModal{{ kp.id }}" title="删除">
@@ -69,7 +69,7 @@
                                             </div>
                                             <div class="modal-footer">
                                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                                                <form action="{% url 'knowledge_point_delete' kp.id %}" method="POST" class="d-inline">
+                                                <form action="{% url 'question:kp_delete' kp.id %}" method="POST" class="d-inline">
                                                     {% csrf_token %}
                                                     <button type="submit" class="btn btn-danger">确认删除</button>
                                                 </form>
