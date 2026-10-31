@@ -1,6 +1,5 @@
 **/__pycache__/
 debug.log
-*/migrations/
 config.py
 .venv/
 .vscode/

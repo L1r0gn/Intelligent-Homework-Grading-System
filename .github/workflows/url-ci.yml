@@ -89,8 +89,8 @@ jobs:
       - name: Django 自检
         run: python manage.py check
 
-      - name: 路由规范测试
-        run: python manage.py test tests.test_url_convention -v 2
+      - name: 路由规范与迁移健康度测试
+        run: python manage.py test tests -v 2
 
       - name: 导出路由清单
         if: always()
