@@ -78,12 +78,13 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if assignment.status == 'PUBLISHED' %}
-                            <span class="badge bg-success">已发布</span>
-                            {% elif assignment.status == 'DRAFT' %}
-                            <span class="badge bg-secondary">草稿</span>
+                            {# 作业本身没有状态字段（创建即发布）；这一列展示该作业的批改进度 #}
+                            {% if not assignment.submitted_count %}
+                            <span class="badge bg-secondary">未提交</span>
+                            {% elif assignment.graded_count >= assignment.submitted_count %}
+                            <span class="badge bg-success">已批改 {{ assignment.graded_count }}/{{ assignment.submitted_count }}</span>
                             {% else %}
-                            <span class="badge bg-warning text-dark">{{ assignment.status }}</span>
+                            <span class="badge bg-warning text-dark">已批改 {{ assignment.graded_count }}/{{ assignment.submitted_count }}</span>
                             {% endif %}
                         </td>
                         <td>{{ assignment.created_at|date:"Y-m-d H:i" }}</td>

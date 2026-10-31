@@ -18,6 +18,11 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from userManageModule.decorators import jwt_login_required, admin_required
 
 from .models import Assignment, className, AssignmentStatus
+from gradingModule.models import Submission
+
+# 学生端「作业状态」的展示文案 = 批改状态（取自 Submission）+ 一个真正属于作业侧的状态
+SUBMISSION_STATUS_TEXT = dict(Submission.STATUS_CHOICES)
+SUBMISSION_STATUS_TEXT[AssignmentStatus.NOT_SUBMITTED] = '待完成'
 
 @admin_required
 def assignment_list_web(request):
@@ -27,13 +32,19 @@ def assignment_list_web(request):
     assignments = Assignment.objects.all().select_related('teacher', 'target_class', 'problem').order_by('-created_at')
 
     # 筛选逻辑
-    search_query = request.GET.get('search_query', '').strip()
+    search_query = request.GET.get('search_query', '').strip() or request.GET.get('q', '').strip()
     class_filter = request.GET.get('class_filter', '').strip()
     teacher_filter = request.GET.get('teacher_filter', '').strip()
-    status_filter = request.GET.get('status_filter', '').strip()
+    # 模板下拉框的 name 是 status，这里统一取 status
+    status_filter = request.GET.get('status', '').strip() or request.GET.get('status_filter', '').strip()
 
     if search_query:
-        assignments = assignments.filter(title__icontains=search_query)
+        assignments = assignments.filter(
+            Q(title__icontains=search_query)
+            | Q(target_class__name__icontains=search_query)
+            | Q(teacher__wx_nickName__icontains=search_query)
+            | Q(teacher__username__icontains=search_query)
+        )
     
     if class_filter:
         assignments = assignments.filter(target_class__name__icontains=class_filter)
@@ -45,7 +56,27 @@ def assignment_list_web(request):
         )
         
     if status_filter:
-        assignments = assignments.filter(status=status_filter)
+        # 作业本身没有状态字段，这里的「状态」指该作业下提交记录的批改状态。
+        # 旧代码写的是 assignments.filter(status=...)，Assignment 上根本没有该字段，
+        # 只要带状态筛选就会 FieldError 500。
+        assignments = assignments.filter(
+            assignmentstatus__submission__status__in=Submission.status_filter_values(status_filter)
+        ).distinct()
+
+    # 汇总批改进度：状态列与统计都用这三个注解，避免逐行再查库
+    assignments = assignments.annotate(
+        member_count=Count('target_class__members', distinct=True),
+        submitted_count=Count(
+            'assignmentstatus',
+            filter=Q(assignmentstatus__submission__isnull=False),
+            distinct=True,
+        ),
+        graded_count=Count(
+            'assignmentstatus',
+            filter=Q(assignmentstatus__submission__status=Submission.STATUS_GRADED),
+            distinct=True,
+        ),
+    )
 
     # 分页
     paginator = Paginator(assignments, 20)  # 每页20条
@@ -54,10 +85,14 @@ def assignment_list_web(request):
 
     context = {
         'page_obj': page_obj,
+        'total_count': paginator.count,
         'search_query': search_query,
+        'query': search_query,
         'class_filter': class_filter,
         'teacher_filter': teacher_filter,
         'status_filter': status_filter,
+        # 状态筛选的候选项直接来自模型，和提交记录页共用同一套枚举
+        'status_choices': Submission.STATUS_CHOICES,
     }
     return render(request, 'assignment_list.html', context)
 
@@ -74,7 +109,7 @@ def assignment_detail_web(request, assignment_id):
     # 统计数据
     total_students = student_statuses.count()
     submitted_count = student_statuses.filter(submission__isnull=False).count()
-    graded_count = student_statuses.filter(submission__status='GRADED').count() # 假设 'GRADED' 是已批改状态
+    graded_count = student_statuses.filter(submission__status=Submission.STATUS_GRADED).count()
     
     # 计算平均分（仅计算已提交且有分数的）
     average_score_data = student_statuses.filter(submission__score__isnull=False).aggregate(Avg('submission__score'))
@@ -299,12 +334,16 @@ def student_assignments(request):
     for assignment in assignments:
         assignmentStatusOfThisAssignment = assignment.assignmentstatus_set.filter(assignment=assignment).first()
         # 5. 处理作业状态
-        if assignmentStatusOfThisAssignment and assignmentStatusOfThisAssignment.submission:
-            assignment_status = assignmentStatusOfThisAssignment.submission.status
+        # 【关键区分】"学生还没交作业" 和 "作业交了但等着批改" 是两件事。
+        # 过去两者都返回 'PENDING'，前端只能靠猜；现在未提交用 NOT_SUBMITTED 单独表示，
+        # 已提交才回落到 Submission 的批改状态。
+        submission = assignmentStatusOfThisAssignment.submission if assignmentStatusOfThisAssignment else None
+        if submission:
+            assignment_status = submission.status
             submitted_at = assignmentStatusOfThisAssignment.submitted_at.strftime(
                 '%Y-%m-%d %H:%M') if assignmentStatusOfThisAssignment.submitted_at else None
         else:
-            assignment_status = 'PENDING'
+            assignment_status = AssignmentStatus.NOT_SUBMITTED
             submitted_at = None
 
         assignments_data.append({
@@ -317,20 +356,15 @@ def student_assignments(request):
             'deadline': assignment.deadline.strftime('%Y-%m-%d %H:%M') if assignment.deadline else None,
             'problem_id': assignment.problem.id if assignment.problem else None,
             'problem_title': assignment.problem.title if assignment.problem else '传统作业',
-            'score': assignmentStatusOfThisAssignment.submission.score if assignmentStatusOfThisAssignment and assignmentStatusOfThisAssignment.submission else None,
+            'score': submission.score if submission else None,
             'student_count': assignment.assignmentstatus_set.count(),
             'submit_count': assignment.assignmentstatus_set.filter(submission__isnull=False).count(),
+            'submitted': submission is not None,
+            # status 是学生的作业完成状态；grading_status 只在已提交时给出，语义不再混用
             'status': assignment_status,
-            'status_text': {
-                'PENDING': '待完成',
-                'GRADING': '批改中',
-                'SUBMITTED': '已提交',
-                'GRADED': '已批改',
-                'ACCEPTED': '答案正确',
-                'WRONG_ANSWER': '答案错误',
-                'COMPILE_ERROR': '编译错误',
-                'RUNTIME_ERROR': '运行错误'
-            }.get(assignment_status, '未知'),
+            'grading_status': submission.status if submission else None,
+            'is_correct': submission.is_correct if submission else None,
+            'status_text': SUBMISSION_STATUS_TEXT.get(assignment_status, '未提交' if not submission else '未知'),
             'submitted_at': submitted_at,
         })
     return JsonResponse({
@@ -450,21 +484,24 @@ def get_student_homework_detail(request, assignment_id):
     if not student.class_in.filter(id=assignment.target_class.id).exists():
         return JsonResponse({'success': False, 'error': '您不是该班级成员，无法查看此作业'}, status=403)
     # 获取作业状态
+    # AssignmentStatus 自迁移 0007 起已没有 status 字段（状态由关联的 Submission 决定），
+    # 这里再传 defaults={'status': ...} 会直接 TypeError，学生一点开作业详情就 500。
     status_obj, created = AssignmentStatus.objects.get_or_create(
         assignment=assignment,
         student=student,
-        defaults={'status': 'PENDING'}
     )
 
     # 获取题目状态
     problem = assignment.problem
 
-    if status_obj.submission:
-        status = status_obj.submission.status
-        score = status_obj.submission.score
+    submission = status_obj.submission
+    if submission:
+        status = submission.status
+        score = submission.score
     else:
-        status = 'PENDING'
-        score = 0
+        # 未提交 ≠ 待批改，用独立取值表达
+        status = AssignmentStatus.NOT_SUBMITTED
+        score = None
 
     data = {
         'assignment_id': assignment.id,
@@ -473,6 +510,10 @@ def get_student_homework_detail(request, assignment_id):
         'deadline': assignment.deadline.strftime('%Y-%m-%d %H:%M') if assignment.deadline else None,
         'assignment_status_id': status_obj.id,
         'status': status,
+        'status_text': SUBMISSION_STATUS_TEXT.get(status, '未知'),
+        'grading_status': submission.status if submission else None,
+        'is_correct': submission.is_correct if submission else None,
+        'submitted': submission is not None,
         'score': score,
         'submitted_at': status_obj.submitted_at.strftime('%Y-%m-%d %H:%M') if status_obj.submitted_at else None,
     }
@@ -539,7 +580,9 @@ def teacher_get_assignments_detail(request, class_id, assignment_id):
 
         for stu in assignment.target_class.members.all():
             status_obj = AssignmentStatus.objects.filter(student=stu, assignment=assignment).first()
-            if status_obj and status_obj.submission and status_obj.submission.status != 'PENDING':
+            # 「已提交」的判据是有没有提交记录。过去比的是 status != 'PENDING'，
+            # 而 PENDING 现在表示"待批改"（已经交了），那个条件会把待批改的学生漏掉。
+            if status_obj and status_obj.submission:
                 submittedCount += 1
 
         problem = assignment.problem
@@ -605,20 +648,23 @@ def teacher_get_students_assignments_list(request, class_id, assignment_id):
             ).first()
 
             is_submitted = False
-            status_text = '未提交'
+            status_code = AssignmentStatus.NOT_SUBMITTED
             score = None
 
             if assignment_status and assignment_status.submission:
-                status_text = assignment_status.submission.status
+                status_code = assignment_status.submission.status
                 score = assignment_status.submission.score
-                if status_text != 'PENDING':
-                    is_submitted = True
+                # 有提交记录就是已交，与批改进度无关
+                is_submitted = True
 
             student_data = {
                 'id': stu.id,
                 'name': stu.wx_nickName,
                 'submitted': is_submitted,
-                'status': status_text,
+                'status': status_code,
+                'status_text': SUBMISSION_STATUS_TEXT.get(status_code, '未知'),
+                'is_correct': assignment_status.submission.is_correct
+                if assignment_status and assignment_status.submission else None,
                 'score': score
             }
             student_list.append(student_data)

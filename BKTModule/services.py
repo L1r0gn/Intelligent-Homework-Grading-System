@@ -310,7 +310,7 @@ class BKTService:
                 # 2. 获取该学生的所有已批改提交记录（按时间顺序）
                 submissions = Submission.objects.filter(
                     student_id=student_id,
-                    status__in=['ACCEPTED', 'GRADED', 'WRONG_ANSWER']  # 只处理已批改的
+                    status=Submission.STATUS_GRADED  # 只有已批改的记录能进 BKT
                 ).select_related('problem').order_by('submitted_time')
                 
                 logger.info(f"找到 {submissions.count()} 条提交记录")
@@ -327,16 +327,10 @@ class BKTService:
                         if not knowledge_points.exists():
                             continue
                             
-                        # 判断答题是否正确
-                        if submission.problem.problem_type.name == "选择":
-                            is_correct = (submission.status == 'ACCEPTED')
-                        else:
-                            # 主观题按得分率判断（60%以上为正确）
-                            is_correct = (
-                                submission.score and 
-                                submission.problem.points and 
-                                (submission.score / submission.problem.points) >= 0.6
-                            ) if submission.score is not None and submission.problem.points else False
+                        # 判断答题是否正确：口径统一走 Submission.is_correct
+                        # （客观题满分即正确；主观题按统一阈值判定），
+                        # 不再按题型各写一套规则，否则重算结果和实时批改结果会对不上。
+                        is_correct = submission.is_correct
                         
                         # 为每个知识点创建学习事件
                         for kp in knowledge_points:

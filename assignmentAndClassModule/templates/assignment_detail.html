@@ -147,14 +147,15 @@
                                         <span class="badge bg-secondary">待批改</span>
                                         {% elif status.submission.status == 'GRADING' %}
                                         <span class="badge bg-info">批改中</span>
-                                        {% elif status.submission.status == 'SUBMITTED' %}
-                                        <span class="badge bg-primary">已提交</span>
                                         {% elif status.submission.status == 'GRADED' %}
-                                        <span class="badge bg-success">已批改</span>
-                                        {% elif status.submission.status == 'ACCEPTED' %}
-                                        <span class="badge bg-success">答案正确</span>
-                                        {% elif status.submission.status == 'WRONG_ANSWER' %}
-                                        <span class="badge bg-danger">答案错误</span>
+                                        <span class="badge bg-success">{{ status.submission.get_status_display }}</span>
+                                        {% if status.submission.is_correct %}
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">正确</span>
+                                        {% else %}
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle">错误</span>
+                                        {% endif %}
+                                        {% elif status.submission.is_failed %}
+                                        <span class="badge bg-danger">{{ status.submission.get_status_display }}</span>
                                         {% else %}
                                         <span class="badge bg-secondary">{{ status.submission.status }}</span>
                                         {% endif %}

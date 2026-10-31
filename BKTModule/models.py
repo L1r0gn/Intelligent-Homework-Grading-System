@@ -284,7 +284,9 @@ class BKTClassAnalytics(models.Model):
     calculated_at = models.DateTimeField(auto_now=True, verbose_name="计算时间")
     
     class Meta:
-        unique_together = ('class_identifier', 'knowledge_point')
+        # class_type 必须参与唯一性：class_identifier 是字符串，
+        # 「年级 1」和「1 班」可能取到同一个值，缺了 class_type 会互相覆盖统计。
+        unique_together = ('class_identifier', 'class_type', 'knowledge_point')
         verbose_name = "班级BKT分析"
         verbose_name_plural = "班级BKT分析"
         db_table = 'bkt_class_analytics'

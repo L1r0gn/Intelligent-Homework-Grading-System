@@ -87,7 +87,7 @@ from BKTModule.services import BKTService
 BKTService.process_learning_event(
     student_id=submission.student.id,
     knowledge_point_id=knowledge_point.id,
-    is_correct=(submission.status == 'ACCEPTED'),
+    is_correct=submission.is_correct,   # 由得分率派生，见 gradingModule.models.Submission
     submission_id=submission.id
 )
 ```

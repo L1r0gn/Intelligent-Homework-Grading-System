@@ -80,8 +80,8 @@
             {{ form.status }} {# 假设在forms.py中已添加 'class': 'form-select' #}
         </div>
         <div class="col-md-3">
-            <label for="{{ form.assignment.id_for_label }}" class="form-label">作业</label>
-            {{ form.assignment }} {# 假设在forms.py中已添加 'class': 'form-select' #}
+            <label for="{{ form.problem.id_for_label }}" class="form-label">{{ form.problem.label }}</label>
+            {{ form.problem }}
         </div>
         <div class="col-md-4">
             <label for="{{ form.student.id_for_label }}" class="form-label">学生</label>
@@ -116,7 +116,7 @@
                                     <th style="width: 1%;" class="text-center"><input class="form-check-input" type="checkbox" id="select-all-checkbox"></th>
                                     <th>ID</th>
                                     <th>学生</th>
-                                    <th>作业</th>
+                                    <th>题目</th>
                                     <th>提交时间</th>
                                     <th>状态</th>
                                     <th>分数</th>
@@ -133,9 +133,11 @@
                                     <td>{{ submission.submitted_time|date:"Y-m-d H:i" }}</td>
                                     <td>
                                         <span class="badge rounded-pill
-                                            {% if submission.status == 'graded' %}bg-success
-                                            {% elif submission.status == 'processing' %}bg-warning text-dark
-                                            {% elif submission.status == 'error' %}bg-danger
+                                            {% if submission.status == 'GRADED' %}bg-success
+                                            {% elif submission.status == 'GRADING' %}bg-info text-dark
+                                            {% elif submission.status == 'PENDING' %}bg-warning text-dark
+                                            {% elif submission.status == 'COMPILE_ERROR' %}bg-danger
+                                            {% elif submission.status == 'RUNTIME_ERROR' %}bg-danger
                                             {% else %}bg-secondary{% endif %}">
                                             {{ submission.get_status_display }}
                                         </span>
@@ -144,7 +146,7 @@
                                         {% if submission.score is not None %}
                                             <span class="fw-bold text-primary">{{ submission.score }}</span>
                                         {% else %}
-                                            {% if submission.status == 'RUNTIME_ERROR' %}
+                                            {% if submission.is_failed %}
                                             <span class="text-muted">批改过程出错</span>
                                             {% else %}
                                             <span class="text-muted">-</span>

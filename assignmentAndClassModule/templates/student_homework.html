@@ -432,12 +432,10 @@
                 </select>
                 <select class="form-select form-select-sm" id="statusFilter" style="max-width:140px;" onchange="renderAssignments()">
                     <option value="">全部状态</option>
-                    <option value="PENDING">待完成</option>
-                    <option value="SUBMITTED">已提交</option>
+                    <option value="NOT_SUBMITTED">待完成</option>
+                    <option value="PENDING">待批改</option>
                     <option value="GRADING">批改中</option>
                     <option value="GRADED">已批改</option>
-                    <option value="ACCEPTED">答案正确</option>
-                    <option value="WRONG_ANSWER">答案错误</option>
                 </select>
                 <button class="btn btn-sm btn-outline-primary" onclick="loadAssignments()">
                     <i class="fas fa-sync-alt"></i> 刷新
@@ -662,10 +660,9 @@
                 <select class="form-select form-select-sm" id="histStatusFilter" style="max-width:140px;" onchange="loadHistory()">
                     <option value="">全部状态</option>
                     <option value="GRADED">已批改</option>
-                    <option value="ACCEPTED">答案正确</option>
-                    <option value="WRONG_ANSWER">答案错误</option>
                     <option value="PENDING">待批改</option>
                     <option value="GRADING">批改中</option>
+                    <option value="RUNTIME_ERROR">批改失败</option>
                 </select>
                 <button class="btn btn-sm btn-outline-primary" onclick="loadHistory()">
                     <i class="fas fa-sync-alt"></i> 刷新
@@ -1003,10 +1000,11 @@ function renderAssignments() {
     });
 
     // Update stats
+    // 口径：待完成 = 还没交（NOT_SUBMITTED）；批改中 = 交了还没出结果；已批改 = 出了结果
     document.getElementById('statTotal').textContent = allAssignments.length;
-    document.getElementById('statPending').textContent = allAssignments.filter(a => a.status === 'PENDING').length;
-    document.getElementById('statGrading').textContent = allAssignments.filter(a => a.status === 'GRADING' || a.status === 'SUBMITTED').length;
-    document.getElementById('statGraded').textContent = allAssignments.filter(a => ['GRADED','ACCEPTED','WRONG_ANSWER'].includes(a.status)).length;
+    document.getElementById('statPending').textContent = allAssignments.filter(a => a.status === 'NOT_SUBMITTED').length;
+    document.getElementById('statGrading').textContent = allAssignments.filter(a => a.status === 'PENDING' || a.status === 'GRADING').length;
+    document.getElementById('statGraded').textContent = allAssignments.filter(a => a.status === 'GRADED').length;
 
     if (filtered.length === 0) {
         listEl.innerHTML = `<div class="empty-state"><i class="fas fa-inbox"></i><p>暂无匹配的作业</p></div>`;
@@ -1014,20 +1012,18 @@ function renderAssignments() {
     }
 
     const statusMap = {
-        'PENDING': { label: '待完成', class: 'bg-warning text-dark' },
-        'SUBMITTED': { label: '已提交', class: 'bg-primary' },
+        'NOT_SUBMITTED': { label: '待完成', class: 'bg-warning text-dark' },
+        'PENDING': { label: '待批改', class: 'bg-warning text-dark' },
         'GRADING': { label: '批改中', class: 'bg-info text-dark' },
         'GRADED': { label: '已批改', class: 'bg-success' },
-        'ACCEPTED': { label: '答案正确', class: 'bg-success' },
-        'WRONG_ANSWER': { label: '答案错误', class: 'bg-danger' },
         'COMPILE_ERROR': { label: '编译错误', class: 'bg-danger' },
-        'RUNTIME_ERROR': { label: '运行错误', class: 'bg-danger' }
+        'RUNTIME_ERROR': { label: '批改失败', class: 'bg-danger' }
     };
 
     let html = '<div class="row g-3">';
     filtered.forEach(a => {
         const st = statusMap[a.status] || { label: a.status_text || a.status, class: 'bg-secondary' };
-        const isOverdue = a.deadline && new Date(a.deadline) < new Date() && a.status === 'PENDING';
+        const isOverdue = a.deadline && new Date(a.deadline) < new Date() && a.status === 'NOT_SUBMITTED';
         html += `
         <div class="col-12 col-md-6 col-lg-4">
             <div class="assignment-card p-3" onclick="openHomework(${a.id})">
@@ -1227,7 +1223,7 @@ async function openQuestion(questionId) {
             problem_points: q.points || 0,
             problem_content: q.content || '',
             assignment_title: q.title || `题目 #${q.id}`,
-            status: 'PENDING',
+            status: 'NOT_SUBMITTED',
             score: null,
             standardAnswer: q.answer || '',
             analysis: q.analysis || '',
@@ -1292,9 +1288,9 @@ async function openHomework(assignmentId) {
 
         // Status
         const statusMap = {
-            'PENDING': '待完成', 'SUBMITTED': '已提交', 'GRADING': '批改中',
-            'GRADED': '已批改', 'ACCEPTED': '答案正确', 'WRONG_ANSWER': '答案错误',
-            'COMPILE_ERROR': '编译错误', 'RUNTIME_ERROR': '运行错误'
+            'NOT_SUBMITTED': '待完成', 'PENDING': '待批改', 'GRADING': '批改中',
+            'GRADED': '已批改',
+            'COMPILE_ERROR': '编译错误', 'RUNTIME_ERROR': '批改失败'
         };
         document.getElementById('hwStatusText').textContent = statusMap[data.status] || data.status || '未知';
         document.getElementById('hwScore').textContent = data.score !== null && data.score !== undefined ? data.score + ' 分' : '-';
@@ -1447,16 +1443,14 @@ function buildAnswerArea(data) {
     area.innerHTML = html;
 }
 
-// Status display map
+// Status display map（键与 Submission.STATUS_CHOICES 一致；对错看 is_correct，不占状态位）
 const statusMap = {
+    'NOT_SUBMITTED': { label: '待完成', class: 'bg-warning text-dark' },
     'PENDING': { label: '待批改', class: 'bg-warning text-dark' },
-    'SUBMITTED': { label: '已提交', class: 'bg-primary' },
     'GRADING': { label: '批改中', class: 'bg-info text-dark' },
     'GRADED': { label: '已批改', class: 'bg-success' },
-    'ACCEPTED': { label: '答案正确', class: 'bg-success' },
-    'WRONG_ANSWER': { label: '答案错误', class: 'bg-danger' },
     'COMPILE_ERROR': { label: '编译错误', class: 'bg-danger' },
-    'RUNTIME_ERROR': { label: '运行错误', class: 'bg-danger' }
+    'RUNTIME_ERROR': { label: '批改失败', class: 'bg-danger' }
 };
 
 // Choice helpers
@@ -1568,7 +1562,7 @@ async function pollSubmissionResult(submissionId) {
         try {
             const data = await apiJson(`/grading/wx/submissions/${submissionId}/`);
             const status = data.status || '';
-            const finalStatuses = ['GRADED', 'ACCEPTED', 'WRONG_ANSWER', 'COMPILE_ERROR', 'RUNTIME_ERROR'];
+            const finalStatuses = ['GRADED', 'COMPILE_ERROR', 'RUNTIME_ERROR'];
 
             if (finalStatuses.includes(status)) {
                 document.getElementById('submitArea').style.display = 'none';
@@ -1681,7 +1675,7 @@ function displayResult(data) {
     circle.className = 'score-circle';
     if (pct >= 80) circle.classList.add('excellent');
     else if (pct >= 60) circle.classList.add('good');
-    else if (score === 0 && data.status === 'PENDING') circle.classList.add('pending');
+    else if (score === 0 && (data.status === 'PENDING' || data.status === 'GRADING')) circle.classList.add('pending');
     else circle.classList.add('fail');
 
     document.getElementById('scoreValue').textContent = score;
@@ -1696,9 +1690,9 @@ function displayResult(data) {
 
     // Update status text
     const statusMap = {
-        'PENDING': '待批改', 'GRADING': '批改中', 'SUBMITTED': '已提交',
-        'GRADED': '已批改', 'ACCEPTED': '答案正确', 'WRONG_ANSWER': '答案错误',
-        'COMPILE_ERROR': '编译错误', 'RUNTIME_ERROR': '运行错误'
+        'NOT_SUBMITTED': '待完成', 'PENDING': '待批改', 'GRADING': '批改中',
+        'GRADED': '已批改',
+        'COMPILE_ERROR': '编译错误', 'RUNTIME_ERROR': '批改失败'
     };
     document.getElementById('hwStatusText').textContent = statusMap[data.status] || data.status || '未知';
     document.getElementById('hwScore').textContent = score + ' 分';
@@ -1788,8 +1782,10 @@ function renderHistory(data) {
     const hasMore = data.has_more || false;
 
     // Update stats
-    const correctCount = items.filter(i => i.is_correct).length;
-    const gradedItems = items.filter(i => i.status !== 'PENDING' && i.status !== 'GRADING' && i.status !== 'SUBMITTED');
+    // 只有 status === 'GRADED' 才算"已出结果"；正确率的分母也取这一批，
+    // 否则待批改的记录会被算成"做错"，正确率被稀释。
+    const gradedItems = items.filter(i => i.status === 'GRADED');
+    const correctCount = gradedItems.filter(i => i.is_correct).length;
     const totalScore = gradedItems.reduce((sum, i) => sum + (i.student_score || 0), 0);
     const avgScore = gradedItems.length > 0 ? (totalScore / gradedItems.length).toFixed(1) : '-';
     const correctRate = gradedItems.length > 0 ? Math.round((correctCount / gradedItems.length) * 100) + '%' : '-';

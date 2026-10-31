@@ -279,10 +279,9 @@
                                     </td>
                                     <td>
                                         <span class="badge rounded-pill 
-                                            {% if item.obj.status == 'ACCEPTED' %}bg-success
+                                            {% if item.obj.status == 'GRADED' %}bg-success
                                             {% elif item.obj.status == 'PENDING' %}bg-warning text-dark
                                             {% elif item.obj.status == 'GRADING' %}bg-info
-                                            {% elif item.obj.status == 'WRONG_ANSWER' %}bg-danger
                                             {% elif item.obj.status == 'COMPILE_ERROR' %}bg-danger
                                             {% elif item.obj.status == 'RUNTIME_ERROR' %}bg-danger
                                             {% else %}bg-secondary{% endif %}">

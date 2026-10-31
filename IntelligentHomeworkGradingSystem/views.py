@@ -26,15 +26,14 @@ def helloWorld(request):
 
 
 # 批改状态 -> 视觉色系（与页面 Badge 保持一致）
+# 键必须与 Submission.STATUS_CHOICES 一一对应，新增状态时同步这里，
+# 否則徽章会静默退化成 secondary。
 STATUS_TONE = {
-    'PENDING': 'warning',
-    'GRADING': 'info',
-    'SUBMITTED': 'secondary',
-    'GRADED': 'primary',
-    'ACCEPTED': 'success',
-    'WRONG_ANSWER': 'danger',
-    'COMPILE_ERROR': 'danger',
-    'RUNTIME_ERROR': 'danger',
+    Submission.STATUS_PENDING: 'warning',
+    Submission.STATUS_GRADING: 'info',
+    Submission.STATUS_GRADED: 'success',
+    Submission.STATUS_COMPILE_ERROR: 'danger',
+    Submission.STATUS_RUNTIME_ERROR: 'danger',
 }
 
 
@@ -129,7 +128,7 @@ def dashboard(request):
     submissions, students, problems, classes, assignments, is_admin = _dashboard_scope(user)
 
     # ---------- 待办 ----------
-    pending_qs = submissions.filter(status__in=['PENDING', 'GRADING'])
+    pending_qs = submissions.filter(status__in=Submission.STATUS_IN_PROGRESS)
     pending_count = pending_qs.count()
     # 超过 24 小时仍未批改，单独提示，避免"积压"被总数掩盖
     overdue_count = pending_qs.filter(submitted_time__lt=now - timedelta(hours=24)).count()
