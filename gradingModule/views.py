@@ -86,10 +86,11 @@ def submissionprocess(request):
         except Problem.DoesNotExist:
             return JsonResponse({'error': '指定的题目不存在'}, status=404)
 
-        try:
-            user = User.objects.get(id=userId)
-        except User.DoesNotExist:
-            return HttpResponseBadRequest('用户不存在')
+        # 身份一律以 JWT 为准，不能信任客户端传来的 userId，
+        # 否则任意登录用户都能以他人身份提交（越权）。
+        user = request.user
+        if userId and str(userId) != str(user.id):
+            logger.warning("用户 %s 提交时携带了不一致的 userId=%s，已忽略", user.id, userId)
         logger.info(f"用户 {user.wx_nickName}创建了新提交")
 
         from django.utils import timezone
@@ -423,6 +424,12 @@ def getASubmission(request, submission_id):
     try:
         # 获取对应的提交记录
         submission = Submission.objects.get(id=submission_id)
+
+        # 归属校验：学生只能看自己的提交，教师/管理员可看全部
+        current_user = request.user
+        if current_user.user_attribute < 2 and submission.student_id != current_user.id:
+            return JsonResponse({"error": "无权查看他人的提交记录"}, status=403)
+
         if submission.submitted_image:
             image_url = request.build_absolute_uri(submission.submitted_image.url)
         else:
@@ -500,7 +507,14 @@ def submission_batch_action(request):
     
     return redirect('grading:submission_list')
 
+@csrf_exempt
+@jwt_login_required
 def getSubmissionsByAssignmentId(request, assignment_id):
+    # 该接口返回某次作业下全班学生的作答，属于教师视角数据，
+    # 之前没有任何认证与角色校验，匿名即可拉取，已修复。
+    if request.user.user_attribute < 2:
+        return JsonResponse({"error": "无权查看该作业的提交列表"}, status=403)
+
     try:
         # 根据assignment_id获取相关的提交记录
         # 正确的方法是通过AssignmentStatus表连接Assignment和Submission
