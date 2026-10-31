@@ -42,7 +42,22 @@ jobs:
   url-convention:
     name: 路由规范校验
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
+
+    # 越权测试等属于 TestCase，需要真实数据库建测试库
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: ci-root
+          MYSQL_DATABASE: ihgs
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pci-root"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
 
     steps:
       - name: 检出代码
@@ -70,15 +85,16 @@ jobs:
             "Pillow==10.4.0" \
             "numpy==2.2.6" \
             "pybloom-live==4.0.0" \
-            "django-jsonfield-backport==1.0.5"
+            "django-jsonfield-backport==1.0.5" \
+            "cryptography==43.0.3"
           # torch 用 CPU 版，避免拉 NVIDIA CUDA 依赖（体积差一个数量级）
           pip install "torch==2.4.1" --index-url https://download.pytorch.org/whl/cpu
 
       - name: 生成 CI 用 config.py
         run: |
-          # config.py 被 .gitignore 排除，CI 里用占位值替代；本检查不会连接数据库
+          # config.py 被 .gitignore 排除，这里写入与上面 MySQL service 一致的密码
           cat > config.py <<'PY'
-          DATABASES_PASSWORD = 'ci-placeholder'
+          DATABASES_PASSWORD = 'ci-root'
           OPENROUTER_API_KEY = 'ci-placeholder'
           WECHAT_APPID = 'ci-placeholder'
           WECHAT_SECRET = 'ci-placeholder'
@@ -86,11 +102,21 @@ jobs:
           DOMAIN_NAME = 'localhost'
           PY
 
+      - name: 等待 MySQL 就绪
+        run: |
+          for i in $(seq 1 30); do
+            if python -c "import pymysql,os; pymysql.connect(host='127.0.0.1', user='root', password='ci-root')" 2>/dev/null; then
+              echo "MySQL 已就绪"; exit 0
+            fi
+            sleep 2
+          done
+          echo "MySQL 连接超时"; exit 1
+
       - name: Django 自检
         run: python manage.py check
 
-      - name: 路由规范与迁移健康度测试
-        run: python manage.py test tests -v 2
+      - name: 路由规范 / 迁移健康度 / 越权测试
+        run: python manage.py test tests -v 2 --noinput
 
       - name: 导出路由清单
         if: always()
