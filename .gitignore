@@ -7,3 +7,6 @@ config.py
 media/
 venv/
 .idea/
+.claude/
+.workbuddy/
+todo.md

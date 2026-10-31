@@ -15,6 +15,7 @@ from userManageModule.decorators import jwt_login_required
 # 确保导入 KnowledgePoint
 from .models import Problem, ProblemContent, Answer, ProblemType, Subject, ProblemTag, KnowledgePoint
 from dkt_app.recommendation_utils import get_user_mastery_probabilities
+from questionManageModule.cache_utils import get_cached, question_may_exist, delete_question_detail_cache, rebuild_question_bloom
 from django.utils.text import slugify
 from django.utils.html import strip_tags
 import numpy as np
@@ -265,6 +266,9 @@ def question_create(request):
                 knowledge_point_ids=kp_ids  # 传递知识点
             )
 
+            # 新题创建后重建布隆，使其 id 立即"可能存在"
+            rebuild_question_bloom()
+
             messages.success(request, '问题创建成功')
             return redirect('question_list')
 
@@ -357,6 +361,9 @@ def question_update(request, question_id):
 
                 question.save()
 
+                # 更新后删除该题的详情缓存，下次请求重新回源
+                delete_question_detail_cache(question.id)
+
             messages.success(request, f'问题 #{question.id} 更新成功')
             return redirect('question_detail', question_id=question.id)
 
@@ -375,6 +382,9 @@ def question_delete(request, question_id):
     question = get_object_or_404(Problem, id=question_id)
     if request.method == 'POST':
         question.delete()
+        # 删除后：清缓存 key 并重建布隆（该 id 不再"可能存在"）
+        delete_question_detail_cache(question_id)
+        rebuild_question_bloom()
         messages.success(request, '问题删除成功')
         return redirect('question_list')
     return render(request, 'question_confirm_delete.html', {'question': question})
@@ -395,6 +405,11 @@ def question_batch_action(request):
             queryset.update(is_active=False)
         elif action == 'enable':
             queryset.update(is_active=True)
+
+        # 批量操作后：清相关题的缓存 key，并重建布隆（delete/disable/enable 都影响"激活集合"）
+        for pid in selected_ids:
+            delete_question_detail_cache(pid)
+        rebuild_question_bloom()
 
     return redirect('question_list')
 
@@ -897,28 +912,43 @@ def wx_get_question_by_id(request, question_id):
     微信端：获取指定ID的题目详情 (用于精准练习)
     """
     try:
-        question = Problem.objects.get(id=question_id, is_active=True)
+        # 穿透防护：布隆过滤器确认不存在的 id 直接 404，不打 DB
+        if not question_may_exist(question_id):
+            return JsonResponse({'success': False, 'error': '题目不存在或已下架'}, status=404)
 
-        # 学生只能查看被授权科目的题目
+        # 回源 loader：查 DB 并构造与 random 接口一致的数据结构
+        def load():
+            try:
+                question = Problem.objects.get(id=question_id, is_active=True)
+            except Problem.DoesNotExist:
+                return None
+            return {
+                'id': question.id,
+                'subject_id': question.subject_id,
+                'content': question.content.content,
+                'content_data': question.content.content_data if question.content else {},
+                'problem_type': question.problem_type.name,
+                'problem_type_code': question.problem_type.code if question.problem_type else '',
+                'points': question.points,
+                'difficulty': question.get_difficulty_display(),
+                'answer': question.answer.content if question.answer else '',
+                'analysis': question.answer.explanation if question.answer else '',
+            }
+
+        data = get_cached(f'question:detail:{question_id}', 300, load)
+        if data is None:
+            return JsonResponse({'success': False, 'error': '题目不存在或已下架'}, status=404)
+
+        # 命中缓存后仍要校验学生科目权限（不同学生授权科目不同）
         if request.user.user_attribute == 1:
-            if not request.user.authorized_subjects.filter(id=question.subject_id).exists():
+            if not request.user.authorized_subjects.filter(id=data['subject_id']).exists():
                 return JsonResponse({'success': False, 'error': '您没有权限查看该题目'}, status=403)
 
-        # 构造与 random 接口一致的数据结构
-        data = {
-            'id': question.id,
-            'content': question.content.content,
-            'content_data': question.content.content_data if question.content else {},
-            'problem_type': question.problem_type.name,
-            'problem_type_code': question.problem_type.code if question.problem_type else '',
-            'points': question.points,
-            'difficulty': question.get_difficulty_display(),
-            'answer': question.answer.content if question.answer else '',
-            'analysis': question.answer.explanation if question.answer else '',
-        }
+        data.pop('subject_id')  # 不把内部字段返回前端
         return JsonResponse({'success': True, 'question': data})
-    except Problem.DoesNotExist:
-        return JsonResponse({'success': False, 'error': '题目不存在或已下架'}, status=404)
+    except Exception as e:
+        logger.error(f'获取题目详情失败: {e}', exc_info=True)
+        return JsonResponse({'success': False, 'error': '服务器内部错误'}, status=500)
 
 
 @jwt_login_required
