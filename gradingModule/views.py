@@ -97,39 +97,57 @@ def submissionprocess(request):
         logger.info(f"用户 {user.wx_nickName}创建了新提交")
 
         from django.utils import timezone
-        # 创建新的 submission 实例，保存图片
-        submission = Submission.objects.create(
-            problem=problem,
-            student=user,
-            submitted_text=submitted_text,
-            submitted_time=timezone.now(),
-            submitted_image=submitted_image,
-            choose_answer=choose_answer,
-            # 刚提交 = 待批改（不是"批改中"）；批改任务接手后才会推进到 GRADING
-            status=Submission.STATUS_PENDING,
-            # 未批改不应有分数，否则会被统计进平均分、也会让"0 分"误导学生
-            score=None,
-            feedback='',
-            justification='',
-        )
+        from django.db import transaction
+
+        # 参数与作业存在性先校验、后写库：避免"提交已落库才发现作业不存在"
+        assignment = None
         if source == 'assignment':
             assignment_id = data.get('assignment_id')
             if not assignment_id:
                 return HttpResponseBadRequest("请求必须包含 'assignment_id'")
-            from assignmentAndClassModule.models import AssignmentStatus,Assignment
-            assignment=Assignment.objects.get(id=assignment_id)
-            assignment_status,created = AssignmentStatus.objects.get_or_create(
-                assignment=assignment,
-                submission=submission,
+            from assignmentAndClassModule.models import Assignment
+            try:
+                assignment = Assignment.objects.get(id=assignment_id)
+            except Assignment.DoesNotExist:
+                return JsonResponse({'error': '指定的作业不存在'}, status=404)
+
+        # 提交记录与作业状态的写入放进同一事务：
+        # 要么都落库，要么都不落，避免出现"有提交但没有作业状态"的孤儿数据
+        with transaction.atomic():
+            # 创建新的 submission 实例，保存图片
+            submission = Submission.objects.create(
+                problem=problem,
                 student=user,
-                defaults={
-                    'submitted_at': timezone.now(),
-                    # 其他需要的默认字段
-                }
+                submitted_text=submitted_text,
+                submitted_time=timezone.now(),
+                submitted_image=submitted_image,
+                choose_answer=choose_answer,
+                # 刚提交 = 待批改（不是"批改中"）；批改任务接手后才会推进到 GRADING
+                status=Submission.STATUS_PENDING,
+                # 未批改不应有分数，否则会被统计进平均分、也会让"0 分"误导学生
+                score=None,
+                feedback='',
+                justification='',
             )
-            assignment_status.save()
-        elif source == 'question':
-            submission.save()
+            if assignment is not None:
+                from assignmentAndClassModule.models import AssignmentStatus
+                # 同一作业允许反复提交：状态记录指向【最新一次】提交。
+                # 查找键必须是 (assignment, student)——与唯一约束一致；
+                # 旧代码把 submission 放进查找键，学生第二次提交时会绕过
+                # get() 直接 create，撞上唯一约束直接 500（且此时提交已落库）。
+                assignment_status, created = AssignmentStatus.objects.get_or_create(
+                    assignment=assignment,
+                    student=user,
+                    defaults={
+                        'submission': submission,
+                        'submitted_at': timezone.now(),
+                    },
+                )
+                if not created:
+                    assignment_status.submission = submission
+                    assignment_status.submitted_at = timezone.now()
+                    assignment_status.save()
+            # source == 'question'：单独刷题，只有 Submission，没有作业状态
         ### test
         submissions = Submission.objects.filter(student=user).order_by('-submitted_time')
         logger.info("用户 %s 当前共有 %d 条提交记录", user.wx_nickName, submissions.count())
