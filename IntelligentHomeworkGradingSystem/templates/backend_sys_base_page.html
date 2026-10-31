@@ -72,25 +72,9 @@
         }
 
         .app-navbar .navbar-brand {
-            display: flex;
-            align-items: center;
-            gap: .6rem;
             font-weight: 700;
             letter-spacing: -.01em;
             font-size: 1.02rem;
-        }
-
-        .app-navbar .brand-mark {
-            width: 32px;
-            height: 32px;
-            border-radius: 10px;
-            display: grid;
-            place-items: center;
-            font-size: .9rem;
-            color: #fff;
-            background: linear-gradient(135deg, #4d91ff, #0d6efd);
-            box-shadow: 0 4px 12px -2px rgba(13, 110, 253, .55);
-            flex: 0 0 auto;
         }
 
         .app-navbar .nav-link {
@@ -644,8 +628,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark app-navbar">
         <div class="container-fluid">
             <a class="navbar-brand" href="{% url 'dashboard' %}">
-                <span class="brand-mark"><i class="fas fa-robot"></i></span>
-                <span>智能作业评分系统</span>
+                智能作业评分系统
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
