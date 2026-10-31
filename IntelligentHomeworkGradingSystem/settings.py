@@ -128,6 +128,11 @@ SIMPLE_JWT = {
 
 ROOT_URLCONF = 'IntelligentHomeworkGradingSystem.urls'
 
+# 页面登录跳转地址。
+# 不配置的话 @login_required 会跳到 Django 默认的 /accounts/login/（本项目没有该路由，直接 404）。
+# 这里用路径而不是路由名：LOGIN_URL 只做字符串拼接 ?next=，不参与 reverse。
+LOGIN_URL = '/user/login/'
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',

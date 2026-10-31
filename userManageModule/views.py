@@ -151,8 +151,9 @@ def login_view(request):
             user = authenticate(request, username=username, password=password)
             if user is not None:
                 login(request, user)
-                next_url = request.GET.get('next', 'user_list')
-                return redirect(next_url)
+                next_url = request.GET.get('next')
+                # 默认跳到用户列表；next 为空时不能直接 redirect(None)
+                return redirect(next_url or 'user:user_list')
             else:
                 # 检查用户是否存在但被禁用（is_active=False）
                 try:

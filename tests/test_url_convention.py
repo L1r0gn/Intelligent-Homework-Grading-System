@@ -99,3 +99,28 @@ class URLConventionTest(SimpleTestCase):
             if not namespace.endswith('_api'):
                 offenders.append((name, pattern))
         self.assertEqual(offenders, [], f'API 命名空间下出现了非接口路由：{offenders}')
+
+    def test_login_url_resolves(self):
+        """
+        settings.LOGIN_URL 必须能解析到真实路由。
+
+        @login_required 默认跳 /accounts/login/，本项目没有该路由，
+        不显式配置就会 404（历史踩坑点）。
+        """
+        from django.conf import settings
+        from django.urls import Resolver404, resolve
+
+        self.assertTrue(settings.LOGIN_URL, 'LOGIN_URL 不能为空')
+        try:
+            resolve(settings.LOGIN_URL)
+        except Resolver404:
+            self.fail(f'LOGIN_URL 指向了不存在的路由：{settings.LOGIN_URL}')
+
+    def test_login_landing_page_exists(self):
+        """登录成功后默认落地的路由名必须存在（user:user_list）。"""
+        from django.urls import NoReverseMatch, reverse
+
+        try:
+            reverse('user:user_list')
+        except NoReverseMatch:
+            self.fail('路由名 user:user_list 不存在，登录成功的默认跳转会 500')
