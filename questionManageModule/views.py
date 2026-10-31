@@ -15,7 +15,7 @@ from userManageModule.decorators import jwt_login_required
 # 确保导入 KnowledgePoint
 from .models import Problem, ProblemContent, Answer, ProblemType, Subject, ProblemTag, KnowledgePoint
 from dkt_app.recommendation_utils import get_user_mastery_probabilities
-from questionManageModule.cache_utils import get_cached, question_may_exist, delete_question_detail_cache, rebuild_question_bloom
+from questionManageModule.cache_utils import get_cached, question_may_exist, delete_question_detail_cache, rebuild_question_index
 from django.conf import settings
 from django.utils import timezone
 from file_uploads import save_image
@@ -270,7 +270,7 @@ def question_create(request):
             )
 
             # 新题创建后重建布隆，使其 id 立即"可能存在"
-            rebuild_question_bloom()
+            rebuild_question_index()
 
             messages.success(request, '问题创建成功')
             return redirect('question:problem_list')
@@ -387,7 +387,7 @@ def question_delete(request, question_id):
         question.delete()
         # 删除后：清缓存 key 并重建布隆（该 id 不再"可能存在"）
         delete_question_detail_cache(question_id)
-        rebuild_question_bloom()
+        rebuild_question_index()
         messages.success(request, '问题删除成功')
         return redirect('question:problem_list')
     return render(request, 'question_confirm_delete.html', {'question': question})
@@ -412,7 +412,7 @@ def question_batch_action(request):
         # 批量操作后：清相关题的缓存 key，并重建布隆（delete/disable/enable 都影响"激活集合"）
         for pid in selected_ids:
             delete_question_detail_cache(pid)
-        rebuild_question_bloom()
+        rebuild_question_index()
 
     return redirect('question:problem_list')
 
@@ -915,7 +915,7 @@ def wx_get_question_by_id(request, question_id):
     微信端：获取指定ID的题目详情 (用于精准练习)
     """
     try:
-        # 穿透防护：布隆过滤器确认不存在的 id 直接 404，不打 DB
+        # 穿透防护：先查激活题目索引，确认不存在的 id 直接 404，不打 DB
         if not question_may_exist(question_id):
             return JsonResponse({'success': False, 'error': '题目不存在或已下架'}, status=404)
 
@@ -947,8 +947,10 @@ def wx_get_question_by_id(request, question_id):
             if not request.user.authorized_subjects.filter(id=data['subject_id']).exists():
                 return JsonResponse({'success': False, 'error': '您没有权限查看该题目'}, status=403)
 
-        data.pop('subject_id')  # 不把内部字段返回前端
-        return JsonResponse({'success': True, 'question': data})
+        # 注意：data 是缓存里取出来的对象，不能原地 pop。
+        # 换用 LocMemCache 时 pop 会直接改掉缓存内容，下一个请求就取不到 subject_id。
+        payload = {k: v for k, v in data.items() if k != 'subject_id'}
+        return JsonResponse({'success': True, 'question': payload})
     except Exception as e:
         logger.error(f'获取题目详情失败: {e}', exc_info=True)
         return JsonResponse({'success': False, 'error': '服务器内部错误'}, status=500)

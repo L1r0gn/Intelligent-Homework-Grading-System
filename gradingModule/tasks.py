@@ -1,6 +1,10 @@
 import json
 import logging
 import base64
+import ipaddress
+import os
+from urllib.parse import urlparse
+
 from celery import shared_task
 from openai import OpenAI
 from django.conf import settings  # 确保正确引用 settings
@@ -34,6 +38,53 @@ def encode_image_to_base64(image_path):
     except Exception as e:
         logger.error(f"❌ 编码图片失败: {e}")
         return None
+
+
+def is_publicly_reachable(url):
+    """判断 URL 的主机是否可能被外部服务访问。
+
+    本地回环、私有网段、链路本地地址，大模型侧一律拉不到；
+    这类情况下要把图片内联成 base64 传过去，否则批改会一直失败但看不出原因。
+    """
+    host = (urlparse(url).hostname or '').strip()
+    if not host:
+        return False
+    if host.lower() in ('localhost', '0.0.0.0'):
+        return False
+    try:
+        return ipaddress.ip_address(host).is_global
+    except ValueError:
+        # 域名：假定公网可达，仅排除 .local 这类内网域名
+        return not host.lower().endswith('.local')
+
+
+def build_image_payload(submission):
+    """
+    构造交给多模态模型的图片参数。
+
+    公网可访问时用 URL（省带宽）；否则读本地文件转 base64 data URL。
+    返回 None 表示无法提供图片。
+    """
+    base = str(settings.SERVER_BASE_URL).rstrip('/')
+    url = f'{base}/api/v1/submissions/{submission.id}/image/'
+    if is_publicly_reachable(url):
+        logger.info('图片以 URL 形式提交给模型: %s', url)
+        return url
+
+    try:
+        path = submission.submitted_image.path
+    except (ValueError, NotImplementedError) as e:
+        logger.error('无法读取本地图片文件（非本地存储？），且 URL 不可公网访问: %s', e)
+        return None
+
+    encoded = encode_image_to_base64(path)
+    if not encoded:
+        return None
+
+    ext = os.path.splitext(path)[1].lstrip('.').lower() or 'png'
+    mime = 'image/jpeg' if ext in ('jpg', 'jpeg') else f'image/{ext}'
+    logger.info('图片地址不可公网访问（%s），改用 base64 内联', url)
+    return f'data:{mime};base64,{encoded}'
 
 
 def grade_submission_with_ai(standard_answer, total_score, submission_id=None, assignment_status_id=None, custom_prompt=None):
@@ -85,9 +136,11 @@ def grade_submission_with_ai(standard_answer, total_score, submission_id=None, a
     # 2. 准备 Prompt 和 图片
     logger.info(f'开始 AI 评分，标准答案: {standard_answer}')
 
-    # 优先使用 URL，如果需要也可以切换为 Base64
-    image_url = f"{settings.SERVER_BASE_URL}/api/v1/submissions/{submission_id}/image/"
-    logger.info(f"图片 URL: {image_url}")
+    # 图片参数：公网可达走 URL，内网/本地自动转 base64（否则模型侧拉不到图）
+    image_url = build_image_payload(submission)
+    if not image_url:
+        logger.error('❌ 无法构造图片参数，跳过 AI 批改（submission=%s）', submission_id)
+        return None
 
     # 构建自定义提示词部分
     custom_prompt_section = ""
