@@ -6,6 +6,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from .services import BKTService
+from .models import BKTStudentState, LearningTrace
 from .data_migration import BKTDataMigrationService, BKTParameterInitializationService
 from userManageModule.decorators import jwt_login_required, admin_required
 import json
@@ -554,3 +555,63 @@ def bkt_class_dashboard(request):
         })
     
     return render(request, 'bkt_class_dashboard.html')
+
+@api_view(['GET'])
+@jwt_login_required
+def wx_student_kp_state(request, student_id, kp_id):
+    """
+    获取学生在某个知识点上的 BKT 掌握状态。
+
+    GET /api/v1/students/<student_id>/knowledge-points/<kp_id>/state/
+    学生只能查自己；无记录时返回 404（前端据此提示“暂无学习记录”）。
+    """
+    current_user = request.user
+    if current_user.user_attribute == 1 and current_user.id != student_id:
+        return Response({'success': False, 'error': '只能查看自己的学习数据'}, status=403)
+
+    state = BKTStudentState.objects.filter(
+        student_id=student_id, knowledge_point_id=kp_id
+    ).first()
+    if not state:
+        return Response({'success': False, 'error': '暂无该知识点的学习记录'}, status=404)
+
+    return Response({
+        'success': True,
+        'student_id': student_id,
+        'knowledge_point_id': kp_id,
+        'mastery_probability': state.mastery_probability,
+        'total_attempts': state.total_attempts,
+        'correct_attempts': state.correct_attempts,
+        'streak_length': state.streak_length,
+        'predicted_performance': state.predicted_performance,
+        'last_updated': state.last_updated.strftime('%Y-%m-%d %H:%M:%S'),
+    }, status=200)
+
+
+@api_view(['GET'])
+@jwt_login_required
+def wx_student_kp_traces(request, student_id, kp_id):
+    """
+    获取学生在某个知识点上的学习轨迹（按时间正序）。
+
+    GET /api/v1/students/<student_id>/knowledge-points/<kp_id>/traces/
+    返回 {"success": true, "data": [...], "count": n}
+    """
+    current_user = request.user
+    if current_user.user_attribute == 1 and current_user.id != student_id:
+        return Response({'success': False, 'error': '只能查看自己的学习数据'}, status=403)
+
+    traces = LearningTrace.objects.filter(
+        student_id=student_id, knowledge_point_id=kp_id
+    ).order_by('attempt_time')
+
+    data = [{
+        'id': t.id,
+        'outcome': t.outcome,
+        'submission_id': t.submission_id,
+        'attempt_time': t.attempt_time.strftime('%Y-%m-%d %H:%M:%S'),
+        'predicted_mastery_before': t.predicted_mastery_before,
+        'predicted_mastery_after': t.predicted_mastery_after,
+    } for t in traces]
+
+    return Response({'success': True, 'count': len(data), 'data': data}, status=200)

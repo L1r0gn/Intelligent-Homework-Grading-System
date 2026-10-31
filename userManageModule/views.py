@@ -18,6 +18,7 @@ import string
 import random
 from userManageModule.serializers import serializeUserInfo
 import json
+from file_uploads import save_image
 from django.http import JsonResponse, HttpResponseForbidden
 from rest_framework import status, generics
 from rest_framework.response import Response
@@ -759,3 +760,72 @@ def quit_class(request, class_id):
         # 处理异常
         return JsonResponse({'error': f'退出班级失败：{str(e)}'}, status=500)
 
+
+
+# --------------------------------------------------------------------------
+# 小程序：头像上传
+# --------------------------------------------------------------------------
+@csrf_exempt
+@jwt_login_required
+def wx_upload_avatar(request):
+    """
+    小程序：上传并更新当前用户头像。
+
+    POST multipart/form-data，文件字段名 avatar（兼容 file）。
+    成功返回 {"success": true, "url": "<绝对地址>"}，同时写入 User.wx_avatar。
+    """
+    if request.method != 'POST':
+        return JsonResponse({'code': 405, 'error': '仅支持 POST'}, status=405)
+
+    upload = request.FILES.get('avatar') or request.FILES.get('file')
+    if not upload:
+        return JsonResponse({'code': 400, 'error': '缺少文件字段 avatar'}, status=400)
+
+    try:
+        rel_path = save_image(upload, f'avatars/{request.user.id}')
+    except ValueError as e:
+        return JsonResponse({'code': 400, 'error': str(e)}, status=400)
+
+    url = request.build_absolute_uri(settings.MEDIA_URL + rel_path)
+    user = request.user
+    user.wx_avatar = url
+    user.save(update_fields=['wx_avatar'])
+
+    return JsonResponse({'success': True, 'url': url}, status=200)
+
+
+# --------------------------------------------------------------------------
+# 小程序：移除班级成员
+# --------------------------------------------------------------------------
+@csrf_exempt
+@jwt_login_required
+def wx_remove_class_member(request, class_id, user_id):
+    """
+    将某个学生移出班级。
+
+    DELETE /api/v1/classes/<class_id>/members/<user_id>/
+    权限：管理员，或该班级的创建者/班主任。
+    """
+    if request.method != 'DELETE':
+        return JsonResponse({'code': 405, 'error': '仅支持 DELETE'}, status=405)
+
+    cls = className.objects.filter(id=class_id).first()
+    if not cls:
+        return JsonResponse({'code': 404, 'error': '班级不存在'}, status=404)
+
+    operator = request.user
+    allowed = (
+        operator.user_attribute >= 3
+        or cls.created_by_id == operator.id
+        or cls.homeroom_teacher_id == operator.id
+    )
+    if not allowed:
+        return JsonResponse({'code': 403, 'error': '无权管理该班级成员'}, status=403)
+
+    member = User.objects.filter(id=user_id, class_in=cls).first()
+    if not member:
+        return JsonResponse({'code': 404, 'error': '该用户不在此班级中'}, status=404)
+
+    member.class_in.remove(cls)
+    return JsonResponse({'success': True, 'message': f'已将 {member.wx_nickName or member.username} 移出班级'},
+                        status=200)

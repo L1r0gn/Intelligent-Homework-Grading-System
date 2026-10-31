@@ -557,3 +557,56 @@ def submission_collection(request):
         return submissionprocess(request)
     return showMySubmissions(request)
 
+
+
+# --------------------------------------------------------------------------
+# 小程序：重做题目
+# --------------------------------------------------------------------------
+@csrf_exempt
+@jwt_login_required
+def wx_redo_problem(request):
+    """
+    申请重做某道题。
+
+    语义说明（重要）：本接口**只做资格校验，不修改任何历史数据**。
+    提交接口本身允许同一学生对同一题多次提交，每次都会生成新的 Submission，
+    所以「重做」在服务端等价于「允许再次提交」，历史作答记录保留可追溯。
+
+    请求：POST JSON {"problem_id": <id>}（兼容 questionId）
+    响应：{"code": 200, "success": true, "can_redo": true, "previous_submission_id": <id|null>}
+          小程序端以 data.code === 200 判定成功。
+    """
+    if request.method != 'POST':
+        return JsonResponse({'code': 405, 'error': '仅支持 POST'}, status=405)
+
+    if request.content_type == 'application/json':
+        try:
+            data = json.loads(request.body or '{}')
+        except json.JSONDecodeError:
+            return JsonResponse({'code': 400, 'error': 'JSON 解析错误'}, status=400)
+    else:
+        data = request.POST
+
+    problem_id = data.get('problem_id') or data.get('questionId')
+    if not problem_id:
+        return JsonResponse({'code': 400, 'error': '缺少 problem_id'}, status=400)
+
+    problem = Problem.objects.filter(id=problem_id, is_active=True).first()
+    if not problem:
+        return JsonResponse({'code': 404, 'error': '题目不存在或已下架'}, status=404)
+
+    user = request.user
+    # 学生（user_attribute == 1）只能重做被授权科目的题目
+    if user.user_attribute == 1 and not user.authorized_subjects.filter(id=problem.subject_id).exists():
+        return JsonResponse({'code': 403, 'error': '您没有权限作答该题目'}, status=403)
+
+    last = Submission.objects.filter(student=user, problem=problem).order_by('-submitted_time').first()
+
+    return JsonResponse({
+        'code': 200,
+        'success': True,
+        'can_redo': True,
+        'problem_id': problem.id,
+        'previous_submission_id': last.id if last else None,
+        'message': '可以重新作答，本次作答将生成新的提交记录',
+    }, status=200)

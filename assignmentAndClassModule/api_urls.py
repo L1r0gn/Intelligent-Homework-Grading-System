@@ -11,6 +11,7 @@ urlpatterns = [
     path('assignments/batch/', views.batch_push_assignments, name='assignment_batch'),
     path('assignments/<int:assignment_id>/', views.get_student_homework_detail, name='assignment_detail'),
     path('assignments/<int:assignment_id>/update/', views.update_assignment, name='assignment_update'),
+    path('assignments/<int:assignment_id>/delete/', views.delete_assignment, name='assignment_delete'),
 
     # 学生端：我的作业
     path('students/me/assignments/', views.student_assignments, name='student_assignments'),

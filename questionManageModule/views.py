@@ -16,6 +16,9 @@ from userManageModule.decorators import jwt_login_required
 from .models import Problem, ProblemContent, Answer, ProblemType, Subject, ProblemTag, KnowledgePoint
 from dkt_app.recommendation_utils import get_user_mastery_probabilities
 from questionManageModule.cache_utils import get_cached, question_may_exist, delete_question_detail_cache, rebuild_question_bloom
+from django.conf import settings
+from django.utils import timezone
+from file_uploads import save_image
 from django.utils.text import slugify
 from django.utils.html import strip_tags
 import numpy as np
@@ -998,3 +1001,33 @@ def wx_get_student_stats(request):
             'stats_list': stats_list
         }
     })
+
+# --------------------------------------------------------------------------
+# 小程序：通用图片上传（作业内容配图等）
+# --------------------------------------------------------------------------
+@csrf_exempt
+@jwt_login_required
+def wx_upload_image(request):
+    """
+    通用图片上传。教师/管理员可用于作业内容配图、题目附件预览等。
+
+    POST multipart/form-data，文件字段名 file（兼容 image）。
+    成功返回 {"success": true, "url": "<绝对地址>"}。
+    """
+    if request.method != 'POST':
+        return JsonResponse({'code': 405, 'error': '仅支持 POST'}, status=405)
+
+    if request.user.user_attribute < 2:
+        return JsonResponse({'code': 403, 'error': '仅教师及以上可上传'}, status=403)
+
+    upload = request.FILES.get('file') or request.FILES.get('image')
+    if not upload:
+        return JsonResponse({'code': 400, 'error': '缺少文件字段 file'}, status=400)
+
+    try:
+        rel_path = save_image(upload, f'uploads/{timezone.now():%Y/%m}')
+    except ValueError as e:
+        return JsonResponse({'code': 400, 'error': str(e)}, status=400)
+
+    url = request.build_absolute_uri(settings.MEDIA_URL + rel_path)
+    return JsonResponse({'success': True, 'url': url}, status=200)

@@ -19,4 +19,7 @@ urlpatterns = [
     # 元数据创建（AJAX）
     path('subjects/', question_views.ajax_create_subject, name='subject_create'),
     path('problem-types/', question_views.ajax_create_problem_type, name='problem_type_create'),
+
+    # 图片上传（作业配图等）
+    path('uploads/images/', question_views.wx_upload_image, name='image_upload'),
 ]
