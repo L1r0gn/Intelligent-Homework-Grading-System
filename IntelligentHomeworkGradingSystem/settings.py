@@ -49,6 +49,16 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Asia/Shanghai' # 根据你的时区设置
 
+# --- Redis 缓存配置 ---
+# 使用独立 db 1，与 Celery 的 db 0 隔离
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': 'redis://localhost:6380/1',
+        'TIMEOUT': 300,
+    }
+}
+
 # Application definition
 
 INSTALLED_APPS = [
